@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Inter", sans-serif;
+}
+@layer components {
+  .form-row {
+    @apply flex space-x-4 w-full;
+  }
+  .form-item {
+    @apply flex flex-col gap-2 flex-1;
+  }
+  .form-item label {
+    @apply text-gray-500 text-sm;
+  }
+}
+
+body {
+  @apply text-gray-900
+}
