@@ -257,7 +257,7 @@ async function handleSubmit() {
 	</div>
 </template>
 
-<style scoped>
+<style scoped lang="postcss">
 .form-checkbox {
   @apply rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50;
 }
