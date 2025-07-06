@@ -1,10 +1,14 @@
-// import { TablesInsert } from '~/types/database.types'
+import type { TablesInsert } from '~/types/database.types';
 
 export default defineEventHandler(async (event) => {
 	try {
+		const body = await readBody<TablesInsert<'locations'>>(event);
+
 		const { data, error } = await event.context.supabase
-			.from('inspections')
-			.select('*, products(brand,model_type,refill_date,next_refill_date,locations(location,building_area,location_id))');
+			.from('locations')
+			.insert(body)
+			.select()
+			.single();
 
 		if (error) {
 			throw createError({
@@ -19,7 +23,7 @@ export default defineEventHandler(async (event) => {
 		console.log('ERROR:', error);
 		if (error instanceof Error) {
 			throw createError({
-				statusCode: (error as any).statusCode || 500,
+				statusCode: error.statusCode || 500,
 				message: error.message,
 			});
 		}

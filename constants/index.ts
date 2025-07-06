@@ -71,6 +71,7 @@ export const headerLabels = {
 	pin_and_seal: 'Pim ve mühür',
 	pressure: 'Basınç',
 	position: 'Pozisyon',
+	unit: 'Ağırlık',
 	working_mechanism: 'Çalışma mekanizması',
 	model_type: 'Modeli / tipi',
 	refill_date: 'Dolum tarihi',
@@ -92,3 +93,5 @@ export const headerLabels = {
 	working_pressure_bar: 'Çalışma basıncı',
 	working_temperature_celsius: 'Çalışma sıcaklığı',
 };
+
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body'];

@@ -1,40 +1,14 @@
 <script setup lang="ts">
-import type { ColumnNode } from 'primevue';
-
-type CustomCells = {
-	[key: string]: (value: any) => {
-		name: string;
-		props: Record<string, any>;
-		text: string | null;
-	};
-};
-
 type Props = {
-	slotProps: {
-		data: any;
-		node: any;
-		column: ColumnNode;
-		field: string | ((item: any) => string) | undefined;
-		index: number;
-		frozenRow: boolean;
-		editorInitCallback: (event: Event) => void;
-		rowTogglerCallback: (event: Event) => void;
-	};
+	field: string;
+	value: unknown;
 };
+// need better type definitions
 
 const props = defineProps<Props>();
 
-const fields: CustomCells = {
-	date: (value: string) => ({
-		name: 'span',
-		props: {},
-		text: new Date(value).toLocaleDateString('tr-TR', {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-		}),
-	}),
-	check: (value: boolean) => ({
+const customCells = {
+	boolean: (value: boolean) => ({
 		name: 'i',
 		props: {
 			class: value
@@ -44,29 +18,51 @@ const fields: CustomCells = {
 		text: null,
 	}),
 };
-const components: CustomCells = {
-	'products.refill_date': fields.date,
-	'photo_url': (value: string) => ({
-		name: 'img',
-		props: {
-			src: value,
-			alt: 'Product Image',
-			class: 'w-16 h-16 object-cover rounded-lg',
-		},
-		text: null,
+const componentDefinitions = {
+	'products.refill_date': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: new Date(value).toLocaleDateString('tr-TR', {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+		}),
 	}),
-	'result': fields.check,
+	'products.next_refill_date': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: new Date(value).toLocaleDateString('tr-TR', {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+		}),
+	}),
+	'result': customCells.boolean,
+	'position': customCells.boolean,
+	'body': customCells.boolean,
+	'control_card': customCells.boolean,
+	'hose_and_nozzle': customCells.boolean,
+	'instruction_and_label': customCells.boolean,
+	'mass': customCells.boolean,
+	'pin_and_seal': customCells.boolean,
+	'pressure': customCells.boolean,
+	'working_mechanism': customCells.boolean,
 };
 
-const field = props.slotProps.field;
-console.log('field:', props.slotProps.data.products.refill_date);
-const c = components[field](props.slotProps.data[field]);
+const currentComponentData = computed(() => {
+	if (props.field in componentDefinitions) {
+		return componentDefinitions[props.field](props.value);
+	}
+	return null;
+});
 </script>
 
 <template>
-	<div>
-		{{ c }}
-	</div>
-
-	<!-- <component :is="c.name" v-bind="c.props" :text="c.text" /> -->
+	<component
+		:is="currentComponentData.name"
+		v-if="currentComponentData"
+		v-bind="currentComponentData.props"
+	>
+		{{ currentComponentData.text }}
+	</component>
 </template>

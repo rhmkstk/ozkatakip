@@ -58,7 +58,7 @@ const sidebarExpanded = ref(true);
 						<NuxtLink
 							:to="item.path"
 							class="flex items-center px-2 py-2 space-x-1.5 border rounded-lg border-slate-100"
-							active-class="!text-red-500 !border-red-500 rounded-lg shadow-sm"
+							active-class="!text-blue-500 !border-blue-500 rounded-lg shadow-sm"
 						>
 							<i
 								:class="item.icon"

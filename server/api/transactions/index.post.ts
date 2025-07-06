@@ -2,19 +2,10 @@ import type { TablesInsert } from '~/types/database.types';
 
 export default defineEventHandler(async (event) => {
 	try {
-		const body = await readBody<TablesInsert<'products'>>(event);
-		console.log('body::', body);
-
-		// Validate required fields
-		if (!body.manufacture_year || !body.serial_number) {
-			throw createError({
-				statusCode: 400,
-				message: 'Missing required fields: manufacture_year and serial_number are required',
-			});
-		}
+		const body = await readBody<TablesInsert<'transactions'>>(event);
 
 		const { data, error } = await event.context.supabase
-			.from('products')
+			.from('transactions')
 			.insert(body)
 			.select()
 			.single();
@@ -32,7 +23,7 @@ export default defineEventHandler(async (event) => {
 		console.log('ERROR:', error);
 		if (error instanceof Error) {
 			throw createError({
-				statusCode: (error as any).statusCode || 500,
+				name: error.name,
 				message: error.message,
 			});
 		}

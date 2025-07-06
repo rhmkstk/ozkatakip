@@ -1,12 +1,8 @@
 <script setup lang="ts">
-// import type { Tables, TablesInsert } from "~/types/database.types";
-
-// Veri girisi
-// Barkod olusuturma
-
 const tabledata = ref([]);
 const expandedRows = ref([]);
-const { data, status, error } = await useFetch('/api/inspections', {
+const { error } = await useFetch('/api/inspections', {
+	method: 'GET',
 	onResponse({ response }) {
 		if (response._data) {
 			console.log('response._data;', response._data);
@@ -22,12 +18,12 @@ const date = ref(new Date());
 
 const columns = [
 	{
-		accessorKey: 'products.locations.location',
-		header: 'Bulduğu yer',
+		accessorKey: 'products.locations.room',
+		header: 'Bulduğu oda',
 	},
 	{
-		accessorKey: 'products.locations.building_area',
-		header: 'Bulduğu bina / alan',
+		accessorKey: 'products.locations.building_id.name',
+		header: 'Bulduğu bina',
 	},
 	{
 		accessorKey: 'products.locations.location_id',
@@ -51,109 +47,52 @@ const columns = [
 	},
 ];
 
-const expandColuns = [
+const expandColumns = [
 	{
-		field: 'photo_url',
+		accessorKey: 'photo_url',
 		header: 'Fotoğraf',
 	},
 	{
-		field: 'note',
+		accessorKey: 'note',
 		header: 'Not',
 	},
 	{
-		field: 'body',
+		accessorKey: 'body',
 		header: 'Gövde',
 	},
 	{
-		field: 'control_card',
+		accessorKey: 'control_card',
 		header: 'Kontrol kartı',
 	},
 	{
-		field: 'hose_and_nozzle',
+		accessorKey: 'hose_and_nozzle',
 		header: 'Hortum ve memesi',
 	},
 	{
-		field: 'instruction_and_label',
+		accessorKey: 'instruction_and_label',
 		header: 'Talimat ve etiket',
 	},
 	{
-		field: 'mass',
+		accessorKey: 'mass',
 		header: 'Kütle',
 	},
 	{
-		field: 'pin_and_seal',
+		accessorKey: 'pin_and_seal',
 		header: 'Pim ve conta',
 	},
 	{
-		field: 'position',
+		accessorKey: 'position',
 		header: 'Pozisyon',
 	},
 	{
-		field: 'pressure',
+		accessorKey: 'pressure',
 		header: 'Basınç',
 	},
 	{
-		field: 'working_mechanism',
+		accessorKey: 'working_mechanism',
 		header: 'Çalışma mekanizması',
 	},
 ];
-
-// const columns = [
-//   {
-//     accessorKey: "position",
-//     header: "Position",
-//   },
-//   {
-//     accessorKey: "body",
-//     header: "Body",
-//   },
-//   {
-//     accessorKey: "control_card",
-//     header: "Control card",
-//   },
-//   {
-//     accessorKey: "hose_and_nozzle",
-//     header: "Hose and Nozzle",
-//   },
-//   {
-//     accessorKey: "instruction_and_label",
-//     header: "Instruction and label",
-//   },
-//   {
-//     accessorKey: "mass",
-//     header: "Mass",
-//   },
-//   {
-//     accessorKey: "pin_and_seal",
-//     header: "Pin and Seal",
-//   },
-//   {
-//     accessorKey: "pressure",
-//     header: "Pressure",
-//   },
-//   {
-//     accessorKey: "working_mechanism",
-//     header: "Working Mechanism",
-//   },
-//   {
-//     accessorKey: "result",
-//     header: "Result",
-//   },
-//   {
-//     accessorKey: "date",
-//     header: "Date",
-//   },
-// ];
-
-// function getText(slotProps) {
-//   console.log('slotProps:', slotProps);
-//   const date = new Date(slotProps.data.products.refill_date);
-//   return date.toLocaleDateString("tr-TR", {
-//     year: "numeric",
-//     month: "2-digit",
-//     day: "2-digit",
-//   });
-// }
 </script>
 
 <template>
@@ -189,39 +128,15 @@ const expandColuns = [
 					:field="item.accessorKey"
 					:header="item.header"
 				>
-					<!-- <template #body="slotProps">
-            <CustomCell v-if="slotProps.field === 'products.refill_date'" :slot-props="slotProps" />
-          </template> -->
-					<!-- <template
-            v-if="item.accessorKey === 'products.refill_date'"
-            #body="slotProps"
-          >
-            {{
-              new Date(slotProps.data.products.refill_date).toLocaleDateString(
-                "tr-TR",
-                {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                }
-              )
-            }}
-          </template>
-          <template
-            v-if="item.accessorKey === 'products.next_refill_date'"
-            #body="slotProps"
-          >
-            {{
-              new Date(slotProps.data.products.next_refill_date).toLocaleDateString(
-                "tr-TR",
-                {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                }
-              )
-            }}
-          </template> -->
+					<template
+						v-if="isCellCustom(item.accessorKey)"
+						#body="slotProps"
+					>
+						<CustomCell
+							:field="item.accessorKey"
+							:value="slotProps.data.products.refill_date"
+						/>
+					</template>
 				</Column>
 				<template #expansion="slotProps">
 					<div class="p-4">
@@ -230,11 +145,21 @@ const expandColuns = [
 							size="small"
 						>
 							<Column
-								v-for="item in expandColuns"
-								:key="item.field"
-								:field="item.field"
+								v-for="item in expandColumns"
+								:key="item.accessorKey"
+								:field="item.accessorKey"
 								:header="item.header"
-							/>
+							>
+								<template
+									v-if="isCellCustom(item.accessorKey)"
+									#body="expandSlotProps"
+								>
+									<CustomCell
+										:field="item.accessorKey"
+										:value="expandSlotProps.data.products.refill_date"
+									/>
+								</template>
+							</Column>
 						</DataTable>
 					</div>
 				</template>

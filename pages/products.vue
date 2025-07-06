@@ -1,22 +1,32 @@
 <script setup lang="ts">
-import QRCode from 'qrcode';
-import type { TablesInsert } from '~/types/database.types';
+// import QRCode from 'qrcode';
+import { FilterMatchMode } from '@primevue/core/api';
+import type { Tables } from '~/types/database.types';
 
-const tabledata = ref<TablesInsert<'products'>[]>([]);
-const expandedRows = ref<TablesInsert<'products'>[]>([]);
-const selectedProducts = ref<TablesInsert<'products'>[]>([]);
+type ProductWithLocation = Tables<'products'> & {
+	locations: Tables<'locations'> | null;
+};
+
+const loading = ref(false);
+const toast = useToast();
+const tabledata = ref<ProductWithLocation[]>([]);
+const expandedRows = ref<ProductWithLocation[]>([]);
+const selectedProducts = ref<ProductWithLocation[]>([]);
 const showQRModal = ref(false);
-const selectedLocation = ref<{ name: string; id: string } | null>(null);
-const locations = ref<{ name: string; id: string }[]>([]);
+const deleteProductConfirmModal = ref(false);
+const selectedLocation = ref<string | null>(null);
+const locations = ref<string[]>([]);
+const filters = ref({
+	'locations.building_id.name': { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+});
 
-const { error } = await useFetch('/api/products', {
+const { error, refresh } = await useFetch('/api/products', {
 	onResponse({ response }) {
 		if (response._data) {
+			console.log('Fetched products:', response._data);
 			tabledata.value = response._data;
-			locations.value = response._data.map((item: any) => ({
-				name: item.locations.building_area,
-				id: item.locations.location_id,
-			}));
+			const uniqueLocations = new Set(response._data.map((item: ProductWithLocation) => item?.locations?.building_id?.name));
+			locations.value = Array.from(uniqueLocations as Set<string>).sort();
 		}
 		else {
 			console.error('Error fetching data:', error);
@@ -26,12 +36,12 @@ const { error } = await useFetch('/api/products', {
 
 const columns = [
 	{
-		accessorKey: 'locations.building_area',
-		header: 'Bulunduğu bina / alan',
+		accessorKey: 'locations.building_id.name',
+		header: 'Bulunduğu bina',
 	},
 	{
-		accessorKey: 'locations.location',
-		header: 'Bulunduğu yer/Lokasyon',
+		accessorKey: 'locations.room',
+		header: 'Bulunduğu oda',
 	},
 	{
 		accessorKey: 'locations.location_id',
@@ -53,33 +63,6 @@ const columns = [
 		accessorKey: 'manufacture_year',
 		header: 'Üretim tarihi',
 	},
-	// {
-	//   accessorKey: "pressure_source",
-	//   header: "pressure_source",
-
-	// },
-	// {
-	//   accessorKey: "working_pressure_bar",
-	//   header: "working_pressure_bar",
-
-	// },
-	// {
-	//   accessorKey: "manometer_scale_bar",
-	//   header: "manometer_scale_bar",
-
-	// },
-	// {
-	//   accessorKey: "test_pressure_bar",
-	//   header: "test_pressure_bar",
-	// },
-	// {
-	//   accessorKey: "safety_valve_setting_pressure_bar",
-	//   header: "safety_valve_setting_pressure_bar",
-	// },
-	// {
-	//   accessorKey: "working_temperature_celsius",
-	//   header: "working_temperature_celsius",
-	// },
 	{
 		accessorKey: 'refill_period',
 		header: 'Yeniden dolum periyodu',
@@ -136,53 +119,87 @@ const expandColuns = [
 
 const generateQRCodes = () => {
 	showQRModal.value = true;
-	// const text = 'https://example.com';
+};
 
-	// QRCode.toCanvas(document.getElementById('qrCanvas'), text, function (error) {
-	// 	if (error) console.error(error);
-	// 	console.log('QR code generated!');
-	// });
+const handleDeleteProducts = async () => {
+	if (selectedProducts.value.length === 0) return;
+
+	const productIds = (selectedProducts.value as Array<{ id: number }>).map(product => product.id.toString());
+	loading.value = true;
+	try {
+		await $fetch('/api/products', {
+			method: 'DELETE',
+			body: { ids: productIds },
+		});
+		selectedProducts.value = [];
+		deleteProductConfirmModal.value = false;
+		toast.add({
+			severity: 'success',
+			summary: 'Başarılı',
+			detail: 'Ürünler başarıyla silindi.',
+		});
+		refresh();
+	}
+	catch (err) {
+		console.error('Error deleting products:', err);
+		toast.add({
+			severity: 'error',
+			summary: 'Hata',
+			detail: 'Ürünler silinirken bir hata oluştu.',
+		});
+	}
+	finally {
+		loading.value = false;
+	}
 };
 </script>
 
 <template>
 	<div>
+		<BaseLoader v-if="loading" />
 		<div>
 			<div class="flex items-center space-x-4 pb-6">
 				<Select
-					v-model="selectedLocation"
+					v-model="filters['locations.building_id.name'].value"
 					:options="locations"
-					option-label="name"
 					placeholder="Bulundugu bina/alan sefc"
 					class="w-full md:w-56"
 				/>
 
-				<h2 class="text-lg">
-					{{ selectedLocation?.name }} e konumundaki tüpler listeleniyor
+				<h2 class="text-gray-500">
+					{{ selectedLocation }} konumundaki tüpler listeleniyor
 				</h2>
 				<Button
 					v-if="selectedProducts.length"
 					class="ml-auto"
+					outlined
+					label="QR Kod Oluştur"
+					icon="ri-qr-code-line"
 					@click="generateQRCodes"
-				>
-					QR olustur
-				</Button>
+				/>
+
+				<Button
+					v-if="selectedProducts.length"
+					class="ml-1"
+					severity="danger"
+					outlined
+					label="Ürünleri Sil"
+					icon="ri-delete-bin-5-line"
+					@click="deleteProductConfirmModal = true"
+				/>
 			</div>
-			<!-- <p>TEST</p>
-			<canvas id="qrCanvas" />
-			<button @click="generateQrCode">
-				Generate QR Code
-			</button> -->
 		</div>
 
 		<div class="overflow-x-auto">
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				v-model:selection="selectedProducts"
+				v-model:filters="filters"
 				:value="tabledata"
 				striped-rows
 				size="large"
 				class="text-sm"
+				removable-sort
 			>
 				<Column
 					selection-mode="multiple"
@@ -197,6 +214,7 @@ const generateQRCodes = () => {
 					:key="item.accessorKey"
 					:field="item.accessorKey"
 					:header="item.header.toUpperCase()"
+					sortable
 				/>
 				<template #expansion="slotProps">
 					<div class="p-4">
@@ -218,18 +236,34 @@ const generateQRCodes = () => {
 		<Dialog
 			v-model:visible="showQRModal"
 			modal
+			header="QR Kod Listesi"
 		>
 			<DisplayQrCodes
 				:products="selectedProducts"
 			/>
-			<!-- <div>
-				<p>QrCode</p>
-				<canvas
-					id="qrCanvas"
-					width="300"
-					height="300"
+		</Dialog>
+		<Dialog
+			v-model:visible="deleteProductConfirmModal"
+			modal
+			header="Ürünleri Sil"
+			:style="{ width: '30rem' }"
+		>
+			<p class="text-lg mb-2">
+				{{ selectedProducts.map(product => product.locations?.location_id).toString() }} YSC nolu ürünleri silmek istediğinizden emin misiniz ? Bu işlem geri alınamaz
+			</p>
+			<template #footer>
+				<Button
+					label="Sil"
+					severity="danger"
+					@click="handleDeleteProducts"
 				/>
-			</div> -->
+				<Button
+					label="Vazgeç"
+					severity="secondary"
+					outlined
+					@click="deleteProductConfirmModal = false"
+				/>
+			</template>
 		</Dialog>
 	</div>
 </template>

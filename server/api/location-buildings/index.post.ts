@@ -2,18 +2,18 @@ import type { TablesInsert } from '~/types/database.types';
 
 export default defineEventHandler(async (event) => {
 	try {
-		const body = await readBody<TablesInsert<'locations'>>(event);
+		const body = await readBody<TablesInsert<'location_buildings'>>(event);
 
 		// Validate required fields
-		if (!body.building_area || !body.location || !body.location_id) {
+		if (!body.name) {
 			throw createError({
 				statusCode: 400,
-				message: 'Missing required fields: building_area, location, and location_id are required',
+				message: 'Missing required fields: name are required',
 			});
 		}
 
 		const { data, error } = await event.context.supabase
-			.from('locations')
+			.from('location_buildings')
 			.insert(body)
 			.select()
 			.single();
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
 		console.log('ERROR:', error);
 		if (error instanceof Error) {
 			throw createError({
-				statusCode: (error as any).statusCode || 500,
+				name: error.name,
 				message: error.message,
 			});
 		}

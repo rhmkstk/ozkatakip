@@ -1,4 +1,5 @@
-import { fieldMap } from '~/constants';
+import { customCellFields, fieldMap } from '~/constants';
+import type { Database } from '~/types/database.types';
 
 interface ExcelRow {
 	[key: string]: string | number;
@@ -31,4 +32,22 @@ function parseValues(key: string, value: string | number): string | number {
 	if (typeof value === 'string')
 		return value.replace(/\r\n/g, ' ').replace(/\s+/g, ' ').trim();
 	return value;
+}
+export function isCellCustom(cell: string): boolean {
+	return customCellFields.includes(cell);
+}
+
+export function addYearToDate(date: Date, year: number): Date {
+	const newDate = new Date(date);
+	newDate.setFullYear(newDate.getFullYear() + year);
+	return newDate;
+}
+
+export function getTransactionDetails(type: Database['public']['Enums']['transaction_types']): string {
+	switch (type) {
+		case 'bakım':
+			return 'Purchase';
+		default:
+			return 'Unknown';
+	}
 }

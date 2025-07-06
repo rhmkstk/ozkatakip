@@ -1,25 +1,26 @@
-// import { TablesInsert } from '~/types/database.types'
-
+// getProductWithLocationId.ts
 export default defineEventHandler(async (event) => {
 	try {
-		const { data, error } = await event.context.supabase
-			.from('products')
-			.select('*, locations(location,building_area,location_id)');
+		const locationId = getQuery(event).location_id;
 
-		if (error) {
+		if (!locationId) {
 			throw createError({
-				statusCode: 500,
-				message: error.message,
+				statusCode: 400,
+				message: 'Missing location_id parameter',
 			});
 		}
 
+		const { data } = await event.context.supabase
+			.from('locations')
+			.select('*, building_id(*)')
+			.eq('location_id', locationId);
 		return data;
 	}
 	catch (error: unknown) {
 		console.log('ERROR:', error);
 		if (error instanceof Error) {
 			throw createError({
-				statusCode: (error as any).statusCode || 500,
+				name: error.name,
 				message: error.message,
 			});
 		}
