@@ -5,6 +5,7 @@ definePageMeta({
 	layout: 'mobile',
 });
 
+const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const inspectionFormLoading = ref(false);
@@ -218,6 +219,7 @@ async function saveInspectionForm() {
 	}
 	finally {
 		inspectionFormLoading.value = false;
+		router.push('/mobile');
 	}
 }
 </script>
@@ -341,6 +343,7 @@ async function saveInspectionForm() {
 					>
 						<label for="note"> Not </label>
 						<Textarea
+							v-model="inspectionForm.note"
 							rows="3"
 						/>
 					</div>

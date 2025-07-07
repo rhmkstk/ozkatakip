@@ -93,6 +93,10 @@ const expandColumns = [
 		header: 'Çalışma mekanizması',
 	},
 ];
+
+function getValueByPath(obj, path) {
+	return path.split('.').reduce((acc, part) => acc?.[part], obj);
+}
 </script>
 
 <template>
@@ -134,7 +138,7 @@ const expandColumns = [
 					>
 						<CustomCell
 							:field="item.accessorKey"
-							:value="slotProps.data.products.refill_date"
+							:value="getValueByPath(slotProps.data, item.accessorKey)"
 						/>
 					</template>
 				</Column>
@@ -156,7 +160,7 @@ const expandColumns = [
 								>
 									<CustomCell
 										:field="item.accessorKey"
-										:value="expandSlotProps.data.products.refill_date"
+										:value="expandSlotProps.data[item.accessorKey]"
 									/>
 								</template>
 							</Column>

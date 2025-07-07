@@ -8,6 +8,7 @@ const menuItems = [
 	{ name: 'YSC genel liste', path: '/products', icon: 'ri-fire-line' },
 	{ name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line' },
 	{ name: 'YSC Veri girişi', path: '/insert-data', icon: 'ri-group-line' },
+	{ name: 'Mobil', path: '/mobile', icon: 'ri-cellphone-line' },
 ];
 
 const supportItems = [

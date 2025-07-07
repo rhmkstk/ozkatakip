@@ -22,20 +22,17 @@ const componentDefinitions = {
 	'products.refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: new Date(value).toLocaleDateString('tr-TR', {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-		}),
+		text: value,
 	}),
 	'products.next_refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: new Date(value).toLocaleDateString('tr-TR', {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-		}),
+		text: value,
+		// text: new Date(value).toLocaleDateString('tr-TR', {
+		// 	year: 'numeric',
+		// 	month: '2-digit',
+		// 	day: '2-digit',
+		// }),
 	}),
 	'result': customCells.boolean,
 	'position': customCells.boolean,
