@@ -48,6 +48,10 @@ const columns = [
 		header: 'YSC no',
 	},
 	{
+		accessorKey: 'unit',
+		header: 'KG',
+	},
+	{
 		accessorKey: 'model_type',
 		header: 'Modeli / tipi',
 	},
