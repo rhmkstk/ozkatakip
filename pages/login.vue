@@ -1,0 +1,89 @@
+<script setup>
+definePageMeta({
+  layout: false,
+   middleware:'guest'
+});
+const userCredentials = ref({
+  email: "",
+  password: "",
+});
+const supabase = useSupabaseClient();
+const errorMessage = ref("");
+const loading = ref(false);
+
+
+const login = async () => {
+
+  const email = userCredentials.value.email.trim();
+  const password = userCredentials.value.password.trim();
+
+  loading.value = true;
+  errorMessage.value = "";
+  const { data, error } = await supabase.auth.signInWithPassword({email,password,options:{emailRedirectTo: 'http://localhost:3000/confirm'}});
+  if (error) {
+    errorMessage.value = error.message;
+    console.error("Giriş başarısız:", error.message);
+    console.log("Giriş başarısız:", error.value);
+  } else {
+    console.log("Giriş başarılı - Kullanici ID:", data.user.id);
+    navigateTo('/confirm');
+  }
+    loading.value = false;
+};
+</script>
+<template>
+  <div class="flex justify-center items-center min-h-screen bg-gray-100">
+    
+    <Card class="w-full max-w-md shadow-lg">
+      
+      <template #title>Giriş Yap</template>
+      <template #content>
+        <form @submit.prevent="login">
+        <div class="space-y-4">
+          <div class="w-full">
+            <label for="email" class="block mb-1">E-posta</label>
+            <InputText
+              id="email"
+              v-model="userCredentials.email"
+              type="email"
+              placeholder="Email"
+              class="w-full"
+              :disabled="loading"
+              autocomplete="email"
+
+
+            />
+          </div>
+
+          <div class="w-full">
+            <label for="password" class="block mb-1">Şifre</label>
+            <Password
+              id="password"
+              v-model="userCredentials.password"
+              toggleMask
+              :feedback="false"
+              placeholder="Şifre"
+              inputClass="w-full"
+              class="w-full"
+              :disabled="loading"
+
+            />
+          </div>
+
+          <Button
+          label="Giriş Yap"
+          class="w-full"
+          :loading="loading"
+          type="submit"
+          :disabled="loading || !userCredentials.email || !userCredentials.password"
+        />
+
+          <Message v-if="errorMessage" severity="error" :closable="false">
+            {{ errorMessage }}
+          </Message>
+        </div>
+        </form>
+      </template>
+    </Card>
+  </div>
+</template>
