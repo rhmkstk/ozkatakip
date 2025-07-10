@@ -1,6 +1,14 @@
 <script setup lang="ts">
 // No additional setup needed
-
+const supabase  = useSupabaseClient();
+const logout = async () => {
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    console.error("Logout error:", error.message)
+  } else {
+    await navigateTo('/login')
+  }
+}
 const menuItems = [
 	{ name: 'Bakım kayıtları', path: '/', icon: 'ri-booklet-line' },
 	{ name: 'İşlem geçmişi', path: '/history', icon: 'ri-history-fill' },
@@ -14,7 +22,7 @@ const menuItems = [
 const supportItems = [
 	{ name: 'Yardım', path: '/help' },
 	{ name: 'İletişim', path: '/contact' },
-	{ name: 'Çıkış yap', path: '/logout' },
+	{ name: 'Çıkış yap', path: '/logout' , action: logout },
 ];
 
 const sidebarExpanded = ref(true);
@@ -75,6 +83,7 @@ const sidebarExpanded = ref(true);
 					<li
 						v-for="item in supportItems"
 						:key="item.name"
+						@click="item.action ? item.action() : null"
 					>
 						<NuxtLink
 							:to="item.path"
