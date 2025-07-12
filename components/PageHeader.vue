@@ -14,5 +14,8 @@ const props = defineProps<Props>();
 		>
 			{{ props.title }}
 		</h2>
+		<div class="ml-auto flex items-center space-x-2 shrink-0">
+			<slot name="right"/>
+		</div>
 	</div>
 </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { header } from '@primeuix/themes/aura/accordion';
+import { headerLabels } from '~/constants';
 import type { Tables } from '~/types/database.types';
 
 type DateRange = Date | null;
@@ -6,6 +8,88 @@ type DateRange = Date | null;
 type ProductWithLocation = Tables<'products'> & {
 	locations: Tables<'locations'> | null;
 };
+//basliklari constantstan cek
+const columns = [
+	{
+		accessorKey: 'locations.building_id.name',
+		header: headerLabels.building_area,
+	},
+	{
+		accessorKey: 'locations.room',
+		header: headerLabels.location,
+	},
+	{
+		accessorKey: 'locations.location_id',
+		header: headerLabels.location_id,
+	},
+	{
+		accessorKey: 'model_type',
+		header: headerLabels.model_type,
+	},
+	{
+		accessorKey: 'serial_number',
+		header: headerLabels.serial_number,
+	},
+	{
+		accessorKey: 'brand',
+		header: headerLabels.brand,
+	},
+	{
+		accessorKey: 'manufacture_year',
+		header: headerLabels.manufacture_year,
+	},
+	{
+		accessorKey: 'refill_period',
+		header: headerLabels.refill_period,
+	},
+	{
+		accessorKey: 'refill_date',
+		header: headerLabels.refill_date,
+	},
+	{
+		accessorKey: 'next_refill_date',
+		header: headerLabels.next_refill_date,
+	},
+	{
+		accessorKey: 'hydrostatic_test_date',
+		header: headerLabels.hydrostatic_test_date,
+	},
+	{
+		accessorKey: 'next_hydrostatic_test_date',
+		header: headerLabels.next_hydrostatic_test_date,
+	},
+	{
+		accessorKey: 'current_status',
+		header: headerLabels.current_status,
+	},
+];
+
+const expandColuns = [
+	{
+		field: 'pressure_source',
+		header: 'Basinc kaynagi',
+	},
+	{
+		field: 'working_pressure_bar',
+		header: 'Calisma basinci(Bar)',
+	},
+	{
+		field: 'manometer_scale_bar',
+		header: 'Monometre skala buyuklugu(Bar)',
+	},
+	{
+		field: 'test_pressure_bar',
+		header: 'Test basıncı(Bar)',
+	},
+	{
+		field: 'safety_valve_setting_pressure_bar',
+		header: 'Emniyet valfi ayar basinci(Bar)',
+	},
+	{
+		field: 'working_temperature_celsius',
+		header: 'Calisma sicaklik araligi(°C)',
+	},
+];
 const now = new Date();
 const startDate = ref(new Date(now.getFullYear(), now.getMonth(), 1)); // 1st of next month
 const endDate = ref(new Date(now.getFullYear(), now.getMonth() + 1, 1)); // 1st of the following month
@@ -55,93 +139,33 @@ onMounted(() => {
 	// Initialize with the current month
 	onDateRangeChange([startDate.value, endDate.value]);
 });
-const columns = [
-	{
-		accessorKey: 'locations.building_id.name',
-		header: 'Bulunduğu bina',
-	},
-	{
-		accessorKey: 'locations.room',
-		header: 'Bulunduğu oda',
-	},
-	{
-		accessorKey: 'locations.location_id',
-		header: 'YSC no',
-	},
-	{
-		accessorKey: 'model_type',
-		header: 'Modeli / tipi',
-	},
-	{
-		accessorKey: 'serial_number',
-		header: 'Seri no',
-	},
-	{
-		accessorKey: 'brand',
-		header: 'Marka',
-	},
-	{
-		accessorKey: 'manufacture_year',
-		header: 'Üretim tarihi',
-	},
-	{
-		accessorKey: 'refill_period',
-		header: 'Yeniden dolum periyodu',
-	},
-	{
-		accessorKey: 'refill_date',
-		header: 'Dolum tarihi',
-	},
-	{
-		accessorKey: 'next_refill_date',
-		header: 'Yeniden dolum tarihi',
-	},
-	{
-		accessorKey: 'hydrostatic_test_date',
-		header: 'Hidrostatik test tarihi',
-	},
-	{
-		accessorKey: 'next_hydrostatic_test_date',
-		header: 'Sonraki hidrostatik test tarihi',
-	},
-	{
-		accessorKey: 'current_status',
-		header: 'Durum',
-	},
-];
+const getFilteredDates = computed(() => {
+  const start = startDate.value;
+  const end = endDate.value;
 
-const expandColuns = [
-	{
-		field: 'pressure_source',
-		header: 'Basinc kaynagi',
-	},
-	{
-		field: 'working_pressure_bar',
-		header: 'Calisma basinci(Bar)',
-	},
-	{
-		field: 'manometer_scale_bar',
-		header: 'Monometre skala buyuklugu(Bar)',
-	},
-	{
-		field: 'test_pressure_bar',
-		header: 'Test basıncı(Bar)',
-	},
-	{
-		field: 'safety_valve_setting_pressure_bar',
-		header: 'Emniyet valfi ayar basinci(Bar)',
-	},
-	{
-		field: 'working_temperature_celsius',
-		header: 'Calisma sicaklik araligi(°C)',
-	},
-];
+  if (!start || !end) return "Tarih aralığı seçilmedi";
+
+  const formattedStart = start.toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const formattedEnd = end.toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return `Yeniden dolum tarihi ${formattedStart} ve ${formattedEnd} arasında olan ürünler listeleniyor`;
+});
+
 </script>
 
 <template>
-	<div>
+	<div class="">
 		<BaseLoader v-if="loading" />
-		<!-- <PageHeader :title="pageTitle">
+		<PageHeader :title="getFilteredDates">
 			<Calendar
 				v-model="dateRange"
 				:date-format="'dd/mm/yy'"
@@ -151,41 +175,18 @@ const expandColuns = [
 				selection-mode="range"
 				@update:model-value="onDateRangeChange"
 			/>
-    </PageHeader> -->
+    </PageHeader>
 
-		<div class="flex items-center space-x-4 mb-6 p-6 -m-6 shadow-sm">
-			<Calendar
-				v-model="dateRange"
-				:date-format="'dd/mm/yy'"
-				placeholder="Select Date Range"
-				show-icon
-				class=" w-64"
-				selection-mode="range"
-				@update:model-value="onDateRangeChange"
-			/>
-			<h2 class="text-gray-500">
-				Yeniden dolum tarihi
-				{{
-					startDate.toLocaleDateString("tr-TR", {
-						day: "numeric",
-						month: "long",
-						year: "numeric",
-					})
-				}}
-				ve
-				{{
-					endDate.toLocaleDateString("tr-TR", {
-						day: "numeric",
-						month: "long",
-						year: "numeric",
-					})
-				}}
-				arasinda olan urunler listeleniyor
-			</h2>
-		</div>
+		
 
-		<div class="overflow-x-auto">
-			<DataTable
+		
+      <EmptyState v-if="!tabledata.length">
+        <template #title>Ürün bulunamadı</template>
+        <template #subtitle>Seçilen tarihler arasında yeniden dolum tarihi olan ürün bulunamadı.</template>
+
+      </EmptyState>
+      <div  v-else class="overflow-x-auto">
+			<DataTable 
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"
 				striped-rows

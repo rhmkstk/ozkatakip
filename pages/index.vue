@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { headerLabels } from '~/constants';
 const tabledata = ref([]);
 const expandedRows = ref([]);
 const { error } = await useFetch('/api/inspections', {
@@ -19,31 +20,31 @@ const date = ref(new Date());
 const columns = [
 	{
 		accessorKey: 'products.locations.room',
-		header: 'Bulduğu oda',
+		header: headerLabels.location,
 	},
 	{
 		accessorKey: 'products.locations.building_id.name',
-		header: 'Bulduğu bina',
+		header: headerLabels.building_area,
 	},
 	{
 		accessorKey: 'products.locations.location_id',
-		header: 'YSC no',
+		header: headerLabels.location_id,
 	},
 	{
 		accessorKey: 'products.model_type',
-		header: 'Modeli / tipi',
+		header: headerLabels.model_type,
 	},
 	{
 		accessorKey: 'products.refill_date',
-		header: 'Dolum tarihi',
+		header: headerLabels.refill_date,
 	},
 	{
 		accessorKey: 'products.next_refill_date',
-		header: 'Yeniden dolum tarihi',
+		header: headerLabels.next_refill_date,
 	},
 	{
 		accessorKey: 'result',
-		header: 'Sonuc',
+		header: headerLabels.result,
 	},
 ];
 
@@ -97,7 +98,14 @@ const expandColumns = [
 
 <template>
 	<div>
-		<div class="pb-6">
+		<PageHeader title="2024 Nisan ayina ait kayitlar listeleniyor">
+			<DatePicker
+					v-model="date"
+					view="month"
+					date-format="mm/yy"
+				/>
+		</PageHeader>
+		<!-- <div class="pb-6">
 			<div class="flex items-center space-x-4">
 				<DatePicker
 					v-model="date"
@@ -108,9 +116,13 @@ const expandColumns = [
 					2024 Nisan ayina ait kayitlar listeleniyor
 				</h2>
 			</div>
-		</div>
+		</div> -->
+<EmptyState v-if="!tabledata.length">
+        <template #title>Bakım Kayıdı bulunamadı</template>
+        <template #subtitle>Seçilen tarihler için bakım kayıdı bulunamadı.</template>
 
-		<div class="overflow-x-auto">
+      </EmptyState>
+		<div v-else class="overflow-x-auto">
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"
