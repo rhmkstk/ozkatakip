@@ -72,7 +72,7 @@ const columns = [
   },
   {
     accessorKey: "refill_period",
-    header: headerLabels,
+    header: headerLabels.refill_period,
   },
   {
     accessorKey: "refill_date",
