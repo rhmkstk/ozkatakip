@@ -12,6 +12,8 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
+		console.log('Inserting product:', body);
+
 		const { data, error } = await event.context.supabase
 			.from('products')
 			.insert(body)

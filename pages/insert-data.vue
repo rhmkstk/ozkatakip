@@ -10,18 +10,6 @@ type KindList = {
 
 const HYDROSTATIC_TEST_PERIOD = 4; // years
 const toast = useToast();
-const loading = ref(false);
-const newBuilding = ref({
-	loading: false,
-	modal: false,
-	name: '',
-});
-const buildings = ref([]);
-const selectedBuilding = ref<TablesInsert<'locations'> | null>(null);
-const selectedKind = ref<{ name: string; value: ProductKinds }>({
-	name: 'Kuru kimyevi tozlu',
-	value: 'kkt',
-});
 const kindList: KindList = [
 	{ name: 'Kuru kimyevi tozlu', value: 'kkt' },
 	{ name: 'Karbondioksit gazli', value: 'co2' },
@@ -33,6 +21,19 @@ const productStatusOptions = [
 	{ label: 'Kayıp', value: 'kayıp' },
 	{ label: 'Yedek', value: 'yedek' },
 ];
+
+const loading = ref(false);
+const newBuilding = ref({
+	loading: false,
+	modal: false,
+	name: '',
+});
+const buildings = ref([]);
+const selectedBuilding = ref<TablesInsert<'locations'> | null>(null);
+const selectedKind = ref<{ name: string; value: ProductKinds }>({
+	name: kindList[0].name,
+	value: kindList[0].value,
+});
 
 const { error, refresh: refreshBuildings } = await useFetch('/api/location-buildings', {
 	onResponse({ response }) {
@@ -80,7 +81,7 @@ const staticInfos = {
 	},
 	co2: {
 		pressure_source: 'Karbondioksit(CO2)',
-		manometer_scale_bar: '',
+		manometer_scale_bar: null,
 		test_pressure_bar: '250',
 		safety_valve_setting_pressure_bar: '190',
 		working_pressure_bar: '150',
@@ -121,6 +122,7 @@ const resetForm = () => {
 };
 
 const saveProduct = async () => {
+	console.log('Selected kind:', { ...form.product });
 	try {
 		loading.value = true;
 		const locationResponse = await $fetch('/api/locations', {
@@ -133,15 +135,19 @@ const saveProduct = async () => {
 		});
 
 		if (locationResponse.id) {
-			await $fetch('/api/products', {
+			const year = form.product.manufacture_year.getFullYear();
+			const res = await $fetch('/api/products', {
 				method: 'POST',
 				body: {
 					...staticInfos[selectedKind.value.value],
 					...form.product,
 					location: locationResponse.id,
 					model_type: selectedKind.value.name,
+					manufacture_year: new Date(`${year}-01-01`),
 				},
 			});
+
+			console.log('Product saved:', res);
 			toast.add({
 				severity: 'success',
 				summary: 'Başarılı',
@@ -158,10 +164,12 @@ const saveProduct = async () => {
 			detail: 'YSC kaydedilirken bir hata oluştu.',
 			life: 2000,
 		});
+		// window.location.reload();
 	}
 	finally {
 		console.log('Form resetleniyor!!');
 		loading.value = false;
+		// window.location.reload();
 		resetForm();
 	}
 };
