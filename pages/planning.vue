@@ -8,7 +8,7 @@ type DateRange = Date | null;
 type ProductWithLocation = Tables<'products'> & {
 	locations: Tables<'locations'> | null;
 };
-//basliklari constantstan cek
+// basliklari constantstan cek
 const columns = [
 	{
 		accessorKey: 'locations.building_id.name',
@@ -67,27 +67,27 @@ const columns = [
 const expandColuns = [
 	{
 		field: 'pressure_source',
-		header: 'Basinc kaynagi',
+		header: headerLabels.pressure_source,
 	},
 	{
 		field: 'working_pressure_bar',
-		header: 'Calisma basinci(Bar)',
+		header: headerLabels.working_pressure_bar,
 	},
 	{
 		field: 'manometer_scale_bar',
-		header: 'Monometre skala buyuklugu(Bar)',
+		header: headerLabels.manometer_scale_bar,
 	},
 	{
 		field: 'test_pressure_bar',
-		header: 'Test basıncı(Bar)',
+		header: headerLabels.test_pressure_bar,
 	},
 	{
 		field: 'safety_valve_setting_pressure_bar',
-		header: 'Emniyet valfi ayar basinci(Bar)',
+		header: headerLabels.safety_valve_setting_pressure_bar,
 	},
 	{
 		field: 'working_temperature_celsius',
-		header: 'Calisma sicaklik araligi(°C)',
+		header: headerLabels.working_temperature_celsius,
 	},
 ];
 const now = new Date();
@@ -140,26 +140,25 @@ onMounted(() => {
 	onDateRangeChange([startDate.value, endDate.value]);
 });
 const getFilteredDates = computed(() => {
-  const start = startDate.value;
-  const end = endDate.value;
+	const start = startDate.value;
+	const end = endDate.value;
 
-  if (!start || !end) return "Tarih aralığı seçilmedi";
+	if (!start || !end) return 'Tarih aralığı seçilmedi';
 
-  const formattedStart = start.toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+	const formattedStart = start.toLocaleDateString('tr-TR', {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+	});
 
-  const formattedEnd = end.toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+	const formattedEnd = end.toLocaleDateString('tr-TR', {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+	});
 
-  return `Yeniden dolum tarihi ${formattedStart} ve ${formattedEnd} arasında olan ürünler listeleniyor`;
+	return `Yeniden dolum tarihi ${formattedStart} ve ${formattedEnd} arasında olan ürünler listeleniyor`;
 });
-
 </script>
 
 <template>
@@ -175,18 +174,21 @@ const getFilteredDates = computed(() => {
 				selection-mode="range"
 				@update:model-value="onDateRangeChange"
 			/>
-    </PageHeader>
+		</PageHeader>
 
-		
-
-		
-      <EmptyState v-if="!tabledata.length">
-        <template #title>Ürün bulunamadı</template>
-        <template #subtitle>Seçilen tarihler arasında yeniden dolum tarihi olan ürün bulunamadı.</template>
-
-      </EmptyState>
-      <div  v-else class="overflow-x-auto">
-			<DataTable 
+		<EmptyState v-if="!tabledata.length">
+			<template #title>
+				Ürün bulunamadı
+			</template>
+			<template #subtitle>
+				Seçilen tarihler arasında yeniden dolum tarihi olan ürün bulunamadı.
+			</template>
+		</EmptyState>
+		<div
+			v-else
+			class="overflow-x-auto"
+		>
+			<DataTable
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"
 				striped-rows
