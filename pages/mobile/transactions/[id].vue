@@ -191,22 +191,19 @@ async function saveInspectionForm() {
 		});
 
 		if (response) {
-			// await $fetch('/api/transactions', {
-			// 	method: 'POST',
-			// 	body: {
-			// 		type: 'bakım',
-			// 		product_id: data.value?.product.id,
-			// 		details: '',
-			// 	},
-			// });
-
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Bakim kaydı başarıyla oluşturuldu.',
-				life: 2000,
-			});
-			drawersShow.fill = false;
+			if (!result) {
+				drawersShow.fill = false;
+				drawersShow.change = true;
+			}
+			else {
+				toast.add({
+					severity: 'success',
+					summary: 'Başarılı',
+					detail: 'Bakim kaydı başarıyla oluşturuldu.',
+					life: 2000,
+				});
+				drawersShow.fill = false;
+			}
 		}
 	}
 	catch {
@@ -246,12 +243,12 @@ async function saveInspectionForm() {
 					severity="contrast"
 					@click="drawersShow.fill = true"
 				/>
-				<Button
+				<!-- <Button
 					icon="ri-repeat-line"
 					label="Degisim"
 					severity="contrast"
 					@click="drawersShow.change = true"
-				/>
+				/> -->
 			</header>
 			<ProductSummaryCard
 				v-if="data?.product && data?.location"
@@ -422,7 +419,7 @@ async function saveInspectionForm() {
 		<Drawer
 			v-model:visible="drawersShow.change"
 			header="Degisim"
-			position="bottom"
+			position="full"
 			style="height: auto"
 		>
 			<InspectionStepper

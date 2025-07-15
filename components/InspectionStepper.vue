@@ -20,6 +20,7 @@ const newProductData = reactive({
 	product: null,
 });
 const loading = ref(false);
+const showScanner = ref(false);
 const newProductId = ref('');
 
 const currentProductSummaryCardData = computed(() => {
@@ -70,11 +71,11 @@ const newProductSummaryCardData = computed(() => {
 	return [];
 });
 
-async function getNewProductData(callback: () => void) {
+async function getNewProductData(newLocationId: string, callback: () => void) {
 	try {
 		loading.value = true;
 		const location = await $fetch('/api/locations/getByLocationId', {
-			params: { location_id: newProductId.value },
+			params: { location_id: newLocationId },
 		});
 		if (!location || location.length === 0) {
 			throw new Error('Location not found');
@@ -155,7 +156,7 @@ async function applyChanges() {
 	<div class="card flex justify-center">
 		<BaseLoader v-if="loading" />
 		<Stepper
-			value="2"
+			value="1"
 			class="basis-[50rem]"
 		>
 			<StepList>
@@ -174,19 +175,22 @@ async function applyChanges() {
 					v-slot="{ activateCallback }"
 					value="1"
 				>
-					<div class="flex flex-col items-center mb-6">
-						<i class="ri-checkbox-circle-line text-6xl text-green-600" />
-						<h3 class="text-lg font-semibold mb-2">
-							Rutin kontrol formunu olusturdun.
-						</h3>
-						<h4 class="text-gray-800 text-center">
-							YSC gerekli kontrollerden gecemedigi icin degistirilmesi gerekli! Devam ederek degisim islemini tamamlayabilirsin.
-						</h4>
+					<div class="border-2 border-dashed border-[#e2e8f0] rounded p-4">
+						<div class="flex flex-col items-center mb-6">
+							<i class="ri-checkbox-circle-line text-6xl text-green-600" />
+							<h3 class="text-lg font-semibold mb-2">
+								Rutin kontrol formunu olusturdun.
+							</h3>
+							<h4 class="text-gray-800 text-center">
+								YSC gerekli kontrollerden gecemedigi icin degistirilmesi gerekli! Devam ederek degisim islemini tamamlayabilirsin.
+							</h4>
+						</div>
 					</div>
+
 					<div class="flex pt-6 justify-end">
 						<Button
 							label="Devam"
-							icon="pi pi-arrow-right"
+							icon="ri-arrow-right-line"
 							icon-pos="right"
 							@click="activateCallback('2')"
 						/>
@@ -196,61 +200,50 @@ async function applyChanges() {
 					v-slot="{ activateCallback }"
 					value="2"
 				>
-					<!-- <h5 class="mb-12 text-xl">
-							Yeni YSC nin bilgilerini girin
-						</h5> -->
-					<!-- <div class="flex px-2 py-3 bg-blue-100 border border-blue-300 rounded-lg mb-6">
-							<i class="ri-information-line mr-2 text-blue-900" />
-							<h4 class="text-blue-900 text-sm">
-								Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec
-							</h4>
-						</div> -->
+					<div class="border-2 border-dashed border-[#e2e8f0] rounded p-4">
+						<h4 class="text-gray-800 mb-6 font-semibold">
+							Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
+						</h4>
 
-					<h4 class="text-gray-800 mb-6">
-						Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
-					</h4>
-
-					<form
-						class="mt-auto w-full"
-						@submit.prevent
-					>
-						<div class="form-row">
-							<div class="form-item">
-								<label for="building_area">YSC no</label>
-								<div class="flex space-x-2">
-									<InputText
-										id="building_area"
-										v-model="newProductId"
-										placeholder="ATM-2"
-										size="large"
-										class="flex-1"
-									/>
-									<Button
-										size="large"
-										label="Ara"
-										@click="getNewProductData(() => activateCallback('3'))"
-									/>
+						<form
+							class="mt-auto w-full"
+							@submit.prevent
+						>
+							<div class="form-row">
+								<div class="form-item">
+									<label for="building_area">YSC no</label>
+									<div class="flex space-x-2">
+										<InputText
+											id="building_area"
+											v-model="newProductId"
+											placeholder="ATM-2"
+											class="flex-1"
+										/>
+										<Button
+											label="Ara"
+											@click="getNewProductData(newProductId, () => activateCallback('3'))"
+										/>
+									</div>
 								</div>
 							</div>
-						</div>
-						<!-- <Button
-								label="Ara"
-								size="large"
-								class="mt-6 w-full"
-								@click="getNewProductData(() => activateCallback('3'))"
-							/> -->
-					</form>
-					<Divider align="center">
-						<span class="text-sm">Veya</span>
-					</Divider>
-					<Button
-						class="w-full"
-						icon="ri-camera-fill"
-						size="large"
-						outlined
-						label="QR Kod Tara"
-						@click="activateCallback('3')"
+						</form>
+						<Divider align="center">
+							<span class="text-sm">Veya</span>
+						</Divider>
+						<Button
+							class="w-full"
+							icon="ri-camera-fill"
+							outlined
+							label="QR Kod Tara"
+							@click="showScanner = true"
+						/>
+					</div>
+					<QRScanner
+						v-if="showScanner"
+						@close="showScanner = false"
+						@scan-complete="(scannedNumber) => getNewProductData(scannedNumber, () => activateCallback('3'))"
 					/>
+
 					<div class="flex pt-6">
 						<Button
 							label="Geri"
@@ -264,72 +257,64 @@ async function applyChanges() {
 					v-slot="{ activateCallback }"
 					value="3"
 				>
-					<!-- <div class="flex flex-col h-48">
-							<div class="border-2 border-dashed border-surface-200 dark:border-surface-700 rounded bg-surface-50 dark:bg-surface-950 flex-auto flex justify-center items-center font-medium">
-								Content III
-							</div>
-						</div> -->
-					<div
-						class="h-full"
-					>
-						<div>
-							<h4 class="text-gray-800 mb-6">
-								Son adimdasin! Asagida ozet YSC bilgilerini kontrol et, eger her sey dogruysa degisim islemini tamamlayabilirsin.
-							</h4>
+					<div class="border-2 border-dashed border-[#e2e8f0] rounded p-4">
+						<h4 class="text-gray-800 mb-6 font-semibold">
+							Son adimdasin! Asagida ozet YSC bilgilerini kontrol et, eger her sey dogruysa degisim islemini tamamlayabilirsin.
+						</h4>
 
-							<div class="bg-gray-400 rounded-xl p-px">
-								<h5 class="text-lg text-center font-semibold text-white">
-									MEVCUT
-								</h5>
-								<div class="mt-1 bg-white p-3 rounded-xl">
-									<ul
-										class="space-y-2 list-disc list-inside"
+						<div class="bg-gray-400 rounded-xl p-px">
+							<h5 class="text-lg text-center font-semibold text-white">
+								MEVCUT
+							</h5>
+							<div class="mt-1 bg-white p-3 rounded-xl">
+								<ul
+									class="space-y-2 list-disc list-inside"
+								>
+									<li
+										v-for="item in currentProductSummaryCardData"
+										:key="item.key"
+										class="flex space-x-1"
 									>
-										<li
-											v-for="item in currentProductSummaryCardData"
-											:key="item.key"
-											class="flex space-x-1"
-										>
-											<p class="font-semibold">
-												{{ item.key }}:
-											</p>
-											<p class=" truncate">
-												{{ item.value }}
-											</p>
-										</li>
-									</ul>
-								</div>
+										<p class="font-semibold">
+											{{ item.key }}:
+										</p>
+										<p class=" truncate">
+											{{ item.value }}
+										</p>
+									</li>
+								</ul>
 							</div>
-							<Divider
-								align="center"
-							>
-								<i class="ri-swap-line text-3xl" />
-							</Divider>
-							<div class="bg-green-600 rounded-xl p-px mb-12">
-								<h5 class="text-lg text-center font-semibold text-white">
-									YENI
-								</h5>
-								<div class="mt-1 bg-white p-3 rounded-xl">
-									<ul
-										class="space-y-2 list-disc list-inside"
+						</div>
+						<Divider
+							align="center"
+						>
+							<i class="ri-swap-line text-3xl" />
+						</Divider>
+						<div class="bg-green-600 rounded-xl p-px mb-12">
+							<h5 class="text-lg text-center font-semibold text-white">
+								YENI
+							</h5>
+							<div class="mt-1 bg-white p-3 rounded-xl">
+								<ul
+									class="space-y-2 list-disc list-inside"
+								>
+									<li
+										v-for="item in newProductSummaryCardData"
+										:key="item.key"
+										class="flex space-x-1"
 									>
-										<li
-											v-for="item in newProductSummaryCardData"
-											:key="item.key"
-											class="flex space-x-1"
-										>
-											<p class="font-semibold">
-												{{ item.key }}:
-											</p>
-											<p class=" truncate">
-												{{ item.value }}
-											</p>
-										</li>
-									</ul>
-								</div>
+										<p class="font-semibold">
+											{{ item.key }}:
+										</p>
+										<p class=" truncate">
+											{{ item.value }}
+										</p>
+									</li>
+								</ul>
 							</div>
 						</div>
 					</div>
+
 					<div class="pt-6 flex justify-between">
 						<Button
 							label="Geri"
