@@ -7,7 +7,7 @@ const productId = ref<string | null>('');
 </script>
 
 <template>
-	<div class="flex flex-col space-y-4 h-full pb-24">
+	<div class="flex flex-col space-y-4 h-full pb-4">
 		<Card>
 			<template #content>
 				<ul class="list-disc list-inside space-y-4 max-h-[50dvh] overflow-y-auto">
@@ -21,36 +21,41 @@ const productId = ref<string | null>('');
 				</ul>
 			</template>
 		</Card>
-		<form
-			class="mt-auto w-full"
-			@submit.prevent
-		>
-			<div class="form-row">
-				<div class="form-item">
-					<label for="building_area">YSC no</label>
-					<InputText
-						id="building_area"
-						v-model="productId"
-						placeholder="ATM-2"
-						size="large"
-					/>
+		<div class="mt-auto">
+			<form
+				class="w-full"
+				@submit.prevent
+			>
+				<div class="form-row">
+					<div class="form-item">
+						<label for="building_area">YSC no</label>
+						<div class="flex space-x-2">
+							<InputText
+								id="building_area"
+								v-model="productId"
+								placeholder="ATM-2"
+								size="large"
+								class="flex-1"
+							/>
+							<Button
+								size="large"
+								label="Ara"
+								@click="$router.push(`/mobile/transactions/${productId}`)"
+							/>
+						</div>
+					</div>
 				</div>
-			</div>
+			</form>
+			<Divider align="center">
+				<span class="text-sm">Veya</span>
+			</Divider>
 			<Button
-				label="Ara"
+				class="w-full"
+				icon="ri-camera-fill"
 				size="large"
-				class="mt-4 w-full"
-				@click="$router.push(`/mobile/transactions/${productId}`)"
+				outlined
+				label="QR Kod Tara"
 			/>
-		</form>
-
-		<Divider />
-		<Button
-			class="mt-4"
-			icon="ri-camera-fill"
-			label="Kamera"
-			size="large"
-			@click="$router.push('/mobile/transactions/1')"
-		/>
+		</div>
 	</div>
 </template>

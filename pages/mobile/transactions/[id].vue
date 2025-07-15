@@ -425,13 +425,13 @@ async function saveInspectionForm() {
 			position="bottom"
 			style="height: auto"
 		>
-			<ProductChange
+			<InspectionStepper
 				:current-product-data="{
 					product: data?.product,
 					location: data?.location,
 				}"
 				@close="drawersShow.change = false"
 			/>
-		</drawer>
+		</Drawer>
 	</div>
 </template>
