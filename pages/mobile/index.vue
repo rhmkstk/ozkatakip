@@ -4,23 +4,14 @@ definePageMeta({
 });
 
 const productId = ref<string | null>('');
+const showScanner = ref(false);
 </script>
 
 <template>
 	<div class="flex flex-col space-y-4 h-full pb-24">
-		<Card>
-			<template #content>
-				<ul class="list-disc list-inside space-y-4 max-h-[50dvh] overflow-y-auto">
-					<li>02.05.2025, saat 10:02 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 10:15 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 10:45 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 13:15 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 13:42 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 14:29 tarihinde bakim kaydi olusturdun</li>
-					<li>03.05.2025, saat 11:12 tarihinde dolum kaydi olusturdun</li>
-				</ul>
-			</template>
-		</Card>
+		<span
+			class="text-center text-4xl font-bold border-2 rounded-2xl p-3 w-max mx-auto text-blue-600"
+		>ÖT</span>
 		<form
 			class="mt-auto w-full"
 			@submit.prevent
@@ -45,12 +36,19 @@ const productId = ref<string | null>('');
 		</form>
 
 		<Divider />
+		<!-- QR Scan Button -->
 		<Button
 			class="mt-4"
 			icon="ri-camera-fill"
 			label="Kamera"
 			size="large"
-			@click="$router.push('/mobile/transactions/1')"
+			@click="showScanner = true"
+		/>
+
+		<QRScanner
+			v-if="showScanner"
+			@close="showScanner = false"
+			@scan-complete="(scannedNumber) => $router.push(`/mobile/transactions/${scannedNumber}`)"
 		/>
 	</div>
 </template>

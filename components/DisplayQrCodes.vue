@@ -1,9 +1,13 @@
 <script lang="ts" setup>
 import QRCode from 'qrcode';
-import type { TablesInsert } from '~/types/database.types';
+import type { Tables } from '~/types/database.types';
+
+type ProductWithLocation = Tables<'products'> & {
+	locations: Tables<'locations'> | null;
+};
 
 type Props = {
-	products: TablesInsert<'products'>[];
+	products: ProductWithLocation[];
 };
 
 const props = defineProps<Props>();
@@ -31,7 +35,7 @@ const qrCodes = ref<Record<string, string>>({});
 onMounted(async () => {
 	for (const product of props.products) {
 		try {
-			const dataUrl = await QRCode.toDataURL(String(product.serial_number) || '');
+			const dataUrl = await QRCode.toDataURL(String(product.locations?.location_id) || '');
 			qrCodes.value[product.id] = dataUrl;
 		}
 		catch (err) {
