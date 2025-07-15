@@ -4,6 +4,7 @@ definePageMeta({
 });
 
 const productId = ref<string | null>('');
+const showScanner = ref(false);
 </script>
 
 <template>
@@ -55,6 +56,22 @@ const productId = ref<string | null>('');
 				size="large"
 				outlined
 				label="QR Kod Tara"
+			/>
+
+			<Divider />
+			<!-- QR Scan Button -->
+			<Button
+				class="mt-4"
+				icon="ri-camera-fill"
+				label="Kamera"
+				size="large"
+				@click="showScanner = true"
+			/>
+
+			<QRScanner
+				v-if="showScanner"
+				@close="showScanner = false"
+				@scan-complete="(scannedNumber) => $router.push(`/mobile/transactions/${scannedNumber}`)"
 			/>
 		</div>
 	</div>

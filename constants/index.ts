@@ -92,6 +92,7 @@ export const headerLabels = {
 	safety_valve_setting_pressure_bar: 'Emniyet valfi ayar basıncı',
 	working_pressure_bar: 'Çalışma basıncı',
 	working_temperature_celsius: 'Çalışma sıcaklığı',
+	manometer_scale_bar: 'Monometre skala buyuklugu(Bar)',
 };
 
 export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body'];
