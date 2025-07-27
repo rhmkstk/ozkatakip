@@ -11,7 +11,7 @@ const toast = useToast();
 const inspectionFormLoading = ref(false);
 const fillRecordLoading = ref(false);
 const showInspectionAlert = ref(false);
-const lastInspectionDate= ref<Date | null>(null);
+const lastInspectionDate = ref<Date | null>(null);
 const drawersShow = reactive({
 	fill: false,
 	change: false,
@@ -45,23 +45,20 @@ const controlFields = [
 	'pressure',
 	'working_mechanism',
 ];
-onMounted(async ()=>{
+onMounted(async () => {
 	const id = route.params.id as string;
 	console.log('Mounted with id:', id);
 	const data = await $fetch('/api/inspections/getByLocationId', {
 		params: { location_id: id },
 	});
 	console.log('Fetched inspection data:', data[0].created_at);
-	lastInspectionDate.value =data[0].created_at;
+	lastInspectionDate.value = data[0].created_at;
 	if (lastInspectionDate.value) {
 		isInLast30Days(lastInspectionDate.value)
-		? showInspectionAlert.value = true
-		: showInspectionAlert.value = false;
-
+			? showInspectionAlert.value = true
+			: showInspectionAlert.value = false;
 	}
-	
-
-})
+});
 
 const { data, status } = await useAsyncData(
 	'product',
@@ -87,18 +84,15 @@ const { data, status } = await useAsyncData(
 );
 
 const inspectionAlert = computed(() => {
-const formattedDate = lastInspectionDate.value
-	? new Date(lastInspectionDate.value).toLocaleDateString("tr-TR", {
-		day: "numeric",
-		month: "long",
-		year: "numeric",
-	})
-	: '';
+	const formattedDate = lastInspectionDate.value
+		? new Date(lastInspectionDate.value).toLocaleDateString('tr-TR', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric',
+			})
+		: '';
 
-
-return	`  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
-
- 
+	return	`  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
 });
 
 const summaryCardData = computed(() => {
@@ -158,14 +152,14 @@ const fillRecordSummaryCardData = computed(() => {
 });
 
 function isInLast30Days(dateString: Date): boolean {
-  const date = new Date(dateString);
-  const now = new Date();
+	const date = new Date(dateString);
+	const now = new Date();
 
-  // Calculate the timestamp for 30 days ago
-  const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+	// Calculate the timestamp for 30 days ago
+	const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Check if date is after or equal to days30Ago and before or equal to now
-  return date >= days30Ago && date <= now;
+	// Check if date is after or equal to days30Ago and before or equal to now
+	return date >= days30Ago && date <= now;
 }
 function onFileSelect(event: Event) {
 	const file = event.files[0] as File;
@@ -301,10 +295,22 @@ async function saveInspectionForm() {
 				v-if="data?.product && data?.location"
 				:data="summaryCardData"
 			/>
-			<div v-if="showInspectionAlert" class="bg-yellow-100 text-yellow-800 p-4 rounded-lg mb-4 mt-4">
-				<p class="text-sm">{{ inspectionAlert }}</p>
 
-			</div>
+			<Message
+				v-if="showInspectionAlert"
+				severity="warn"
+				class="mt-4"
+			>
+				{{ inspectionAlert }}
+			</Message>
+			<!-- <div
+				v-if="showInspectionAlert"
+				class="bg-yellow-100 text-yellow-800 p-4 rounded-lg mb-4 mt-4"
+			>
+				<p class="text-sm">
+					{{ inspectionAlert }}
+				</p>
+			</div> -->
 			<div class="mt-auto pb-4">
 				<h5 class="text-3xl font-semibold mt-8">
 					Bakim kayit formu
