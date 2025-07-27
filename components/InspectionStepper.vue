@@ -14,14 +14,27 @@ const { currentProductData } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const toast = useToast();
-
 const newProductData = reactive({
 	location: null,
 	product: null,
 });
+const activeStep = ref('1');
 const loading = ref(false);
 const showScanner = ref(false);
 const newProductId = ref('');
+
+const src = ref(null);
+
+function onFileSelect(event: Event) {
+	const file = event.files[0];
+	const reader = new FileReader();
+
+	reader.onload = async (e) => {
+		src.value = e.target.result;
+	};
+
+	reader.readAsDataURL(file);
+}
 
 const currentProductSummaryCardData = computed(() => {
 	if (currentProductData?.product && currentProductData?.location) {
@@ -99,7 +112,7 @@ async function getNewProductData(newLocationId: string, callback: () => void) {
 	}
 }
 
-async function applyChanges() {
+async function applyChanges(callback: () => void) {
 	loading.value = true;
 	try {
 		const currentResponse = await $fetch('/api/products', {
@@ -129,12 +142,14 @@ async function applyChanges() {
 			},
 		});
 
-		toast.add({
-			severity: 'success',
-			summary: 'Başarılı',
-			detail: 'Degisim kaydı başarıyla oluşturuldu.',
-			life: 2000,
-		});
+		callback();
+
+		// toast.add({
+		// 	severity: 'success',
+		// 	summary: 'Başarılı',
+		// 	detail: 'Degisim kaydı başarıyla oluşturuldu.',
+		// 	life: 2000,
+		// });
 	}
 	catch (error) {
 		console.error('Error saving fill record:', error);
@@ -146,28 +161,48 @@ async function applyChanges() {
 		});
 	}
 	finally {
-		loading.value = true;
-		emit('close');
+		loading.value = false;
+		// emit('close');
 	}
 }
 </script>
 
 <template>
-	<div class="card flex justify-center">
+	<div class="card flex justify-center border-t border-slate-200 pt-5">
 		<BaseLoader v-if="loading" />
 		<Stepper
-			value="1"
-			class="basis-[50rem]"
+			v-model:value="activeStep"
 		>
 			<StepList>
-				<Step value="1">
-					Bakim
+				<Step
+					value="1"
+					as-child
+				>
+					<CustomStepperButton
+						step="1"
+						title="Yeni YSC"
+						:is-active="activeStep === '1'"
+					/>
 				</Step>
-				<Step value="2">
-					Yeni YSC
+				<Step
+					value="2"
+					as-child
+				>
+					<CustomStepperButton
+						step="2"
+						title="Degisim"
+						:is-active="activeStep === '2'"
+					/>
 				</Step>
-				<Step value="3">
-					Degisim
+				<Step
+					value="3"
+					as-child
+				>
+					<CustomStepperButton
+						step="3"
+						title="Onay"
+						:is-active="activeStep === '3'"
+					/>
 				</Step>
 			</StepList>
 			<StepPanels>
@@ -175,93 +210,75 @@ async function applyChanges() {
 					v-slot="{ activateCallback }"
 					value="1"
 				>
-					<div class="border-2 border-dashed border-[#e2e8f0] rounded p-4">
+					<div>
+						<h4 class="mb-4 mt-10 font-semibold text-slate-600">
+							Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
+						</h4>
+
+						<div>
+							<form
+								class="mt-auto w-full"
+								@submit.prevent
+							>
+								<div class="form-row">
+									<div class="form-item">
+										<label for="building_area">YSC no</label>
+										<div class="flex space-x-2">
+											<InputText
+												id="building_area"
+												v-model="newProductId"
+												placeholder="ATM-2"
+												class="flex-1"
+											/>
+											<Button
+												label="Ara"
+												@click="getNewProductData(newProductId, () => activateCallback('2'))"
+											/>
+										</div>
+									</div>
+								</div>
+							</form>
+							<Divider align="center">
+								<span class="text-sm">Veya</span>
+							</Divider>
+							<Button
+								class="w-full"
+								icon="ri-camera-fill"
+								outlined
+								label="QR Kod Tara"
+								@click="showScanner = true"
+							/>
+						</div>
+					</div>
+					<!-- <div class="p-4">
 						<div class="flex flex-col items-center mb-6">
 							<i class="ri-checkbox-circle-line text-6xl text-green-600" />
 							<h3 class="text-lg font-semibold mb-2">
-								Rutin kontrol formunu olusturdun.
+								Rutin kontrol formunu olusturdun
 							</h3>
 							<h4 class="text-gray-800 text-center">
 								YSC gerekli kontrollerden gecemedigi icin degistirilmesi gerekli! Devam ederek degisim islemini tamamlayabilirsin.
 							</h4>
 						</div>
-					</div>
+					</div> -->
 
-					<div class="flex pt-6 justify-end">
+					<!-- <div class="flex pt-6 justify-end">
 						<Button
 							label="Devam"
 							icon="ri-arrow-right-line"
 							icon-pos="right"
 							@click="activateCallback('2')"
 						/>
-					</div>
+					</div> -->
 				</StepPanel>
 				<StepPanel
 					v-slot="{ activateCallback }"
 					value="2"
 				>
-					<div class="border-2 border-dashed border-[#e2e8f0] rounded p-4">
-						<h4 class="text-gray-800 mb-6 font-semibold">
-							Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
-						</h4>
-
-						<form
-							class="mt-auto w-full"
-							@submit.prevent
-						>
-							<div class="form-row">
-								<div class="form-item">
-									<label for="building_area">YSC no</label>
-									<div class="flex space-x-2">
-										<InputText
-											id="building_area"
-											v-model="newProductId"
-											placeholder="ATM-2"
-											class="flex-1"
-										/>
-										<Button
-											label="Ara"
-											@click="getNewProductData(newProductId, () => activateCallback('3'))"
-										/>
-									</div>
-								</div>
-							</div>
-						</form>
-						<Divider align="center">
-							<span class="text-sm">Veya</span>
-						</Divider>
-						<Button
-							class="w-full"
-							icon="ri-camera-fill"
-							outlined
-							label="QR Kod Tara"
-							@click="showScanner = true"
-						/>
-					</div>
-					<QRScanner
-						v-if="showScanner"
-						@close="showScanner = false"
-						@scan-complete="(scannedNumber) => getNewProductData(scannedNumber, () => activateCallback('3'))"
-					/>
-
-					<div class="flex pt-6">
-						<Button
-							label="Geri"
-							severity="secondary"
-							icon="ri-arrow-left-line"
-							@click="activateCallback('1')"
-						/>
-					</div>
-				</StepPanel>
-				<StepPanel
-					v-slot="{ activateCallback }"
-					value="3"
-				>
-					<div class="border-2 border-dashed border-[#e2e8f0] rounded p-4">
-						<h4 class="text-gray-800 mb-6 font-semibold">
-							Son adimdasin! Asagida ozet YSC bilgilerini kontrol et, eger her sey dogruysa degisim islemini tamamlayabilirsin.
-						</h4>
-
+					<h4 class="mb-4 mt-10 font-semibold text-slate-600">
+						Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
+					</h4>
+					<div>
 						<div class="bg-gray-400 rounded-xl p-px">
 							<h5 class="text-lg text-center font-semibold text-white">
 								MEVCUT
@@ -315,18 +332,50 @@ async function applyChanges() {
 						</div>
 					</div>
 
-					<div class="pt-6 flex justify-between">
+					<div class="pt-4 flex justify-between border-t border-slate-200">
 						<Button
 							label="Geri"
 							severity="secondary"
 							icon="ri-arrow-left-line"
-							@click="activateCallback('2')"
+							@click="activateCallback('1')"
 						/>
 						<Button
 							label="Kaydet"
 							icon="ri-save-line"
 							icon-pos="right"
-							@click="applyChanges"
+							@click="applyChanges(() => activateCallback('3'))"
+						/>
+					</div>
+				</StepPanel>
+				<StepPanel
+					v-slot="{ activateCallback }"
+					value="3"
+				>
+					<h4 class="mb-4 mt-10 font-semibold text-slate-600">
+						Son adimdasin! Bu adimda yeni YSC nin fotografini ekle ve degisim kaydini tamamla.
+					</h4>
+
+					<div class="card flex flex-col items-center gap-6">
+						<FileUpload
+							mode="basic"
+							custom-upload
+							auto
+							severity="secondary"
+							class="p-button-outlined"
+							@select="onFileSelect"
+						/>
+						<img
+							v-if="src"
+							:src="src"
+							alt="Image"
+							class="shadow-md rounded-xl h-auto max-w-[180px] object-cover"
+						>
+					</div>
+
+					<div class="pt-4 border-t border-slate-200 mt-8 flex justify-end">
+						<Button
+							label="Degisim kaydini tamamla"
+							@click="activateCallback('2')"
 						/>
 					</div>
 				</StepPanel>

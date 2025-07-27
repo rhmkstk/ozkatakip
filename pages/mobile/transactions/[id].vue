@@ -12,7 +12,7 @@ const inspectionFormLoading = ref(false);
 const fillRecordLoading = ref(false);
 const drawersShow = reactive({
 	fill: false,
-	change: false,
+	change: true,
 });
 
 const inspectionForm = reactive({
@@ -66,30 +66,6 @@ const { data, status } = await useAsyncData(
 		return { product: product[0], location: location[0] };
 	},
 );
-
-const summaryCardData = computed(() => {
-	if (data.value?.product && data.value?.location) {
-		return [
-			{
-				key: 'YSC no',
-				value: data.value.location.location_id,
-			},
-			{
-				key: 'Modeli',
-				value: data.value.product.model_type,
-			},
-			{
-				key: 'Bina',
-				value: data.value.location.building_id.name,
-			},
-			{
-				key: 'Oda',
-				value: data.value.location.room,
-			},
-		];
-	}
-	return [];
-});
 
 const fillRecordSummaryCardData = computed(() => {
 	if (data.value?.product && data.value?.location) {
@@ -236,13 +212,13 @@ async function saveInspectionForm() {
 					aria-label="go back"
 					@click="$router.push('/mobile')"
 				/>
-				<Button
+				<!-- <Button
 					class="ml-auto"
 					icon="ri-battery-charge-line"
 					label="Dolum"
 					severity="contrast"
 					@click="drawersShow.fill = true"
-				/>
+				/> -->
 				<!-- <Button
 					icon="ri-repeat-line"
 					label="Degisim"
@@ -250,129 +226,230 @@ async function saveInspectionForm() {
 					@click="drawersShow.change = true"
 				/> -->
 			</header>
-			<ProductSummaryCard
-				v-if="data?.product && data?.location"
-				:data="summaryCardData"
-			/>
-			<div class="mt-auto pb-4">
-				<h5 class="text-3xl font-semibold mt-8">
-					Bakim kayit formu
-				</h5>
-				<form
-					class="py-8 space-y-4"
-					@submit.prevent
+			<div class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex">
+				<img
+					src="https://www.capitalsolutions.pk/wp-content/uploads/2021/06/DCP6Kg-ABC-2.jpg"
+					alt="fire-estinguisher"
+					class="object-cover max-w-full w-1/3 h-[200px] rounded"
 				>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.position"
-							input-id="position"
-							binary
-						/>
-						<label for="position"> {{ headerLabels.position }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.body"
-							input-id="body"
-							binary
-						/>
-						<label for="body"> {{ headerLabels.body }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.control_card"
-							input-id="control_card"
-							binary
-						/>
-						<label for="control_card"> {{ headerLabels.control_card }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.hose_and_nozzle"
-							input-id="hose_and_nozzle"
-							binary
-						/>
-						<label for="hose_and_nozzle"> {{ headerLabels.hoze_and_nozzle }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.instruction_and_label"
-							input-id="instruction_and_label"
-							binary
-						/>
-						<label for="instruction_and_label"> {{ headerLabels.instruction_and_label }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.mass"
-							input-id="mass"
-							binary
-						/>
-						<label for="mass"> {{ headerLabels.mass }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.pin_and_seal"
-							input-id="pin_and_seal"
-							binary
-						/>
-						<label for="pin_and_seal"> {{ headerLabels.pin_and_seal }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.pressure"
-							input-id="pressure"
-							binary
-						/>
-						<label for="pressure"> {{ headerLabels.pressure }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.working_mechanism"
-							input-id="working_mechanism"
-							binary
-						/>
-						<label for="working_mechanism"> {{ headerLabels.working_mechanism }} </label>
-					</div>
+				<div class="pt-2 px-2 flex-1 flex flex-col">
+					<h4 class="text-sm font-semibold leading-3">
+						12 KG
+					</h4>
+					<h3 class="text-lg font-semibold truncate">
+						Karbondioksit gazli
+					</h3>
 
-					<div
-						class="flex flex-col gap-2"
-					>
-						<label for="note"> Not </label>
-						<Textarea
-							v-model="inspectionForm.note"
-							rows="3"
-						/>
+					<div class="flex items-center space-x-1">
+						<span class="size-1.5 rounded-full bg-green-600" />
+						<span class="text-xs text-slate-500">AKTİF</span>
 					</div>
-					<div class="flex flex-col items-start gap-2">
-						<FileUpload
-							mode="basic"
-							custom-upload
-							auto
-							severity="secondary"
-							accept="image/*"
-							class="p-button-outlined"
-							choose-label="Resim sec"
-							@select="onFileSelect"
-						>
-							<template #chooseicon>
-								<i class="ri-camera-line" />
-							</template>
-						</FileUpload>
-						<img
-							v-if="inspectionForm.photo_url"
-							:src="inspectionForm.photo_url"
-							alt="Image"
-							class="shadow-md rounded-xl w-64"
-						>
+					<div class="flex space-x-1 mt-4">
+						<i class="ri-map-pin-line -mt-0.5" />
+						<span class="text-sm">MOBİL EKİPMAN BAKIM	, YEDEK , YEDEK225452</span>
 					</div>
-				</form>
-				<Button
-					size="large"
-					class="w-full"
-					label="Bakim kaydi olustur"
-					@click="saveInspectionForm"
-				/>
+					<div class="flex space-x-1 mt-2">
+						<i class="ri-calendar-line -mt-0.5" />
+						<p class="text-sm text-gray-700">
+							Dolum tarihi: <b>2027-07-05</b>, Hidrastatik test tarihi: <b>2027-07-05</b>
+						</p>
+					</div>
+				</div>
+			</div>
+			<div class="card">
+				<Tabs value="0">
+					<TabList>
+						<Tab
+							value="0"
+							class="w-1/2"
+						>
+							Bakım kayıt
+						</Tab>
+						<Tab
+							value="1"
+							class="w-1/2"
+						>
+							Dolum kayıt
+						</Tab>
+					</TabList>
+					<TabPanels>
+						<TabPanel value="0">
+							<form
+								class="space-y-4 m-0"
+								@submit.prevent
+							>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.position"
+										input-id="position"
+										binary
+									/>
+									<label for="position"> {{ headerLabels.position }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.body"
+										input-id="body"
+										binary
+									/>
+									<label for="body"> {{ headerLabels.body }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.control_card"
+										input-id="control_card"
+										binary
+									/>
+									<label for="control_card"> {{ headerLabels.control_card }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.hose_and_nozzle"
+										input-id="hose_and_nozzle"
+										binary
+									/>
+									<label for="hose_and_nozzle"> {{ headerLabels.hoze_and_nozzle }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.instruction_and_label"
+										input-id="instruction_and_label"
+										binary
+									/>
+									<label for="instruction_and_label"> {{ headerLabels.instruction_and_label }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.mass"
+										input-id="mass"
+										binary
+									/>
+									<label for="mass"> {{ headerLabels.mass }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.pin_and_seal"
+										input-id="pin_and_seal"
+										binary
+									/>
+									<label for="pin_and_seal"> {{ headerLabels.pin_and_seal }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.pressure"
+										input-id="pressure"
+										binary
+									/>
+									<label for="pressure"> {{ headerLabels.pressure }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.working_mechanism"
+										input-id="working_mechanism"
+										binary
+									/>
+									<label for="working_mechanism"> {{ headerLabels.working_mechanism }} </label>
+								</div>
+
+								<div
+									class="flex flex-col gap-2"
+								>
+									<label for="note"> Not </label>
+									<Textarea
+										v-model="inspectionForm.note"
+										rows="3"
+									/>
+								</div>
+								<div class="flex flex-col items-start gap-2">
+									<FileUpload
+										mode="basic"
+										custom-upload
+										auto
+										accept="image/*"
+										class="p-button-outlined"
+										choose-label="Resim sec"
+										@select="onFileSelect"
+									>
+										<template #chooseicon>
+											<i class="ri-camera-line" />
+										</template>
+									</FileUpload>
+									<img
+										v-if="inspectionForm.photo_url"
+										:src="inspectionForm.photo_url"
+										alt="Image"
+										class="shadow-md rounded-xl w-64"
+									>
+								</div>
+								<Button
+									class="w-full mt-4"
+									label="Bakim kaydi olustur"
+									@click="saveInspectionForm"
+								/>
+							</form>
+						</TabPanel>
+						<TabPanel value="1">
+							<form
+								class="space-y-4 m-0"
+								@submit.prevent
+							>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										input-id="filling"
+										binary
+									/>
+									<label for="filling"> DOLUM İŞLEMİ </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										input-id="triggger-valve"
+										binary
+									/>
+									<label for="triggger-valve"> TETİK / VANA </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										input-id="manometer"
+										binary
+									/>
+									<label for="manometer"> MANOMETRE </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										input-id="hose-nozzle"
+										binary
+									/>
+									<label for="hose-nozzle"> HORTUM / LANS </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										input-id="wheel"
+										binary
+									/>
+									<label for="wheel"> TEKERLEK  </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										input-id="wet-paint"
+										binary
+									/>
+									<label for="wet-paint"> YAŞ BOYA  </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										input-id="hydrostatic-pressure-test"
+										binary
+									/>
+									<label for="hydrostatic-pressure-test"> HİDROSTATİK BASINÇ TESTİ  </label>
+								</div>
+								<Button
+									class="w-full mt-4"
+									label="Dolum kaydi olustur"
+								/>
+							</form>
+						</TabPanel>
+					</TabPanels>
+				</Tabs>
 			</div>
 		</div>
 		<Drawer
@@ -415,7 +492,6 @@ async function saveInspectionForm() {
 				</footer>
 			</div>
 		</Drawer>
-
 		<Drawer
 			v-model:visible="drawersShow.change"
 			header="Degisim"
