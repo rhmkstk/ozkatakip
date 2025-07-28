@@ -9,10 +9,11 @@ const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const inspectionFormLoading = ref(false);
-const fillRecordLoading = ref(false);
+// const fillRecordLoading = ref(false);
 const drawersShow = reactive({
-	fill: false,
-	change: true,
+	change: false,
+	success: false,
+	needChange: true,
 });
 
 const inspectionForm = reactive({
@@ -67,37 +68,37 @@ const { data, status } = await useAsyncData(
 	},
 );
 
-const fillRecordSummaryCardData = computed(() => {
-	if (data.value?.product && data.value?.location) {
-		return [
-			{
-				key: 'YSC no',
-				value: data.value.location.location_id,
-			},
-			{
-				key: 'Modeli',
-				value: data.value.product.model_type,
-			},
-			{
-				key: 'Bina',
-				value: data.value.location.building_id.name,
-			},
-			{
-				key: 'Oda',
-				value: data.value.location.room,
-			},
-			{
-				key: 'Dolum tarihi',
-				value: new Date(data.value.product.refill_date).toLocaleDateString('tr-TR', {
-					year: 'numeric',
-					month: '2-digit',
-					day: '2-digit',
-				}),
-			},
-		];
-	}
-	return [];
-});
+// const fillRecordSummaryCardData = computed(() => {
+// 	if (data.value?.product && data.value?.location) {
+// 		return [
+// 			{
+// 				key: 'YSC no',
+// 				value: data.value.location.location_id,
+// 			},
+// 			{
+// 				key: 'Modeli',
+// 				value: data.value.product.model_type,
+// 			},
+// 			{
+// 				key: 'Bina',
+// 				value: data.value.location.building_id.name,
+// 			},
+// 			{
+// 				key: 'Oda',
+// 				value: data.value.location.room,
+// 			},
+// 			{
+// 				key: 'Dolum tarihi',
+// 				value: new Date(data.value.product.refill_date).toLocaleDateString('tr-TR', {
+// 					year: 'numeric',
+// 					month: '2-digit',
+// 					day: '2-digit',
+// 				}),
+// 			},
+// 		];
+// 	}
+// 	return [];
+// });
 
 function onFileSelect(event: Event) {
 	const file = event.files[0] as File;
@@ -111,47 +112,47 @@ function onFileSelect(event: Event) {
 	reader.readAsDataURL(file);
 }
 
-async function saveFillRecord() {
-	fillRecordLoading.value = true;
-	if (!data.value?.product || !data.value?.location) {
-		console.error('Product or location data is missing');
-		fillRecordLoading.value = false;
-		return;
-	}
-	try {
-		const response = await $fetch('/api/products', {
-			method: 'PUT',
-			body: {
-				...data.value.product,
-				refill_date: new Date(),
-				next_refill_date: addYearToDate(new Date(), data.value.product.refill_period),
-			},
-		});
+// async function saveFillRecord() {
+// 	fillRecordLoading.value = true;
+// 	if (!data.value?.product || !data.value?.location) {
+// 		console.error('Product or location data is missing');
+// 		fillRecordLoading.value = false;
+// 		return;
+// 	}
+// 	try {
+// 		const response = await $fetch('/api/products', {
+// 			method: 'PUT',
+// 			body: {
+// 				...data.value.product,
+// 				refill_date: new Date(),
+// 				next_refill_date: addYearToDate(new Date(), data.value.product.refill_period),
+// 			},
+// 		});
 
-		if (response) {
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Dolum kaydı başarıyla oluşturuldu.',
-				life: 2000,
-			});
-			drawersShow.fill = false;
-		}
-	}
-	catch (error) {
-		console.error('Error saving fill record:', error);
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: 'Dolum kaydı oluşturulurken bir hata oluştu.',
-			life: 2000,
-		});
-	}
-	finally {
-		fillRecordLoading.value = false;
-		drawersShow.fill = false;
-	}
-}
+// 		if (response) {
+// 			toast.add({
+// 				severity: 'success',
+// 				summary: 'Başarılı',
+// 				detail: 'Dolum kaydı başarıyla oluşturuldu.',
+// 				life: 2000,
+// 			});
+// 			drawersShow.fill = false;
+// 		}
+// 	}
+// 	catch (error) {
+// 		console.error('Error saving fill record:', error);
+// 		toast.add({
+// 			severity: 'error',
+// 			summary: 'Hata',
+// 			detail: 'Dolum kaydı oluşturulurken bir hata oluştu.',
+// 			life: 2000,
+// 		});
+// 	}
+// 	finally {
+// 		fillRecordLoading.value = false;
+// 		drawersShow.fill = false;
+// 	}
+// }
 
 async function saveInspectionForm() {
 	const result = controlFields.every(field => inspectionForm[field] === true);
@@ -167,18 +168,11 @@ async function saveInspectionForm() {
 		});
 
 		if (response) {
-			if (!result) {
-				drawersShow.fill = false;
-				drawersShow.change = true;
+			if (result) {
+				drawersShow.success = true;
 			}
 			else {
-				toast.add({
-					severity: 'success',
-					summary: 'Başarılı',
-					detail: 'Bakim kaydı başarıyla oluşturuldu.',
-					life: 2000,
-				});
-				drawersShow.fill = false;
+				drawersShow.change = true;
 			}
 		}
 	}
@@ -212,19 +206,6 @@ async function saveInspectionForm() {
 					aria-label="go back"
 					@click="$router.push('/mobile')"
 				/>
-				<!-- <Button
-					class="ml-auto"
-					icon="ri-battery-charge-line"
-					label="Dolum"
-					severity="contrast"
-					@click="drawersShow.fill = true"
-				/> -->
-				<!-- <Button
-					icon="ri-repeat-line"
-					label="Degisim"
-					severity="contrast"
-					@click="drawersShow.change = true"
-				/> -->
 			</header>
 			<div class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex">
 				<img
@@ -453,46 +434,6 @@ async function saveInspectionForm() {
 			</div>
 		</div>
 		<Drawer
-			v-model:visible="drawersShow.fill"
-			header="Dolum kaydi"
-			position="bottom"
-			style="height: auto"
-		>
-			<div class="pt-8 border-t border-slate-200">
-				<BaseLoader v-if="fillRecordLoading" />
-				<ProductSummaryCard :data="fillRecordSummaryCardData" />
-				<p class="mt-10 mb-16 text-lg font-semibold">
-					Dolum tarihi {{ new Date().toLocaleDateString('tr-TR', {
-						year: 'numeric',
-						month: '2-digit',
-						day: '2-digit',
-					}) }}, bir sonraki dolum tarihi {{
-						addYearToDate(new Date(), data?.product.refill_period).toLocaleDateString('tr-TR', {
-							year: 'numeric',
-							month: '2-digit',
-							day: '2-digit',
-						})
-					}} olarak kaydedilecek, onayliyor musunuz ?
-				</p>
-				<footer class="flex justify-end px-4 py-6 space-x-4 -m-5 border-t border-slate-200">
-					<Button
-						label="Vazgeç"
-						icon="ri-close-line"
-						severity="secondary"
-						size="large"
-						@click="drawersShow.fill = false"
-					/>
-					<Button
-						label="Kaydet"
-						icon="ri-save-line"
-						severity="primary"
-						size="large"
-						@click="saveFillRecord"
-					/>
-				</footer>
-			</div>
-		</Drawer>
-		<Drawer
 			v-model:visible="drawersShow.change"
 			header="Degisim"
 			position="full"
@@ -506,5 +447,40 @@ async function saveInspectionForm() {
 				@close="drawersShow.change = false"
 			/>
 		</Drawer>
+		<Dialog
+			v-model:visible="drawersShow.needChange"
+			:show-header="false"
+			:modal="true"
+		>
+			<div class="flex flex-col items-center pt-4">
+				<!-- <i class="ri-checkbox-circle-line text-6xl text-green-600 mb-2" /> -->
+				<div class="flex items-center space-x-1">
+					<h3 class="text-lg font-semibold">
+						Bakim kaydi basarıyla olusturuldu!
+					</h3>
+					<i class="ri-check-line text-green-600 text-4xl" />
+				</div>
+
+				<Message
+					severity="warn"
+					class="my-4"
+				>
+					YSC kullanima uygun olmadigi icin degisim gerektirmektedir. Lütfen degisim kaydi olusturunuz!
+				</Message>
+			</div>
+			<template #footer>
+				<Button
+					label="Degisim kaydi olustur"
+					severity="secondary"
+					size="large"
+					@click="drawersShow.needChange = false; drawersShow.change = true"
+				/>
+			</template>
+		</Dialog>
+		<TransactionsSuccessDialog
+			:visible="drawersShow.success"
+			title="Bakım kaydı başarıyla oluşturuldu!"
+			@close="drawersShow.success = false"
+		/>
 	</div>
 </template>

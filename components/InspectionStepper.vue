@@ -6,12 +6,12 @@ type Props = {
 	};
 };
 
-type Emits = {
-	(e: 'close'): void;
-};
+// type Emits = {
+// 	(e: 'close'): void;
+// };
 
 const { currentProductData } = defineProps<Props>();
-const emit = defineEmits<Emits>();
+// const emit = defineEmits<Emits>();
 
 const toast = useToast();
 const newProductData = reactive({
@@ -276,7 +276,7 @@ async function applyChanges(callback: () => void) {
 					value="2"
 				>
 					<h4 class="mb-4 mt-10 font-semibold text-slate-600">
-						Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
+						Bu adimda yeni ve eski YSC bilgilerini kontrol et, bilgiler dogruysa son adim icin devam et
 					</h4>
 					<div>
 						<div class="bg-gray-400 rounded-xl p-px">
@@ -340,8 +340,8 @@ async function applyChanges(callback: () => void) {
 							@click="activateCallback('1')"
 						/>
 						<Button
-							label="Kaydet"
-							icon="ri-save-line"
+							label="Devam et"
+							icon="ri-arrow-right-line"
 							icon-pos="right"
 							@click="applyChanges(() => activateCallback('3'))"
 						/>
@@ -372,8 +372,10 @@ async function applyChanges(callback: () => void) {
 						>
 					</div>
 
-					<div class="pt-4 border-t border-slate-200 mt-8 flex justify-end">
+					<div class="pt-4 border-t border-slate-200 mt-12 flex justify-end">
 						<Button
+							icon="ri-check-line"
+							icon-pos="right"
 							label="Degisim kaydini tamamla"
 							@click="activateCallback('2')"
 						/>
