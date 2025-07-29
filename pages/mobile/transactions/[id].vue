@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { headerLabels } from '~/constants';
+import { headerLabels, fillLabels } from '~/constants';
 
 definePageMeta({
 	layout: 'mobile',
@@ -30,6 +30,17 @@ const inspectionForm = reactive({
 	result: true,
 	note: null,
 	photo_url: null,
+	user_id: null,
+});
+
+const fillForm = reactive({
+	filling: false,
+	trigger_valve: false,
+	manometer: false,
+	hose_and_nozzle: false,
+	wheel: false,
+	paint: false,
+	hydrostatic_pressure_test: false,
 	user_id: null,
 });
 
@@ -181,6 +192,45 @@ async function saveInspectionForm() {
 			severity: 'error',
 			summary: 'Hata',
 			detail: 'Bakim kaydı oluşturulurken bir hata oluştu.',
+			life: 2000,
+		});
+	}
+	finally {
+		inspectionFormLoading.value = false;
+		router.push('/mobile');
+	}
+}
+
+async function saveFillRecord() {
+	inspectionFormLoading.value = true;
+	try {
+		const response = await $fetch('/api/fill', {
+			method: 'POST',
+			body: {
+				...fillForm,
+				product_id: data.value?.product.id,
+				// location_id: data.value?.location.location_id,
+			},
+		});
+
+		
+
+		if (response) {
+			toast.add({
+				severity: 'success',
+				summary: 'Başarılı',
+				detail: 'Dolum kaydı başarıyla oluşturuldu.',
+				life: 2000,
+			});
+			drawersShow.success = true;
+		}
+	}
+	catch (error) {
+		console.error('Error saving fill record:', error);
+		toast.add({
+			severity: 'error',
+			summary: 'Hata',
+			detail: 'Dolum kaydı oluşturulurken bir hata oluştu.',
 			life: 2000,
 		});
 	}
@@ -378,54 +428,62 @@ async function saveInspectionForm() {
 									<Checkbox
 										input-id="filling"
 										binary
+										v-model="fillForm.filling"
 									/>
-									<label for="filling"> DOLUM İŞLEMİ </label>
+									<label for="filling"> {{ fillLabels.filling }}  </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
 										input-id="triggger-valve"
 										binary
+										v-model="fillForm.trigger_valve"
 									/>
-									<label for="triggger-valve"> TETİK / VANA </label>
+									<label for="triggger-valve"> {{ fillLabels.trigger_valve}} </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
 										input-id="manometer"
 										binary
+										v-model="fillForm.manometer"
 									/>
-									<label for="manometer"> MANOMETRE </label>
+									<label for="manometer"> {{ fillLabels.manometer }} </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
 										input-id="hose-nozzle"
 										binary
+										v-model="fillForm.hose_and_nozzle"
 									/>
-									<label for="hose-nozzle"> HORTUM / LANS </label>
+									<label for="hose-nozzle"> {{ fillLabels.hose_and_nozzle }} </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
 										input-id="wheel"
 										binary
+										v-model="fillForm.wheel"
 									/>
-									<label for="wheel"> TEKERLEK  </label>
+									<label for="wheel"> {{ fillLabels.wheel }}  </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
 										input-id="wet-paint"
 										binary
+										v-model="fillForm.paint"
 									/>
-									<label for="wet-paint"> YAŞ BOYA  </label>
+									<label for="wet-paint"> {{ fillLabels.paint }}  </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
 										input-id="hydrostatic-pressure-test"
 										binary
+										v-model="fillForm.hydrostatic_pressure_test"
 									/>
-									<label for="hydrostatic-pressure-test"> HİDROSTATİK BASINÇ TESTİ  </label>
+									<label for="hydrostatic-pressure-test"> {{ fillLabels.hydrostatic_pressure_test }}  </label>
 								</div>
 								<Button
 									class="w-full mt-4"
 									label="Dolum kaydi olustur"
+									@click="saveFillRecord"
 								/>
 							</form>
 						</TabPanel>

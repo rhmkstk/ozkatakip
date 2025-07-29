@@ -12,6 +12,7 @@ const logout = async () => {
 };
 const menuItems = [
 	{ name: 'Bakım kayıtları', path: '/', icon: 'ri-booklet-line' },
+	{ name: 'Dolum kayıtları', path: '/fill-records', icon: 'ri-booklet-line' },
 	{ name: 'İşlem geçmişi', path: '/history', icon: 'ri-history-fill' },
 	{ name: 'Planlama', path: '/planning', icon: 'ri-calendar-todo-line' },
 	{ name: 'YSC genel liste', path: '/products', icon: 'ri-fire-line' },

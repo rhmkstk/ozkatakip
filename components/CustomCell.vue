@@ -44,6 +44,13 @@ const componentDefinitions = {
 	'pin_and_seal': customCells.boolean,
 	'pressure': customCells.boolean,
 	'working_mechanism': customCells.boolean,
+	'filling': customCells.boolean,
+	'trigger_valve': customCells.boolean,
+	'manometer': customCells.boolean,
+	'wheel': customCells.boolean,
+	'paint': customCells.boolean,
+	'hydrostatic_pressure_test': customCells.boolean,
+	
 };
 
 const currentComponentData = computed(() => {

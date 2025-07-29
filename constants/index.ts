@@ -34,7 +34,17 @@ export const headerLabels = {
 	manometer_scale_bar: 'Monometre skala buyuklugu(Bar)',
 };
 
-export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body'];
+export const fillLabels = {
+	filling: 'Dolum İşlemi',
+	trigger_valve: 'Tetik / Vana',
+	manometer: 'Manometre',
+	hose_and_nozzle: 'Hortum / Lans',
+	wheel: 'Tekerlek',
+	paint: 'Yaş Boya',
+	hydrostatic_pressure_test: 'Hidrostatik Basınç Testi',	
+}
+
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body','filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test'];
 
 export const fireExtinguishers = [
 	{
