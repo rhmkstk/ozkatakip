@@ -1,16 +1,18 @@
 <script setup lang="ts">
 // No additional setup needed
-const supabase  = useSupabaseClient();
+const supabase = useSupabaseClient();
 const logout = async () => {
-  const { error } = await supabase.auth.signOut()
-  if (error) {
-    console.error("Logout error:", error.message)
-  } else {
-    await navigateTo('/login')
-  }
-}
+	const { error } = await supabase.auth.signOut();
+	if (error) {
+		console.error('Logout error:', error.message);
+	}
+	else {
+		await navigateTo('/login');
+	}
+};
 const menuItems = [
 	{ name: 'Bakım kayıtları', path: '/', icon: 'ri-booklet-line' },
+	{ name: 'Dolum kayıtları', path: '/fill-records', icon: 'ri-booklet-line' },
 	{ name: 'İşlem geçmişi', path: '/history', icon: 'ri-history-fill' },
 	{ name: 'Planlama', path: '/planning', icon: 'ri-calendar-todo-line' },
 	{ name: 'YSC genel liste', path: '/products', icon: 'ri-fire-line' },
@@ -22,7 +24,7 @@ const menuItems = [
 const supportItems = [
 	{ name: 'Yardım', path: '/help' },
 	{ name: 'İletişim', path: '/contact' },
-	{ name: 'Çıkış yap', path: '/logout' , action: logout },
+	{ name: 'Çıkış yap', path: '/logout', action: logout },
 ];
 
 const sidebarExpanded = ref(true);

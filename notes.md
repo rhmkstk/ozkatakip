@@ -48,3 +48,6 @@ id (PK)	room_id (FK)	number (int)
 3	3	1
 
 room_id → rooms.id
+
+
+// eger bir tupun o ay icerisinde bakim kaydi olusturulmus ise uyari ver!
