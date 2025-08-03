@@ -6,8 +6,6 @@ import { headerLabels, fillLabels } from '~/constants';
 definePageMeta({
 	layout: 'mobile',
 });
-
-// const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const imageCompressionOptions = {
@@ -99,50 +97,8 @@ async function onFileSelect(event: FileUploadSelectEvent) {
 	}
 }
 
-// async function saveFillRecord() {
-// 	fillRecordLoading.value = true;
-// 	if (!data.value?.product || !data.value?.location) {
-// 		console.error('Product or location data is missing');
-// 		fillRecordLoading.value = false;
-// 		return;
-// 	}
-// 	try {
-// 		const response = await $fetch('/api/products', {
-// 			method: 'PUT',
-// 			body: {
-// 				...data.value.product,
-// 				refill_date: new Date(),
-// 				next_refill_date: addYearToDate(new Date(), data.value.product.refill_period),
-// 			},
-// 		});
-
-// 		if (response) {
-// 			toast.add({
-// 				severity: 'success',
-// 				summary: 'Başarılı',
-// 				detail: 'Dolum kaydı başarıyla oluşturuldu.',
-// 				life: 2000,
-// 			});
-// 			drawersShow.fill = false;
-// 		}
-// 	}
-// 	catch (error) {
-// 		console.error('Error saving fill record:', error);
-// 		toast.add({
-// 			severity: 'error',
-// 			summary: 'Hata',
-// 			detail: 'Dolum kaydı oluşturulurken bir hata oluştu.',
-// 			life: 2000,
-// 		});
-// 	}
-// 	finally {
-// 		fillRecordLoading.value = false;
-// 		drawersShow.fill = false;
-// 	}
-// }
-
 async function saveInspectionForm() {
-	const result = controlFields.every(field => inspectionForm[field] === true);
+	const result = controlFields.every(field => inspectionForm[field as keyof typeof inspectionForm] === true);
 	inspectionFormLoading.value = true;
 	console.log('compressedImage.value:', compressedImage.value);
 	try {
@@ -153,8 +109,7 @@ async function saveInspectionForm() {
 			});
 
 			console.log('uploadImageResponse:', uploadImageResponse);
-
-			return;
+			// inspectionForm.photo_url = uploadImageResponse?.url || null;
 		}
 		const response = await $fetch('/api/inspections', {
 			method: 'POST',
@@ -202,12 +157,12 @@ async function saveFillRecord() {
 		});
 
 		if (response) {
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Dolum kaydı başarıyla oluşturuldu.',
-				life: 2000,
-			});
+			// toast.add({
+			// 	severity: 'success',
+			// 	summary: 'Başarılı',
+			// 	detail: 'Dolum kaydı başarıyla oluşturuldu.',
+			// 	life: 2000,
+			// });
 			drawersShow.success = true;
 		}
 	}
@@ -220,10 +175,10 @@ async function saveFillRecord() {
 			life: 2000,
 		});
 	}
-	finally {
-		inspectionFormLoading.value = false;
-		router.push('/mobile');
-	}
+	// finally {
+	// 	inspectionFormLoading.value = false;
+	// 	router.push('/mobile');
+	// }
 }
 </script>
 
@@ -496,7 +451,6 @@ async function saveFillRecord() {
 			:modal="true"
 		>
 			<div class="flex flex-col items-center pt-4">
-				<!-- <i class="ri-checkbox-circle-line text-6xl text-green-600 mb-2" /> -->
 				<div class="flex items-center space-x-1">
 					<h3 class="text-lg font-semibold">
 						Bakim kaydi basarıyla olusturuldu!
@@ -506,7 +460,7 @@ async function saveFillRecord() {
 
 				<Message
 					severity="warn"
-					class="my-4"
+					class="my-6"
 				>
 					YSC kullanima uygun olmadigi icin degisim gerektirmektedir. Lütfen degisim kaydi olusturunuz!
 				</Message>
