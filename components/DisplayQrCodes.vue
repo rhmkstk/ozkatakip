@@ -29,7 +29,7 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div class="flex gap-4 flex-wrap justify-center">
+<div class="flex gap-4 flex-wrap justify-center">
 		<div
 			v-for="product in products"
 			:key="product.id"
