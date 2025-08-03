@@ -1,19 +1,26 @@
 <script setup lang="ts">
+import imageCompression from 'browser-image-compression';
+import type { FileUploadSelectEvent } from 'primevue';
 import { headerLabels, fillLabels } from '~/constants';
 
 definePageMeta({
 	layout: 'mobile',
 });
 
-const router = useRouter();
+// const router = useRouter();
 const route = useRoute();
 const toast = useToast();
+const imageCompressionOptions = {
+	maxSizeMB: 0.5,
+	maxWidthOrHeight: 800,
+	useWebWorker: true,
+};
+const compressedImage = ref<File | null>(null);
 const inspectionFormLoading = ref(false);
-// const fillRecordLoading = ref(false);
 const drawersShow = reactive({
 	change: false,
 	success: false,
-	needChange: true,
+	needChange: false,
 });
 
 const inspectionForm = reactive({
@@ -62,7 +69,6 @@ const { data, status } = await useAsyncData(
 		const location = await $fetch('/api/locations/getByLocationId', {
 			params: { location_id: route.params.id },
 		});
-		console.log('location data:', location);
 
 		if (!location) {
 			throw new Error('Location not found');
@@ -79,48 +85,18 @@ const { data, status } = await useAsyncData(
 	},
 );
 
-// const fillRecordSummaryCardData = computed(() => {
-// 	if (data.value?.product && data.value?.location) {
-// 		return [
-// 			{
-// 				key: 'YSC no',
-// 				value: data.value.location.location_id,
-// 			},
-// 			{
-// 				key: 'Modeli',
-// 				value: data.value.product.model_type,
-// 			},
-// 			{
-// 				key: 'Bina',
-// 				value: data.value.location.building_id.name,
-// 			},
-// 			{
-// 				key: 'Oda',
-// 				value: data.value.location.room,
-// 			},
-// 			{
-// 				key: 'Dolum tarihi',
-// 				value: new Date(data.value.product.refill_date).toLocaleDateString('tr-TR', {
-// 					year: 'numeric',
-// 					month: '2-digit',
-// 					day: '2-digit',
-// 				}),
-// 			},
-// 		];
-// 	}
-// 	return [];
-// });
+async function onFileSelect(event: FileUploadSelectEvent) {
+	const imageFile = event.files[0];
 
-function onFileSelect(event: Event) {
-	const file = event.files[0] as File;
-	const reader = new FileReader();
-
-	reader.onload = async (e) => {
-		const result = e.target?.result;
-		inspectionForm.photo_url = result as string;
-	};
-
-	reader.readAsDataURL(file);
+	try {
+		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
+		compressedImage.value = compressedFile as File;
+		console.log('compressedFile instanceof Blob', compressedFile instanceof Blob); // true
+		console.log(`compressedFile size ${compressedFile.size / 1024 / 1024} MB`); // smaller than maxSizeMB
+	}
+	catch (error) {
+		console.warn(error);
+	}
 }
 
 // async function saveFillRecord() {
@@ -168,7 +144,18 @@ function onFileSelect(event: Event) {
 async function saveInspectionForm() {
 	const result = controlFields.every(field => inspectionForm[field] === true);
 	inspectionFormLoading.value = true;
+	console.log('compressedImage.value:', compressedImage.value);
 	try {
+		if (compressedImage.value) {
+			const uploadImageResponse = await $fetch('/api/upload/inspection-photo', {
+				method: 'POST',
+				body: compressedImage.value,
+			});
+
+			console.log('uploadImageResponse:', uploadImageResponse);
+
+			return;
+		}
 		const response = await $fetch('/api/inspections', {
 			method: 'POST',
 			body: {
@@ -179,6 +166,7 @@ async function saveInspectionForm() {
 		});
 
 		if (response) {
+			inspectionFormLoading.value = false;
 			if (result) {
 				drawersShow.success = true;
 			}
@@ -195,10 +183,10 @@ async function saveInspectionForm() {
 			life: 2000,
 		});
 	}
-	finally {
-		inspectionFormLoading.value = false;
-		router.push('/mobile');
-	}
+	// finally {
+	// 	inspectionFormLoading.value = false;
+	// 	router.push('/mobile');
+	// }
 }
 
 async function saveFillRecord() {
@@ -212,8 +200,6 @@ async function saveFillRecord() {
 				// location_id: data.value?.location.location_id,
 			},
 		});
-
-		
 
 		if (response) {
 			toast.add({
@@ -395,7 +381,6 @@ async function saveFillRecord() {
 									<FileUpload
 										mode="basic"
 										custom-upload
-										auto
 										accept="image/*"
 										class="p-button-outlined"
 										choose-label="Resim sec"
@@ -426,57 +411,57 @@ async function saveFillRecord() {
 							>
 								<div class="flex items-center gap-2">
 									<Checkbox
+										v-model="fillForm.filling"
 										input-id="filling"
 										binary
-										v-model="fillForm.filling"
 									/>
 									<label for="filling"> {{ fillLabels.filling }}  </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
+										v-model="fillForm.trigger_valve"
 										input-id="triggger-valve"
 										binary
-										v-model="fillForm.trigger_valve"
 									/>
-									<label for="triggger-valve"> {{ fillLabels.trigger_valve}} </label>
+									<label for="triggger-valve"> {{ fillLabels.trigger_valve }} </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
+										v-model="fillForm.manometer"
 										input-id="manometer"
 										binary
-										v-model="fillForm.manometer"
 									/>
 									<label for="manometer"> {{ fillLabels.manometer }} </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
+										v-model="fillForm.hose_and_nozzle"
 										input-id="hose-nozzle"
 										binary
-										v-model="fillForm.hose_and_nozzle"
 									/>
 									<label for="hose-nozzle"> {{ fillLabels.hose_and_nozzle }} </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
+										v-model="fillForm.wheel"
 										input-id="wheel"
 										binary
-										v-model="fillForm.wheel"
 									/>
 									<label for="wheel"> {{ fillLabels.wheel }}  </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
+										v-model="fillForm.paint"
 										input-id="wet-paint"
 										binary
-										v-model="fillForm.paint"
 									/>
 									<label for="wet-paint"> {{ fillLabels.paint }}  </label>
 								</div>
 								<div class="flex items-center gap-2">
 									<Checkbox
+										v-model="fillForm.hydrostatic_pressure_test"
 										input-id="hydrostatic-pressure-test"
 										binary
-										v-model="fillForm.hydrostatic_pressure_test"
 									/>
 									<label for="hydrostatic-pressure-test"> {{ fillLabels.hydrostatic_pressure_test }}  </label>
 								</div>
