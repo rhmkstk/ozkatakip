@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ZoomImage from './ZoomImage.vue';
+
 type Props = {
 	field: string;
 	value: unknown;
@@ -26,11 +28,10 @@ const customCells = {
 		text: null,
 	}),
 	photo: (value: string) => ({
-		name: 'img',
+		name: ZoomImage,
 		props: {
 			src: value,
 			alt: 'Product Photo',
-			class: 'w-16 h-16 object-cover rounded-lg',
 		},
 		text: null,
 	}),
