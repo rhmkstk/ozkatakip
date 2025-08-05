@@ -35,7 +35,6 @@ watch(isVisible, (newVal) => {
 
 // Starts the countdown
 function startCountdown() {
-	console.log('Starting countdown...');
 	clearCountdown(); // Ensure no multiple timers
 	timer = setInterval(() => {
 		if (countDown.value > 1) {

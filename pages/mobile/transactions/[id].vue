@@ -12,6 +12,8 @@ const supabase = useSupabaseClient();
 const toast = useToast();
 
 const activeTab = ref('0');
+const lastInspectionDate = ref<Date | null>(null);
+const showInspectionAlert = ref(false);
 const compressedImage = ref<File | null>(null);
 const inspectionFormLoading = ref(false);
 const drawersShow = reactive({
@@ -81,6 +83,18 @@ const { data, status } = await useAsyncData(
 		return { product: product[0], location: location[0] };
 	},
 );
+
+const inspectionAlert = computed(() => {
+	const formattedDate = lastInspectionDate.value
+		? new Date(lastInspectionDate.value).toLocaleDateString('tr-TR', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric',
+			})
+		: '';
+
+	return	`  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
+});
 
 async function onFileSelect(event: FileUploadSelectEvent) {
 	const imageFile = event.files[0];
@@ -157,6 +171,16 @@ async function saveInspectionForm() {
 }
 
 async function saveFillRecord() {
+	const isAnyItemSelected = Object.values(fillForm).some(value => typeof value === 'boolean' && value === true);
+	if (!isAnyItemSelected) {
+		toast.add({
+			severity: 'warn',
+			summary: 'Uyarı',
+			detail: 'Dolum kaydı oluşturmak için en az bir alan seçilmelidir.',
+			life: 2000,
+		});
+		return;
+	}
 	inspectionFormLoading.value = true;
 	try {
 		const response = await $fetch('/api/fill', {
@@ -193,6 +217,29 @@ async function saveFillRecord() {
 		});
 	}
 }
+
+function isInLast30Days(dateString: Date): boolean {
+	const date = new Date(dateString);
+	const now = new Date();
+
+	// Calculate the timestamp for 30 days ago
+	const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+	// Check if date is after or equal to days30Ago and before or equal to now
+	return date >= days30Ago && date <= now;
+}
+
+onMounted(async () => {
+	const id = route.params.id as string;
+
+	const data = await $fetch('/api/inspections/getByLocationId', {
+		params: { location_id: id },
+	});
+
+	if (isInLast30Days(data[0].created_at)) {
+		showInspectionAlert.value = true;
+	}
+});
 </script>
 
 <template>
@@ -244,6 +291,13 @@ async function saveFillRecord() {
 					</div>
 				</div>
 			</div>
+			<Message
+				v-if="showInspectionAlert"
+				severity="warn"
+				class="my-4"
+			>
+				{{ inspectionAlert }}
+			</Message>
 			<div class="card">
 				<Tabs v-model:value="activeTab">
 					<TabList>

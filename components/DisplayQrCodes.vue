@@ -12,8 +12,6 @@ type Props = {
 
 const props = defineProps<Props>();
 
-console.log('DisplayQrCodes.vue props:', props);
-
 // Store a map of product.id to QR data URL
 const qrCodes = ref<Record<string, string>>({});
 

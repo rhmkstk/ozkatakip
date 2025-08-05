@@ -20,6 +20,7 @@ export const headerLabels = {
 	location_id: 'YSC no',
 	serial_number: 'Seri no',
 	brand: 'Markası',
+	date: 'Tarih',
 	manufacture_year: 'Üretim tarihi',
 	refill_period: 'Yeniden dolum periyodu',
 	hydrostatic_test_date: 'Hidrostatik test tarihi',
@@ -43,8 +44,7 @@ export const fillLabels = {
 	paint: 'Yaş Boya',
 	hydrostatic_pressure_test: 'Hidrostatik Basınç Testi',
 };
-
-export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url'];
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url'];
 
 export const fireExtinguishers = [
 	{

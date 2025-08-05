@@ -28,7 +28,6 @@ const filters = ref({
 const { error, refresh } = await useFetch('/api/products', {
 	onResponse({ response }) {
 		if (response._data) {
-			console.log('Fetched products:', response._data);
 			tabledata.value = response._data;
 			const uniqueLocations = new Set(
 				response._data.map(

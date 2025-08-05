@@ -24,7 +24,6 @@ const { error, refresh: refreshBuildings } = await useFetch('/api/location-build
 	onResponse({ response }) {
 		if (response._data) {
 			buildings.value = response._data;
-			console.log('Buildings fetched:', buildings.value);
 		}
 		else {
 			console.error('Error fetching data:', error);
@@ -108,7 +107,6 @@ const saveProduct = async () => {
 				},
 			});
 
-			console.log('Product saved:', res);
 			toast.add({
 				severity: 'success',
 				summary: 'Başarılı',
@@ -127,7 +125,6 @@ const saveProduct = async () => {
 		});
 	}
 	finally {
-		console.log('Form resetleniyor!!');
 		loading.value = false;
 
 		resetForm();

@@ -7,6 +7,14 @@ type Props = {
 
 const props = defineProps<Props>();
 
+function converIsoString(isoString: string): string {
+	const date = new Date(isoString);
+	const day = String(date.getUTCDate()).padStart(2, '0');
+	const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+	const year = date.getUTCFullYear();
+	return `${day}.${month}.${year}`;
+}
+
 const customCells = {
 	boolean: (value: boolean) => ({
 		name: 'i',
@@ -42,6 +50,11 @@ const componentDefinitions = {
 		// 	month: '2-digit',
 		// 	day: '2-digit',
 		// }),
+	}),
+	'created_at': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: converIsoString(value),
 	}),
 	'result': customCells.boolean,
 	'position': customCells.boolean,

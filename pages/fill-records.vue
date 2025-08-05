@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { headerLabels,fillLabels } from '~/constants';
+import { headerLabels, fillLabels } from '~/constants';
 
 const tabledata = ref([]);
 const expandedRows = ref([]);
@@ -7,7 +7,6 @@ const { error } = await useFetch('/api/fill', {
 	method: 'GET',
 	onResponse({ response }) {
 		if (response._data) {
-			console.log('response._data;', response._data);
 			tabledata.value = response._data;
 		}
 		else {
@@ -68,17 +67,17 @@ const expandColumns = [
 	},
 	{
 		accessorKey: 'wheel',
-		header: 	fillLabels.wheel,
+		header: fillLabels.wheel,
 	},
 	{
 		accessorKey: 'paint',
-		header: 	fillLabels.paint,
+		header: fillLabels.paint,
 	},
 	{
 		accessorKey: 'hydrostatic_pressure_test',
 		header: fillLabels.hydrostatic_pressure_test,
 	},
-	
+
 ];
 
 function getValueByPath(obj, path) {
@@ -90,10 +89,10 @@ function getValueByPath(obj, path) {
 	<div>
 		<PageHeader title="2024 Nisan ayina ait kayitlar listeleniyor">
 			<DatePicker
-					v-model="date"
-					view="month"
-					date-format="mm/yy"
-				/>
+				v-model="date"
+				view="month"
+				date-format="mm/yy"
+			/>
 		</PageHeader>
 		<!-- <div class="pb-6">
 			<div class="flex items-center space-x-4">
@@ -107,12 +106,18 @@ function getValueByPath(obj, path) {
 				</h2>
 			</div>
 		</div> -->
-<EmptyState v-if="!tabledata.length">
-        <template #title>Bakım Kayıdı bulunamadı</template>
-        <template #subtitle>Seçilen tarihler için bakım kayıdı bulunamadı.</template>
-
-      </EmptyState>
-		<div v-else class="overflow-x-auto">
+		<EmptyState v-if="!tabledata.length">
+			<template #title>
+				Bakım Kayıdı bulunamadı
+			</template>
+			<template #subtitle>
+				Seçilen tarihler için bakım kayıdı bulunamadı.
+			</template>
+		</EmptyState>
+		<div
+			v-else
+			class="overflow-x-auto"
+		>
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"

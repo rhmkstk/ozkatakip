@@ -32,6 +32,10 @@ const columns = [
 		header: headerLabels.location_id,
 	},
 	{
+		accessorKey: 'created_at',
+		header: headerLabels.date,
+	},
+	{
 		accessorKey: 'products.model_type',
 		header: headerLabels.model_type,
 	},
@@ -137,9 +141,10 @@ function getValueByPath(obj, path) {
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"
-				striped-rows
 				size="large"
 				class="text-sm"
+
+				:row-class="(rowData) => (rowData.result ? '' : '!bg-red-100')"
 			>
 				<Column
 					expander
