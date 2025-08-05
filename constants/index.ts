@@ -41,10 +41,10 @@ export const fillLabels = {
 	hose_and_nozzle: 'Hortum / Lans',
 	wheel: 'Tekerlek',
 	paint: 'Yaş Boya',
-	hydrostatic_pressure_test: 'Hidrostatik Basınç Testi',	
-}
+	hydrostatic_pressure_test: 'Hidrostatik Basınç Testi',
+};
 
-export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body','filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test'];
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url'];
 
 export const fireExtinguishers = [
 	{
@@ -87,3 +87,9 @@ export const fireExtinguishers = [
 		},
 	},
 ];
+
+export const imageCompressionOptions = {
+	maxSizeMB: 0.5,
+	maxWidthOrHeight: 800,
+	useWebWorker: true,
+};

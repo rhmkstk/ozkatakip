@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+import type { FileUploadSelectEvent } from 'primevue';
+import imageCompression from 'browser-image-compression';
+import { imageCompressionOptions } from '~/constants';
+
 type Props = {
 	currentProductData: {
 		product: unknown;
@@ -6,14 +10,11 @@ type Props = {
 	};
 };
 
-// type Emits = {
-// 	(e: 'close'): void;
-// };
-
 const { currentProductData } = defineProps<Props>();
-// const emit = defineEmits<Emits>();
 
+const supabase = useSupabaseClient();
 const toast = useToast();
+const compressedImage = ref<File | null>(null);
 const newProductData = reactive({
 	location: null,
 	product: null,
@@ -25,15 +26,16 @@ const newProductId = ref('');
 
 const src = ref(null);
 
-function onFileSelect(event: Event) {
-	const file = event.files[0];
-	const reader = new FileReader();
+async function onFileSelect(event: FileUploadSelectEvent) {
+	const imageFile = event.files[0];
 
-	reader.onload = async (e) => {
-		src.value = e.target.result;
-	};
-
-	reader.readAsDataURL(file);
+	try {
+		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
+		compressedImage.value = compressedFile as File;
+	}
+	catch (error) {
+		console.warn(error);
+	}
 }
 
 const currentProductSummaryCardData = computed(() => {
@@ -141,6 +143,18 @@ async function applyChanges(callback: () => void) {
 				current_status: 'aktif',
 			},
 		});
+
+		// const userId = (await supabase.auth.getUser()).data.user?.id;
+
+		// $fetch('/api/transactions', {
+		// 	method: 'POST',
+		// 	body: {
+		// 		type: 'dolum',
+		// 		user: userId,
+		// 		product_id: data.value?.product.id,
+		// 		details: response.id,
+		// 	},
+		// });
 
 		callback();
 

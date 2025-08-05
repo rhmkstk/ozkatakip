@@ -17,6 +17,15 @@ const customCells = {
 		},
 		text: null,
 	}),
+	photo: (value: string) => ({
+		name: 'img',
+		props: {
+			src: value,
+			alt: 'Product Photo',
+			class: 'w-16 h-16 object-cover rounded-lg',
+		},
+		text: null,
+	}),
 };
 const componentDefinitions = {
 	'products.refill_date': (value: string) => ({
@@ -50,7 +59,8 @@ const componentDefinitions = {
 	'wheel': customCells.boolean,
 	'paint': customCells.boolean,
 	'hydrostatic_pressure_test': customCells.boolean,
-	
+	'photo_url': customCells.photo,
+
 };
 
 const currentComponentData = computed(() => {

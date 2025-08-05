@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { headerLabels } from '~/constants';
+
 const tabledata = ref([]);
 const expandedRows = ref([]);
 const { error } = await useFetch('/api/inspections', {
@@ -104,10 +105,10 @@ function getValueByPath(obj, path) {
 	<div>
 		<PageHeader title="2024 Nisan ayina ait kayitlar listeleniyor">
 			<DatePicker
-					v-model="date"
-					view="month"
-					date-format="mm/yy"
-				/>
+				v-model="date"
+				view="month"
+				date-format="mm/yy"
+			/>
 		</PageHeader>
 		<!-- <div class="pb-6">
 			<div class="flex items-center space-x-4">
@@ -121,12 +122,18 @@ function getValueByPath(obj, path) {
 				</h2>
 			</div>
 		</div> -->
-<EmptyState v-if="!tabledata.length">
-        <template #title>Bakım Kayıdı bulunamadı</template>
-        <template #subtitle>Seçilen tarihler için bakım kayıdı bulunamadı.</template>
-
-      </EmptyState>
-		<div v-else class="overflow-x-auto">
+		<EmptyState v-if="!tabledata.length">
+			<template #title>
+				Bakım Kayıdı bulunamadı
+			</template>
+			<template #subtitle>
+				Seçilen tarihler için bakım kayıdı bulunamadı.
+			</template>
+		</EmptyState>
+		<div
+			v-else
+			class="overflow-x-auto"
+		>
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"

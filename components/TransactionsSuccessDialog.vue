@@ -14,6 +14,12 @@ const isVisible = ref(false);
 const countDown = ref(5);
 let timer: ReturnType<typeof setInterval> | null = null;
 
+watch(() => props.visible, (newVal) => {
+	isVisible.value = newVal;
+}, {
+	immediate: true,
+});
+
 // Watch for visibility changes to start countdown
 watch(isVisible, (newVal) => {
 	if (newVal) {
@@ -71,14 +77,15 @@ onUnmounted(() => {
 				{{ title }}
 			</h3>
 			<p class="text-sm text-gray-600 mb-6">
-				{{ countDown }} saniye içerisinde anasayfaya yönlendirileceksiniz.
+				<span class="font-semibold">{{ countDown }}</span> saniye içerisinde anasayfaya yönlendirileceksiniz.
 			</p>
 		</div>
 		<template #footer>
 			<Button
 				label="Anasayfaya dön"
-				severity="secondary"
+				severity="primary"
 				size="large"
+				class="mx-auto"
 				@click="isVisible = false; router.push('/mobile')"
 			/>
 		</template>

@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import imageCompression from 'browser-image-compression';
 import type { FileUploadSelectEvent } from 'primevue';
-import { headerLabels, fillLabels } from '~/constants';
+import { headerLabels, fillLabels, imageCompressionOptions } from '~/constants';
 
 definePageMeta({
 	layout: 'mobile',
 });
+
 const route = useRoute();
+const supabase = useSupabaseClient();
 const toast = useToast();
-const imageCompressionOptions = {
-	maxSizeMB: 0.5,
-	maxWidthOrHeight: 800,
-	useWebWorker: true,
-};
+
+const activeTab = ref('0');
 const compressedImage = ref<File | null>(null);
 const inspectionFormLoading = ref(false);
 const drawersShow = reactive({
@@ -89,8 +88,6 @@ async function onFileSelect(event: FileUploadSelectEvent) {
 	try {
 		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
 		compressedImage.value = compressedFile as File;
-		console.log('compressedFile instanceof Blob', compressedFile instanceof Blob); // true
-		console.log(`compressedFile size ${compressedFile.size / 1024 / 1024} MB`); // smaller than maxSizeMB
 	}
 	catch (error) {
 		console.warn(error);
@@ -100,16 +97,22 @@ async function onFileSelect(event: FileUploadSelectEvent) {
 async function saveInspectionForm() {
 	const result = controlFields.every(field => inspectionForm[field as keyof typeof inspectionForm] === true);
 	inspectionFormLoading.value = true;
-	console.log('compressedImage.value:', compressedImage.value);
 	try {
-		if (compressedImage.value) {
-			const uploadImageResponse = await $fetch('/api/upload/inspection-photo', {
-				method: 'POST',
-				body: compressedImage.value,
-			});
+		const token = (await supabase.auth.getSession()).data.session?.access_token;
 
-			console.log('uploadImageResponse:', uploadImageResponse);
-			// inspectionForm.photo_url = uploadImageResponse?.url || null;
+		if (compressedImage.value) {
+			const formData = new FormData();
+			formData.append('file', compressedImage.value);
+
+			const uploadImageResponse = await fetch('/api/upload/inspection-photo', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+				body: formData,
+			});
+			const result = await uploadImageResponse.json();
+			inspectionForm.photo_url = result?.signedUrl || null;
 		}
 		const response = await $fetch('/api/inspections', {
 			method: 'POST',
@@ -120,13 +123,26 @@ async function saveInspectionForm() {
 			},
 		});
 
+		const userId = (await supabase.auth.getUser()).data.user?.id;
+
+		$fetch('/api/transactions', {
+			method: 'POST',
+			body: {
+				type: 'bakım',
+				user: userId,
+				product_id: data.value?.product.id,
+				details: response.id,
+			},
+		});
+
 		if (response) {
 			inspectionFormLoading.value = false;
 			if (result) {
 				drawersShow.success = true;
+				return;
 			}
 			else {
-				drawersShow.change = true;
+				drawersShow.needChange = true;
 			}
 		}
 	}
@@ -138,10 +154,6 @@ async function saveInspectionForm() {
 			life: 2000,
 		});
 	}
-	// finally {
-	// 	inspectionFormLoading.value = false;
-	// 	router.push('/mobile');
-	// }
 }
 
 async function saveFillRecord() {
@@ -152,17 +164,22 @@ async function saveFillRecord() {
 			body: {
 				...fillForm,
 				product_id: data.value?.product.id,
-				// location_id: data.value?.location.location_id,
 			},
 		});
 
 		if (response) {
-			// toast.add({
-			// 	severity: 'success',
-			// 	summary: 'Başarılı',
-			// 	detail: 'Dolum kaydı başarıyla oluşturuldu.',
-			// 	life: 2000,
-			// });
+			const userId = (await supabase.auth.getUser()).data.user?.id;
+
+			$fetch('/api/transactions', {
+				method: 'POST',
+				body: {
+					type: 'dolum',
+					user: userId,
+					product_id: data.value?.product.id,
+					details: response.id,
+				},
+			});
+			inspectionFormLoading.value = false;
 			drawersShow.success = true;
 		}
 	}
@@ -175,10 +192,6 @@ async function saveFillRecord() {
 			life: 2000,
 		});
 	}
-	// finally {
-	// 	inspectionFormLoading.value = false;
-	// 	router.push('/mobile');
-	// }
 }
 </script>
 
@@ -198,7 +211,10 @@ async function saveFillRecord() {
 					@click="$router.push('/mobile')"
 				/>
 			</header>
-			<div class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex">
+			<div
+				v-if="data?.product"
+				class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex"
+			>
 				<img
 					src="https://www.capitalsolutions.pk/wp-content/uploads/2021/06/DCP6Kg-ABC-2.jpg"
 					alt="fire-estinguisher"
@@ -206,30 +222,30 @@ async function saveFillRecord() {
 				>
 				<div class="pt-2 px-2 flex-1 flex flex-col">
 					<h4 class="text-sm font-semibold leading-3">
-						12 KG
+						{{ data.product.unit }} KG
 					</h4>
 					<h3 class="text-lg font-semibold truncate">
-						Karbondioksit gazli
+						{{ data.product.model_type }}
 					</h3>
 
 					<div class="flex items-center space-x-1">
 						<span class="size-1.5 rounded-full bg-green-600" />
-						<span class="text-xs text-slate-500">AKTİF</span>
+						<span class="text-xs text-slate-500 uppercase">{{ data.product.current_status }}</span>
 					</div>
 					<div class="flex space-x-1 mt-4">
 						<i class="ri-map-pin-line -mt-0.5" />
-						<span class="text-sm">MOBİL EKİPMAN BAKIM	, YEDEK , YEDEK225452</span>
+						<span class="text-sm uppercase">{{ data.location.room }}	, {{ data.location.building_id.name }} </span>
 					</div>
 					<div class="flex space-x-1 mt-2">
 						<i class="ri-calendar-line -mt-0.5" />
 						<p class="text-sm text-gray-700">
-							Dolum tarihi: <b>2027-07-05</b>, Hidrastatik test tarihi: <b>2027-07-05</b>
+							Dolum tarihi: <b>{{ data.product.refill_date }}</b>, Hidrastatik test tarihi: <b>{{ data.product.hydrostatic_test_date }}</b>
 						</p>
 					</div>
 				</div>
 			</div>
 			<div class="card">
-				<Tabs value="0">
+				<Tabs v-model:value="activeTab">
 					<TabList>
 						<Tab
 							value="0"
@@ -468,15 +484,16 @@ async function saveFillRecord() {
 			<template #footer>
 				<Button
 					label="Degisim kaydi olustur"
-					severity="secondary"
+					severity="primary"
 					size="large"
+					class="mx-auto"
 					@click="drawersShow.needChange = false; drawersShow.change = true"
 				/>
 			</template>
 		</Dialog>
 		<TransactionsSuccessDialog
 			:visible="drawersShow.success"
-			title="Bakım kaydı başarıyla oluşturuldu!"
+			:title="activeTab === '0' ? 'Bakim kaydi basariyla olusturuldu!' : 'Dolum kaydi basariyla olusturuldu!'"
 			@close="drawersShow.success = false"
 		/>
 	</div>

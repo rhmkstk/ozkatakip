@@ -10,14 +10,15 @@ const logout = async () => {
 		await navigateTo('/login');
 	}
 };
+
 const menuItems = [
 	{ name: 'Bakım kayıtları', path: '/', icon: 'ri-booklet-line' },
-	{ name: 'Dolum kayıtları', path: '/fill-records', icon: 'ri-booklet-line' },
+	{ name: 'Dolum kayıtları', path: '/fill-records', icon: 'ri-book-open-line' },
 	{ name: 'İşlem geçmişi', path: '/history', icon: 'ri-history-fill' },
 	{ name: 'Planlama', path: '/planning', icon: 'ri-calendar-todo-line' },
 	{ name: 'YSC genel liste', path: '/products', icon: 'ri-fire-line' },
-	{ name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line' },
-	{ name: 'YSC Veri girişi', path: '/insert-data', icon: 'ri-group-line' },
+	// { name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line' },
+	{ name: 'YSC Veri girişi', path: '/insert-data', icon: 'ri-booklet-line' },
 	{ name: 'Mobil', path: '/mobile', icon: 'ri-cellphone-line' },
 ];
 
@@ -37,7 +38,7 @@ const sidebarExpanded = ref(true);
 	<div class="flex w-full max-w-full h-screen bg-slate-100">
 		<div
 			v-show="sidebarExpanded"
-			class="sidebar py-14 px-6 text-gray-950 flex flex-col"
+			class="sidebar py-14 px-12 text-gray-950 flex flex-col"
 		>
 			<div class="border-b pb-6 border-slate-300 flex justify-between">
 				<div class="flex items-center space-x-3">
