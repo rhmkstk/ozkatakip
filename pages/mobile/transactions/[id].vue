@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import { headerLabels } from '~/constants';
+import imageCompression from 'browser-image-compression';
+import type { FileUploadSelectEvent } from 'primevue';
+import { headerLabels, fillLabels, imageCompressionOptions } from '~/constants';
 
 definePageMeta({
 	layout: 'mobile',
 });
 
-const router = useRouter();
 const route = useRoute();
+const supabase = useSupabaseClient();
 const toast = useToast();
-const inspectionFormLoading = ref(false);
-const fillRecordLoading = ref(false);
-const showInspectionAlert = ref(false);
+
+const activeTab = ref('0');
 const lastInspectionDate = ref<Date | null>(null);
+const showInspectionAlert = ref(false);
+const compressedImage = ref<File | null>(null);
+const inspectionFormLoading = ref(false);
 const drawersShow = reactive({
-	fill: false,
 	change: false,
+	success: false,
+	needChange: false,
 });
 
 const inspectionForm = reactive({
@@ -34,6 +39,17 @@ const inspectionForm = reactive({
 	user_id: null,
 });
 
+const fillForm = reactive({
+	filling: false,
+	trigger_valve: false,
+	manometer: false,
+	hose_and_nozzle: false,
+	wheel: false,
+	paint: false,
+	hydrostatic_pressure_test: false,
+	user_id: null,
+});
+
 const controlFields = [
 	'position',
 	'body',
@@ -45,20 +61,6 @@ const controlFields = [
 	'pressure',
 	'working_mechanism',
 ];
-onMounted(async () => {
-	const id = route.params.id as string;
-	console.log('Mounted with id:', id);
-	const data = await $fetch('/api/inspections/getByLocationId', {
-		params: { location_id: id },
-	});
-	console.log('Fetched inspection data:', data[0].created_at);
-	lastInspectionDate.value = data[0].created_at;
-	if (lastInspectionDate.value) {
-		isInLast30Days(lastInspectionDate.value)
-			? showInspectionAlert.value = true
-			: showInspectionAlert.value = false;
-	}
-});
 
 const { data, status } = await useAsyncData(
 	'product',
@@ -66,7 +68,6 @@ const { data, status } = await useAsyncData(
 		const location = await $fetch('/api/locations/getByLocationId', {
 			params: { location_id: route.params.id },
 		});
-		console.log('location data:', location);
 
 		if (!location) {
 			throw new Error('Location not found');
@@ -95,109 +96,115 @@ const inspectionAlert = computed(() => {
 	return	`  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
 });
 
-const summaryCardData = computed(() => {
-	if (data.value?.product && data.value?.location) {
-		return [
-			{
-				key: 'YSC no',
-				value: data.value.location.location_id,
-			},
-			{
-				key: 'Modeli',
-				value: data.value.product.model_type,
-			},
-			{
-				key: 'Bina',
-				value: data.value.location.building_id.name,
-			},
-			{
-				key: 'Oda',
-				value: data.value.location.room,
-			},
-		];
-	}
-	return [];
-});
+async function onFileSelect(event: FileUploadSelectEvent) {
+	const imageFile = event.files[0];
 
-const fillRecordSummaryCardData = computed(() => {
-	if (data.value?.product && data.value?.location) {
-		return [
-			{
-				key: 'YSC no',
-				value: data.value.location.location_id,
-			},
-			{
-				key: 'Modeli',
-				value: data.value.product.model_type,
-			},
-			{
-				key: 'Bina',
-				value: data.value.location.building_id.name,
-			},
-			{
-				key: 'Oda',
-				value: data.value.location.room,
-			},
-			{
-				key: 'Dolum tarihi',
-				value: new Date(data.value.product.refill_date).toLocaleDateString('tr-TR', {
-					year: 'numeric',
-					month: '2-digit',
-					day: '2-digit',
-				}),
-			},
-		];
-	}
-	return [];
-});
-
-function isInLast30Days(dateString: Date): boolean {
-	const date = new Date(dateString);
-	const now = new Date();
-
-	// Calculate the timestamp for 30 days ago
-	const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-	// Check if date is after or equal to days30Ago and before or equal to now
-	return date >= days30Ago && date <= now;
-}
-function onFileSelect(event: Event) {
-	const file = event.files[0] as File;
-	const reader = new FileReader();
-
-	reader.onload = async (e) => {
-		const result = e.target?.result;
-		inspectionForm.photo_url = result as string;
-	};
-
-	reader.readAsDataURL(file);
-}
-
-async function saveFillRecord() {
-	fillRecordLoading.value = true;
-	if (!data.value?.product || !data.value?.location) {
-		console.error('Product or location data is missing');
-		fillRecordLoading.value = false;
-		return;
-	}
 	try {
-		const response = await $fetch('/api/products', {
-			method: 'PUT',
+		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
+		compressedImage.value = compressedFile as File;
+	}
+	catch (error) {
+		console.warn(error);
+	}
+}
+
+async function saveInspectionForm() {
+	const result = controlFields.every(field => inspectionForm[field as keyof typeof inspectionForm] === true);
+	inspectionFormLoading.value = true;
+	try {
+		const token = (await supabase.auth.getSession()).data.session?.access_token;
+
+		if (compressedImage.value) {
+			const formData = new FormData();
+			formData.append('file', compressedImage.value);
+
+			const uploadImageResponse = await fetch('/api/upload/inspection-photo', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+				body: formData,
+			});
+			const result = await uploadImageResponse.json();
+			inspectionForm.photo_url = result?.signedUrl || null;
+		}
+		const response = await $fetch('/api/inspections', {
+			method: 'POST',
 			body: {
-				...data.value.product,
-				refill_date: new Date(),
-				next_refill_date: addYearToDate(new Date(), data.value.product.refill_period),
+				...inspectionForm,
+				fire_extinguisher_id: data.value?.product.id,
+				result,
+			},
+		});
+
+		const userId = (await supabase.auth.getUser()).data.user?.id;
+
+		$fetch('/api/transactions', {
+			method: 'POST',
+			body: {
+				type: 'bakım',
+				user: userId,
+				product_id: data.value?.product.id,
+				details: response.id,
 			},
 		});
 
 		if (response) {
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Dolum kaydı başarıyla oluşturuldu.',
-				life: 2000,
+			inspectionFormLoading.value = false;
+			if (result) {
+				drawersShow.success = true;
+				return;
+			}
+			else {
+				drawersShow.needChange = true;
+			}
+		}
+	}
+	catch {
+		toast.add({
+			severity: 'error',
+			summary: 'Hata',
+			detail: 'Bakim kaydı oluşturulurken bir hata oluştu.',
+			life: 2000,
+		});
+	}
+}
+
+async function saveFillRecord() {
+	const isAnyItemSelected = Object.values(fillForm).some(value => typeof value === 'boolean' && value === true);
+	if (!isAnyItemSelected) {
+		toast.add({
+			severity: 'warn',
+			summary: 'Uyarı',
+			detail: 'Dolum kaydı oluşturmak için en az bir alan seçilmelidir.',
+			life: 2000,
+		});
+		return;
+	}
+	inspectionFormLoading.value = true;
+	try {
+		const response = await $fetch('/api/fill', {
+			method: 'POST',
+			body: {
+				...fillForm,
+				product_id: data.value?.product.id,
+			},
+		});
+
+		if (response) {
+			const userId = (await supabase.auth.getUser()).data.user?.id;
+
+			$fetch('/api/transactions', {
+				method: 'POST',
+				body: {
+					type: 'dolum',
+					user: userId,
+					product_id: data.value?.product.id,
+					details: response.id,
+				},
 			});
-			drawersShow.fill = false;
+			inspectionFormLoading.value = false;
+			drawersShow.success = true;
 		}
 	}
 	catch (error) {
@@ -209,57 +216,30 @@ async function saveFillRecord() {
 			life: 2000,
 		});
 	}
-	finally {
-		fillRecordLoading.value = false;
-		drawersShow.fill = false;
-	}
 }
 
-async function saveInspectionForm() {
-	const result = controlFields.every(field => inspectionForm[field] === true);
-	inspectionFormLoading.value = true;
-	try {
-		const response = await $fetch('/api/inspections', {
-			method: 'POST',
-			body: {
-				...inspectionForm,
-				fire_extinguisher_id: data.value?.product.id,
-				result,
-			},
-		});
+function isInLast30Days(dateString: Date): boolean {
+	const date = new Date(dateString);
+	const now = new Date();
 
-		if (response) {
-			// await $fetch('/api/transactions', {
-			// 	method: 'POST',
-			// 	body: {
-			// 		type: 'bakım',
-			// 		product_id: data.value?.product.id,
-			// 		details: '',
-			// 	},
-			// });
+	// Calculate the timestamp for 30 days ago
+	const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Bakim kaydı başarıyla oluşturuldu.',
-				life: 2000,
-			});
-			drawersShow.fill = false;
-		}
-	}
-	catch {
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: 'Bakim kaydı oluşturulurken bir hata oluştu.',
-			life: 2000,
-		});
-	}
-	finally {
-		inspectionFormLoading.value = false;
-		router.push('/mobile');
-	}
+	// Check if date is after or equal to days30Ago and before or equal to now
+	return date >= days30Ago && date <= now;
 }
+
+onMounted(async () => {
+	const id = route.params.id as string;
+
+	const data = await $fetch('/api/inspections/getByLocationId', {
+		params: { location_id: id },
+	});
+
+	if (isInLast30Days(data[0].created_at)) {
+		showInspectionAlert.value = true;
+	}
+});
 </script>
 
 <template>
@@ -277,215 +257,298 @@ async function saveInspectionForm() {
 					aria-label="go back"
 					@click="$router.push('/mobile')"
 				/>
-				<Button
-					class="ml-auto"
-					icon="ri-battery-charge-line"
-					label="Dolum"
-					severity="contrast"
-					@click="drawersShow.fill = true"
-				/>
-				<Button
-					icon="ri-repeat-line"
-					label="Degisim"
-					severity="contrast"
-					@click="drawersShow.change = true"
-				/>
 			</header>
-			<ProductSummaryCard
-				v-if="data?.product && data?.location"
-				:data="summaryCardData"
-			/>
+			<div
+				v-if="data?.product"
+				class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex"
+			>
+				<img
+					src="https://www.capitalsolutions.pk/wp-content/uploads/2021/06/DCP6Kg-ABC-2.jpg"
+					alt="fire-estinguisher"
+					class="object-cover max-w-full w-1/3 h-[200px] rounded"
+				>
+				<div class="pt-2 px-2 flex-1 flex flex-col">
+					<h4 class="text-sm font-semibold leading-3">
+						{{ data.product.unit }} KG
+					</h4>
+					<h3 class="text-lg font-semibold truncate">
+						{{ data.product.model_type }}
+					</h3>
 
+					<div class="flex items-center space-x-1">
+						<span class="size-1.5 rounded-full bg-green-600" />
+						<span class="text-xs text-slate-500 uppercase">{{ data.product.current_status }}</span>
+					</div>
+					<div class="flex space-x-1 mt-4">
+						<i class="ri-map-pin-line -mt-0.5" />
+						<span class="text-sm uppercase">{{ data.location.room }}	, {{ data.location.building_id.name }} </span>
+					</div>
+					<div class="flex space-x-1 mt-2">
+						<i class="ri-calendar-line -mt-0.5" />
+						<p class="text-sm text-gray-700">
+							Dolum tarihi: <b>{{ data.product.refill_date }}</b>, Hidrastatik test tarihi: <b>{{ data.product.hydrostatic_test_date }}</b>
+						</p>
+					</div>
+				</div>
+			</div>
 			<Message
 				v-if="showInspectionAlert"
 				severity="warn"
-				class="mt-4"
+				class="my-4"
 			>
 				{{ inspectionAlert }}
 			</Message>
-			<!-- <div
-				v-if="showInspectionAlert"
-				class="bg-yellow-100 text-yellow-800 p-4 rounded-lg mb-4 mt-4"
-			>
-				<p class="text-sm">
-					{{ inspectionAlert }}
-				</p>
-			</div> -->
-			<div class="mt-auto pb-4">
-				<h5 class="text-3xl font-semibold mt-8">
-					Bakim kayit formu
-				</h5>
-				<form
-					class="py-8 space-y-4"
-					@submit.prevent
-				>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.position"
-							input-id="position"
-							binary
-						/>
-						<label for="position"> {{ headerLabels.position }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.body"
-							input-id="body"
-							binary
-						/>
-						<label for="body"> {{ headerLabels.body }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.control_card"
-							input-id="control_card"
-							binary
-						/>
-						<label for="control_card"> {{ headerLabels.control_card }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.hose_and_nozzle"
-							input-id="hose_and_nozzle"
-							binary
-						/>
-						<label for="hose_and_nozzle"> {{ headerLabels.hoze_and_nozzle }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.instruction_and_label"
-							input-id="instruction_and_label"
-							binary
-						/>
-						<label for="instruction_and_label"> {{ headerLabels.instruction_and_label }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.mass"
-							input-id="mass"
-							binary
-						/>
-						<label for="mass"> {{ headerLabels.mass }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.pin_and_seal"
-							input-id="pin_and_seal"
-							binary
-						/>
-						<label for="pin_and_seal"> {{ headerLabels.pin_and_seal }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.pressure"
-							input-id="pressure"
-							binary
-						/>
-						<label for="pressure"> {{ headerLabels.pressure }} </label>
-					</div>
-					<div class="flex items-center gap-2">
-						<Checkbox
-							v-model="inspectionForm.working_mechanism"
-							input-id="working_mechanism"
-							binary
-						/>
-						<label for="working_mechanism"> {{ headerLabels.working_mechanism }} </label>
-					</div>
+			<div class="card">
+				<Tabs v-model:value="activeTab">
+					<TabList>
+						<Tab
+							value="0"
+							class="w-1/2"
+						>
+							Bakım kayıt
+						</Tab>
+						<Tab
+							value="1"
+							class="w-1/2"
+						>
+							Dolum kayıt
+						</Tab>
+					</TabList>
+					<TabPanels>
+						<TabPanel value="0">
+							<form
+								class="space-y-4 m-0"
+								@submit.prevent
+							>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.position"
+										input-id="position"
+										binary
+									/>
+									<label for="position"> {{ headerLabels.position }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.body"
+										input-id="body"
+										binary
+									/>
+									<label for="body"> {{ headerLabels.body }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.control_card"
+										input-id="control_card"
+										binary
+									/>
+									<label for="control_card"> {{ headerLabels.control_card }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.hose_and_nozzle"
+										input-id="hose_and_nozzle"
+										binary
+									/>
+									<label for="hose_and_nozzle"> {{ headerLabels.hoze_and_nozzle }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.instruction_and_label"
+										input-id="instruction_and_label"
+										binary
+									/>
+									<label for="instruction_and_label"> {{ headerLabels.instruction_and_label }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.mass"
+										input-id="mass"
+										binary
+									/>
+									<label for="mass"> {{ headerLabels.mass }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.pin_and_seal"
+										input-id="pin_and_seal"
+										binary
+									/>
+									<label for="pin_and_seal"> {{ headerLabels.pin_and_seal }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.pressure"
+										input-id="pressure"
+										binary
+									/>
+									<label for="pressure"> {{ headerLabels.pressure }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="inspectionForm.working_mechanism"
+										input-id="working_mechanism"
+										binary
+									/>
+									<label for="working_mechanism"> {{ headerLabels.working_mechanism }} </label>
+								</div>
 
-					<div
-						class="flex flex-col gap-2"
-					>
-						<label for="note"> Not </label>
-						<Textarea
-							v-model="inspectionForm.note"
-							rows="3"
-						/>
-					</div>
-					<div class="flex flex-col items-start gap-2">
-						<FileUpload
-							mode="basic"
-							custom-upload
-							auto
-							severity="secondary"
-							accept="image/*"
-							class="p-button-outlined"
-							choose-label="Resim sec"
-							@select="onFileSelect"
-						>
-							<template #chooseicon>
-								<i class="ri-camera-line" />
-							</template>
-						</FileUpload>
-						<img
-							v-if="inspectionForm.photo_url"
-							:src="inspectionForm.photo_url"
-							alt="Image"
-							class="shadow-md rounded-xl w-64"
-						>
-					</div>
-				</form>
-				<Button
-					size="large"
-					class="w-full"
-					label="Bakim kaydi olustur"
-					@click="saveInspectionForm"
-				/>
+								<div
+									class="flex flex-col gap-2"
+								>
+									<label for="note"> Not </label>
+									<Textarea
+										v-model="inspectionForm.note"
+										rows="3"
+									/>
+								</div>
+								<div class="flex flex-col items-start gap-2">
+									<FileUpload
+										mode="basic"
+										custom-upload
+										accept="image/*"
+										class="p-button-outlined"
+										choose-label="Resim sec"
+										@select="onFileSelect"
+									>
+										<template #chooseicon>
+											<i class="ri-camera-line" />
+										</template>
+									</FileUpload>
+									<img
+										v-if="inspectionForm.photo_url"
+										:src="inspectionForm.photo_url"
+										alt="Image"
+										class="shadow-md rounded-xl w-64"
+									>
+								</div>
+								<Button
+									class="w-full mt-4"
+									label="Bakim kaydi olustur"
+									@click="saveInspectionForm"
+								/>
+							</form>
+						</TabPanel>
+						<TabPanel value="1">
+							<form
+								class="space-y-4 m-0"
+								@submit.prevent
+							>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="fillForm.filling"
+										input-id="filling"
+										binary
+									/>
+									<label for="filling"> {{ fillLabels.filling }}  </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="fillForm.trigger_valve"
+										input-id="triggger-valve"
+										binary
+									/>
+									<label for="triggger-valve"> {{ fillLabels.trigger_valve }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="fillForm.manometer"
+										input-id="manometer"
+										binary
+									/>
+									<label for="manometer"> {{ fillLabels.manometer }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="fillForm.hose_and_nozzle"
+										input-id="hose-nozzle"
+										binary
+									/>
+									<label for="hose-nozzle"> {{ fillLabels.hose_and_nozzle }} </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="fillForm.wheel"
+										input-id="wheel"
+										binary
+									/>
+									<label for="wheel"> {{ fillLabels.wheel }}  </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="fillForm.paint"
+										input-id="wet-paint"
+										binary
+									/>
+									<label for="wet-paint"> {{ fillLabels.paint }}  </label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox
+										v-model="fillForm.hydrostatic_pressure_test"
+										input-id="hydrostatic-pressure-test"
+										binary
+									/>
+									<label for="hydrostatic-pressure-test"> {{ fillLabels.hydrostatic_pressure_test }}  </label>
+								</div>
+								<Button
+									class="w-full mt-4"
+									label="Dolum kaydi olustur"
+									@click="saveFillRecord"
+								/>
+							</form>
+						</TabPanel>
+					</TabPanels>
+				</Tabs>
 			</div>
 		</div>
 		<Drawer
-			v-model:visible="drawersShow.fill"
-			header="Dolum kaydi"
-			position="bottom"
-			style="height: auto"
-		>
-			<div class="pt-8 border-t border-slate-200">
-				<BaseLoader v-if="fillRecordLoading" />
-				<ProductSummaryCard :data="fillRecordSummaryCardData" />
-				<p class="mt-10 mb-16 text-lg font-semibold">
-					Dolum tarihi {{ new Date().toLocaleDateString('tr-TR', {
-						year: 'numeric',
-						month: '2-digit',
-						day: '2-digit',
-					}) }}, bir sonraki dolum tarihi {{
-						addYearToDate(new Date(), data?.product.refill_period).toLocaleDateString('tr-TR', {
-							year: 'numeric',
-							month: '2-digit',
-							day: '2-digit',
-						})
-					}} olarak kaydedilecek, onayliyor musunuz ?
-				</p>
-				<footer class="flex justify-end px-4 py-6 space-x-4 -m-5 border-t border-slate-200">
-					<Button
-						label="Vazgeç"
-						icon="ri-close-line"
-						severity="secondary"
-						size="large"
-						@click="drawersShow.fill = false"
-					/>
-					<Button
-						label="Kaydet"
-						icon="ri-save-line"
-						severity="primary"
-						size="large"
-						@click="saveFillRecord"
-					/>
-				</footer>
-			</div>
-		</Drawer>
-
-		<Drawer
 			v-model:visible="drawersShow.change"
 			header="Degisim"
-			position="bottom"
+			position="full"
 			style="height: auto"
 		>
-			<ProductChange
+			<InspectionStepper
 				:current-product-data="{
 					product: data?.product,
 					location: data?.location,
 				}"
 				@close="drawersShow.change = false"
 			/>
-		</drawer>
+		</Drawer>
+		<Dialog
+			v-model:visible="drawersShow.needChange"
+			:show-header="false"
+			:modal="true"
+		>
+			<div class="flex flex-col items-center pt-4">
+				<div class="flex items-center space-x-1">
+					<h3 class="text-lg font-semibold">
+						Bakim kaydi basarıyla olusturuldu!
+					</h3>
+					<i class="ri-check-line text-green-600 text-4xl" />
+				</div>
+
+				<Message
+					severity="warn"
+					class="my-6"
+				>
+					YSC kullanima uygun olmadigi icin degisim gerektirmektedir. Lütfen degisim kaydi olusturunuz!
+				</Message>
+			</div>
+			<template #footer>
+				<Button
+					label="Degisim kaydi olustur"
+					severity="primary"
+					size="large"
+					class="mx-auto"
+					@click="drawersShow.needChange = false; drawersShow.change = true"
+				/>
+			</template>
+		</Dialog>
+		<TransactionsSuccessDialog
+			:visible="drawersShow.success"
+			:title="activeTab === '0' ? 'Bakim kaydi basariyla olusturuldu!' : 'Dolum kaydi basariyla olusturuldu!'"
+			@close="drawersShow.success = false"
+		/>
 	</div>
 </template>

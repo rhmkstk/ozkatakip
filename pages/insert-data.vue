@@ -1,20 +1,9 @@
 <script setup lang="ts">
-import { headerLabels } from '@/constants';
+import { headerLabels, fireExtinguishers } from '@/constants';
 import type { TablesInsert } from '~/types/database.types';
-
-type ProductKinds = 'kkt' | 'co2' | 'bio';
-type KindList = {
-	name: string;
-	value: ProductKinds;
-}[];
 
 const HYDROSTATIC_TEST_PERIOD = 4; // years
 const toast = useToast();
-const kindList: KindList = [
-	{ name: 'Kuru kimyevi tozlu', value: 'kkt' },
-	{ name: 'Karbondioksit gazli', value: 'co2' },
-	{ name: 'Bioversal kopuklu', value: 'bio' },
-];
 const productStatusOptions = [
 	{ label: 'Aktif', value: 'aktif' },
 	{ label: 'Arızalı', value: 'arızalı' },
@@ -30,16 +19,11 @@ const newBuilding = ref({
 });
 const buildings = ref([]);
 const selectedBuilding = ref<TablesInsert<'locations'> | null>(null);
-const selectedKind = ref<{ name: string; value: ProductKinds }>({
-	name: kindList[0].name,
-	value: kindList[0].value,
-});
 
 const { error, refresh: refreshBuildings } = await useFetch('/api/location-buildings', {
 	onResponse({ response }) {
 		if (response._data) {
 			buildings.value = response._data;
-			console.log('Buildings fetched:', buildings.value);
 		}
 		else {
 			console.error('Error fetching data:', error);
@@ -61,7 +45,6 @@ const form = reactive<{ product: TablesInsert<'products'>; location: TablesInser
 		next_hydrostatic_test_date: null,
 		current_status: 'aktif',
 		location: null,
-		pressure_source: 'Azot(N)',
 	},
 	location: {
 		room: '',
@@ -70,32 +53,11 @@ const form = reactive<{ product: TablesInsert<'products'>; location: TablesInser
 	},
 });
 
-const staticInfos = {
-	kkt: {
-		pressure_source: 'Azot(N)',
-		manometer_scale_bar: '28',
-		test_pressure_bar: '27',
-		safety_valve_setting_pressure_bar: '24 - 27',
-		working_pressure_bar: '17 - 18',
-		working_temperature_celsius: '-30 / +60',
-	},
-	co2: {
-		pressure_source: 'Karbondioksit(CO2)',
-		manometer_scale_bar: null,
-		test_pressure_bar: '250',
-		safety_valve_setting_pressure_bar: '190',
-		working_pressure_bar: '150',
-		working_temperature_celsius: '-30 / +60',
-	},
-	bio: {
-		pressure_source: 'Azot(N)',
-		manometer_scale_bar: '28',
-		test_pressure_bar: '27',
-		safety_valve_setting_pressure_bar: '24 - 27',
-		working_pressure_bar: '17 - 18',
-		working_temperature_celsius: '-20 / +60',
-	},
-};
+const fireExtinguisherWeightOptions = computed(() => {
+	if (!form.product.model_type) return [];
+	const item = fireExtinguishers.find(f => f.name === form.product.model_type);
+	return item ? item.weightOptions : [];
+});
 
 const resetForm = () => {
 	form.product = {
@@ -118,11 +80,9 @@ const resetForm = () => {
 		location_id: '',
 		building_id: 0,
 	};
-	selectedKind.value = kindList[0];
 };
 
 const saveProduct = async () => {
-	console.log('Selected kind:', { ...form.product });
 	try {
 		loading.value = true;
 		const locationResponse = await $fetch('/api/locations', {
@@ -135,19 +95,18 @@ const saveProduct = async () => {
 		});
 
 		if (locationResponse.id) {
+			const item = fireExtinguishers.find(f => f.name === form.product.model_type);
 			const year = form.product.manufacture_year.getFullYear();
 			const res = await $fetch('/api/products', {
 				method: 'POST',
 				body: {
-					...staticInfos[selectedKind.value.value],
 					...form.product,
+					...item?.tecnicDetails,
 					location: locationResponse.id,
-					model_type: selectedKind.value.name,
 					manufacture_year: new Date(`${year}-01-01`),
 				},
 			});
 
-			console.log('Product saved:', res);
 			toast.add({
 				severity: 'success',
 				summary: 'Başarılı',
@@ -164,12 +123,10 @@ const saveProduct = async () => {
 			detail: 'YSC kaydedilirken bir hata oluştu.',
 			life: 2000,
 		});
-		// window.location.reload();
 	}
 	finally {
-		console.log('Form resetleniyor!!');
 		loading.value = false;
-		// window.location.reload();
+
 		resetForm();
 	}
 };
@@ -276,102 +233,24 @@ watch(() => form.product.hydrostatic_test_date, (newDate) => {
 				</div>
 				<div class="form-row">
 					<div class="form-item">
-						<label for="product-kind">YSC tipi</label>
+						<label for="product-kind">{{ headerLabels.model_type }}</label>
 						<Select
-							v-model="selectedKind"
-							:options="kindList"
+							v-model="form.product.model_type"
+							:options="fireExtinguishers"
 							option-label="name"
+							option-value="name"
 							placeholder="Tipini seçin"
 						/>
 					</div>
 					<div class="form-item">
 						<label for="unit">{{ headerLabels.unit }}</label>
-						<InputText
-							id="unit"
+						<Select
 							v-model="form.product.unit"
+							:options="fireExtinguisherWeightOptions"
+							placeholder="Agirlik seçin"
 						/>
 					</div>
-					<!-- <div class="form-item">
-						<label for="working_pressure_bar">{{
-							headerLabels.model_type
-						}}</label>
-						<InputText
-							id="model_type"
-							v-model="form.product.model_type"
-						/>
-					</div> -->
 				</div>
-				<!-- <div class="form-row">
-					<div class="form-item">
-						<label for="pressure_source">{{
-							headerLabels.pressure_source
-						}}</label>
-						<InputText
-							id="pressure_source"
-							:value="staticInfos[selectedKind.value].pressure_source"
-							readonly
-						/>
-					</div>
-					<div class="form-item">
-						<label for="monometer_scale_bar">{{
-							headerLabels.monometer_scale_bar
-						}}</label>
-						<InputText
-							id="monometer_scale_bar"
-							:value="staticInfos[selectedKind.value].manometer_scale_bar"
-							readonly
-						/>
-					</div>
-				</div> -->
-				<!-- <div class="form-row">
-					<div class="form-item">
-						<label for="test_pressure_bar">{{
-							headerLabels.test_pressure_bar
-						}}</label>
-						<InputText
-							id="test_pressure_bar"
-							:value="staticInfos[selectedKind.value].test_pressure_bar"
-							readonly
-						/>
-					</div>
-					<div class="form-item">
-						<label for="safety_valve_setting_pressure_bar">{{
-							headerLabels.safety_valve_setting_pressure_bar
-						}}</label>
-						<InputText
-							id="safety_valve_setting_pressure_bar"
-							:value="
-								staticInfos[selectedKind.value]
-									.safety_valve_setting_pressure_bar
-							"
-							readonly
-						/>
-					</div>
-				</div> -->
-				<!-- <div class="form-row">
-					<div class="form-item">
-						<label for="working_pressure_bar">{{
-							headerLabels.working_pressure_bar
-						}}</label>
-						<InputText
-							id="working_pressure_bar"
-							:value="staticInfos[selectedKind.value].working_pressure_bar"
-							readonly
-						/>
-					</div>
-					<div class="form-item">
-						<label for="working_temperature_celsius">{{
-							headerLabels.working_temperature_celsius
-						}}</label>
-						<InputText
-							id="working_temperature_celsius"
-							:value="
-								staticInfos[selectedKind.value].working_temperature_celsius
-							"
-							readonly
-						/>
-					</div>
-				</div> -->
 				<div class="form-row">
 					<div class="form-item">
 						<label for="working_pressure_bar">{{ headerLabels.brand }}</label>

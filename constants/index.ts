@@ -1,64 +1,3 @@
-export const fieldMap = {
-	brand: 'MARKASI',
-	model_type: 'MODELİ / TİPİ',
-	serial_number: 'SERİ NO',
-	manufacture_year: 'İMALAT YILI',
-	pressure_source: 'BASINÇ KAYNAĞI',
-	working_pressure_bar: 'ÇALIŞMA BASINCI (BAR)',
-	manometer_scale_bar: 'MANOMETRE SKALA BÜYÜKLÜĞÜ (BAR)',
-	test_pressure_bar: 'TEST BASINCI (BAR)',
-	safety_valve_setting_pressure_bar: 'EMNİYET VALFİ AYAR BASINCI (BAR)',
-	working_temperature_celsius: 'ÇALIŞMA SICAKLIĞI (°C)',
-	location: 'BULUNDUĞU YER / LOKASYON',
-	building_area: 'BULUNDUĞU BİNA / ALAN',
-	refill_period: 'DOLUM PERİYODU',
-	device_no: 'CİHAZ NO',
-	refill_date: 'DOLUM TARİHİ',
-	next_refill_date: 'YENİDEN DOLUM TARİHİ',
-	hydrostatic_test_date: 'HİDROSTATİK TEST TARİHİ',
-	next_hydrostatic_test_date: 'BİR SONRAKİ HİDROSTATİK TEST TARİHİ',
-	test_result: 'TEST SONUCU',
-	position: 'KONUM (1)',
-	instruction_and_label: 'TALİMAT ve ETİKET (2)',
-	pressure: 'BASINÇ (3)',
-	body: 'GÖVDE (4)',
-	working_mechanism: 'ÇALIŞMA MEKANİZMASI (5)',
-	hose_and_nozzle: 'HORTUM ve NOZUL (6)',
-	mass: 'KÜTLE (7)',
-	pin_and_seal: 'PİM ve MÜHÜR (8)',
-	control_card: 'KONTROL KARTI (9)',
-};
-// const exampleData = {
-// 	brand: 'TÜPAŞ',
-// 	model_type: '6 KG ABC KURU KİMYEVİ TOZLU',
-// 	serial_number: 333,
-// 	manufacture_year: '1905-07-11',
-// 	pressure_source: 'AZOT (N)',
-// 	working_pressure_bar: '17-18',
-// 	manometer_scale_bar: 28,
-// 	test_pressure_bar: 27,
-// 	safety_valve_setting_pressure_bar: '24-27',
-// 	working_temperature_celsius: '-30 / +60',
-// 	location: 'ALTINSAR TEKSTİL 3. BÖLGE',
-// 	building_area: 'GÜVENLİK',
-// 	refill_period: 4,
-// 	device_no: '4/1',
-// 	refill_date: '2022-08-31',
-// 	next_refill_date: '2026-08-31',
-// 	hydrostatic_test_date: '2022-08-31',
-// 	next_hydrostatic_test_date: '2026-08-31',
-// 	test_result: 'UYGUN',
-// 	position: 'UYGUN',
-// 	instruction_and_label: 'UYGUN',
-// 	pressure: 'UYGUN',
-// 	body: 'UYGUN',
-// 	working_mechanism: 'UYGUN',
-// 	hose_and_nozzle: 'UYGUN',
-// 	mass: 'UYGUN',
-// 	pin_and_seal: 'UYGUN',
-// 	control_card: 'UYGUN',
-// };
-
 export const headerLabels = {
 	result: 'Sonuç',
 	photo_url: 'Fotoğraf',
@@ -96,4 +35,61 @@ export const headerLabels = {
 	manometer_scale_bar: 'Monometre skala buyuklugu(Bar)',
 };
 
-export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at'];
+export const fillLabels = {
+	filling: 'Dolum İşlemi',
+	trigger_valve: 'Tetik / Vana',
+	manometer: 'Manometre',
+	hose_and_nozzle: 'Hortum / Lans',
+	wheel: 'Tekerlek',
+	paint: 'Yaş Boya',
+	hydrostatic_pressure_test: 'Hidrostatik Basınç Testi',
+};
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url'];
+
+export const fireExtinguishers = [
+	{
+		name: 'Kuru Kimyevi Tozlu',
+		value: 'kkt',
+		weightOptions: ['1 KG', '2 KG', '6 KG', '12 KG', '25 KG', '50 KG'],
+		tecnicDetails: {
+			pressure_source: 'Azot(N)',
+			manometer_scale_bar: '28',
+			test_pressure_bar: '27',
+			safety_valve_setting_pressure_bar: '24 - 27',
+			working_pressure_bar: '17 - 18',
+			working_temperature_celsius: '-30 / +60',
+		},
+	},
+	{
+		name: 'Karbondioksit gazli',
+		value: 'co2',
+		weightOptions: ['5 KG', '10 KG', '30 KG'],
+		tecnicDetails: {
+			pressure_source: 'Karbondioksit(CO2)',
+			manometer_scale_bar: null,
+			test_pressure_bar: '250',
+			safety_valve_setting_pressure_bar: '190',
+			working_pressure_bar: '150',
+			working_temperature_celsius: '-30 / +60',
+		},
+	},
+	{
+		name: 'Bioversal köpüklü',
+		value: 'bio',
+		weightOptions: ['2 LT', '6 LT', '9 LT', '25 LT', '50 LT'],
+		tecnicDetails: {
+			pressure_source: 'Azot(N)',
+			manometer_scale_bar: '28',
+			test_pressure_bar: '27',
+			safety_valve_setting_pressure_bar: '24 - 27',
+			working_pressure_bar: '17 - 18',
+			working_temperature_celsius: '-20 / +60',
+		},
+	},
+];
+
+export const imageCompressionOptions = {
+	maxSizeMB: 0.5,
+	maxWidthOrHeight: 800,
+	useWebWorker: true,
+};

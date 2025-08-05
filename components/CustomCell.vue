@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ZoomImage from './ZoomImage.vue';
+
 type Props = {
 	field: string;
 	value: unknown;
@@ -22,6 +24,14 @@ const customCells = {
 			class: value
 				? 'ri-check-fill text-3xl text-green-600 font-semibold'
 				: 'ri-close-line text-3xl text-red-600 font-semibold',
+		},
+		text: null,
+	}),
+	photo: (value: string) => ({
+		name: ZoomImage,
+		props: {
+			src: value,
+			alt: 'Product Photo',
 		},
 		text: null,
 	}),
@@ -57,6 +67,14 @@ const componentDefinitions = {
 	'pin_and_seal': customCells.boolean,
 	'pressure': customCells.boolean,
 	'working_mechanism': customCells.boolean,
+	'filling': customCells.boolean,
+	'trigger_valve': customCells.boolean,
+	'manometer': customCells.boolean,
+	'wheel': customCells.boolean,
+	'paint': customCells.boolean,
+	'hydrostatic_pressure_test': customCells.boolean,
+	'photo_url': customCells.photo,
+
 };
 
 const currentComponentData = computed(() => {
