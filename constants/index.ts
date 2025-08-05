@@ -81,6 +81,7 @@ export const headerLabels = {
 	location_id: 'YSC no',
 	serial_number: 'Seri no',
 	brand: 'Markası',
+	date: 'Tarih',
 	manufacture_year: 'Üretim tarihi',
 	refill_period: 'Yeniden dolum periyodu',
 	hydrostatic_test_date: 'Hidrostatik test tarihi',
@@ -95,4 +96,4 @@ export const headerLabels = {
 	manometer_scale_bar: 'Monometre skala buyuklugu(Bar)',
 };
 
-export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body'];
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at'];
