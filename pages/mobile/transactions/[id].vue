@@ -35,7 +35,7 @@ const inspectionForm = reactive({
 	working_mechanism: true,
 	result: true,
 	note: null,
-	photo_url: null,
+	photo_url: null as string | null,
 	user_id: null,
 });
 
@@ -98,6 +98,15 @@ const inspectionAlert = computed(() => {
 
 async function onFileSelect(event: FileUploadSelectEvent) {
 	const imageFile = event.files[0];
+	const reader = 	new FileReader();
+	reader.onload = (e) => {
+		if (e.target && e.target.result) {
+			inspectionForm.photo_url = e.target.result as string;
+		}
+	};
+
+	  reader.readAsDataURL(imageFile); 
+
 
 	try {
 		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
@@ -403,14 +412,17 @@ onMounted(async () => {
 									/>
 								</div>
 								<div class="flex flex-col items-start gap-2">
+									<!-- auto attributesi dosyanin select olduktan hemen sonra otomatik olarak update olmasini sagliyor.
+										Ayni zamanda yuklenen dosyanin isminin gozukmesini engelledigi icin kullandim. -->
 									<FileUpload
 										mode="basic"
 										custom-upload
+										auto 
 										accept="image/*"
 										class="p-button-outlined"
 										choose-label="Resim sec"
 										@select="onFileSelect"
-									>
+									>			
 										<template #chooseicon>
 											<i class="ri-camera-line" />
 										</template>
@@ -419,7 +431,7 @@ onMounted(async () => {
 										v-if="inspectionForm.photo_url"
 										:src="inspectionForm.photo_url"
 										alt="Image"
-										class="shadow-md rounded-xl w-64"
+										class="shadow-md rounded-xl w-64 sm:w-12"
 									>
 								</div>
 								<Button
