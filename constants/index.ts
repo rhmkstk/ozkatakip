@@ -33,6 +33,12 @@ export const headerLabels = {
 	working_pressure_bar: 'Çalışma basıncı',
 	working_temperature_celsius: 'Çalışma sıcaklığı',
 	manometer_scale_bar: 'Monometre skala buyuklugu(Bar)',
+	transaction_date: 'İşlem tarihi',
+	user_id: 'Kullanıcı Adi',
+	product_id: 'Ürün ID',
+	details: 'Detaylar',
+	type: 'İşem Tipi',
+
 };
 
 export const fillLabels = {
@@ -44,7 +50,7 @@ export const fillLabels = {
 	paint: 'Yaş Boya',
 	hydrostatic_pressure_test: 'Hidrostatik Basınç Testi',
 };
-export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url'];
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url', 'created_at'];
 
 export const fireExtinguishers = [
 	{
