@@ -34,11 +34,10 @@ export const headerLabels = {
 	working_temperature_celsius: 'Çalışma sıcaklığı',
 	manometer_scale_bar: 'Monometre skala buyuklugu(Bar)',
 	transaction_date: 'İşlem tarihi',
-	user_id: 'Kullanıcı ID',
-	product_id:'Ürün ID',
+	user_id: 'Kullanıcı Adi',
+	product_id: 'Ürün ID',
 	details: 'Detaylar',
-	type: 'Tip',
-
+	type: 'İşem Tipi',
 
 };
 
