@@ -7,7 +7,6 @@ const { error } = await useFetch('/api/inspections', {
 	method: 'GET',
 	onResponse({ response }) {
 		if (response._data) {
-			console.log('response._data;', response._data);
 			tabledata.value = response._data;
 		}
 		else {
@@ -114,18 +113,6 @@ function getValueByPath(obj, path) {
 				date-format="mm/yy"
 			/>
 		</PageHeader>
-		<!-- <div class="pb-6">
-			<div class="flex items-center space-x-4">
-				<DatePicker
-					v-model="date"
-					view="month"
-					date-format="mm/yy"
-				/>
-				<h2 class="text-lg">
-					2024 Nisan ayina ait kayitlar listeleniyor
-				</h2>
-			</div>
-		</div> -->
 		<EmptyState v-if="!tabledata.length">
 			<template #title>
 				Bakım Kayıdı bulunamadı

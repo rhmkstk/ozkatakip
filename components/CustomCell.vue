@@ -74,7 +74,6 @@ const componentDefinitions = {
 	'paint': customCells.boolean,
 	'hydrostatic_pressure_test': customCells.boolean,
 	'photo_url': customCells.photo,
-
 };
 
 const currentComponentData = computed(() => {
