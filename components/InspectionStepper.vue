@@ -23,13 +23,18 @@ const activeStep = ref('1');
 const loading = ref(false);
 const showScanner = ref(false);
 const newProductId = ref('');
-const photo_url = ref<string | null>(null);
+const photo_url = ref<string >('');
 
 const src = ref(null);
 
 async function onFileSelect(event: FileUploadSelectEvent) {
 	const imageFile = event.files[0];
-
+	const reader= new FileReader();
+	reader.onload = (e) => {
+		if (e.target && e.target.result) {
+			photo_url.value = e.target.result as string;
+		}
+	};
 	try {
 		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
 		compressedImage.value = compressedFile as File;
@@ -320,6 +325,11 @@ async function createInspectionForm() {
 								label="QR Kod Tara"
 								@click="showScanner = true"
 							/>
+							<QRScanner
+								v-if="showScanner"
+								@close="showScanner = false"
+								@scan-complete="(scannedNumber) => newProductId = scannedNumber"
+							/>
 						</div>
 					</div>
 					<!-- <div class="p-4">
@@ -432,15 +442,16 @@ async function createInspectionForm() {
 							mode="basic"
 							custom-upload
 							auto
+							accept="image/*"
 							severity="secondary"
 							class="p-button-outlined"
 							@select="onFileSelect"
 						/>
 						<img
-							v-if="src"
-							:src="src"
+							v-if="compressedImage"
+							:src="photo_url"
 							alt="Image"
-							class="shadow-md rounded-xl h-auto max-w-[180px] object-cover"
+							class="shadow-md rounded-xl w-64 sm:w-12"
 						>
 					</div>
 
