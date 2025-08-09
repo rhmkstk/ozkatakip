@@ -35,7 +35,7 @@ const inspectionForm = reactive({
 	working_mechanism: true,
 	result: true,
 	note: null,
-	photo_url: null,
+	photo_url: '',
 	user_id: null,
 });
 
@@ -112,21 +112,9 @@ async function saveInspectionForm() {
 	const result = controlFields.every(field => inspectionForm[field as keyof typeof inspectionForm] === true);
 	inspectionFormLoading.value = true;
 	try {
-		const token = (await supabase.auth.getSession()).data.session?.access_token;
 
 		if (compressedImage.value) {
-			const formData = new FormData();
-			formData.append('file', compressedImage.value);
-
-			const uploadImageResponse = await fetch('/api/upload/inspection-photo', {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-				body: formData,
-			});
-			const result = await uploadImageResponse.json();
-			inspectionForm.photo_url = result?.signedUrl || null;
+			inspectionForm.photo_url = await handleUploadImage(compressedImage.value);
 		}
 		const response = await $fetch('/api/inspections', {
 			method: 'POST',

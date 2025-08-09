@@ -2,6 +2,7 @@
 import type { FileUploadSelectEvent } from 'primevue';
 import imageCompression from 'browser-image-compression';
 import { imageCompressionOptions } from '~/constants';
+import { handleUploadImage } from '~/utils';
 
 type Building = {
 	id: number;
@@ -66,6 +67,7 @@ const loading = ref(false);
 const showScanner = ref(false);
 const newProductId = ref('');
 const photo_url = ref<string | null>(null);
+const drawerShow= ref<boolean>(false);
 
 const src = ref(null);
 
@@ -159,69 +161,42 @@ async function getNewProductData(newLocationId: string, callback: () => void) {
 async function applyChanges(callback: () => void) {
 	loading.value = true;
 	try {
-		const currentResponse = await $fetch('/api/products', {
-			method: 'PUT',
-			body: {
-				...currentProductData.product,
-				location: newProductData.product?.location,
-				current_status: 'arızalı',
-			},
-		});
-
-		if (!currentResponse) {
-			toast.add({
-				severity: 'error',
-				summary: 'Hata',
-				detail: 'Degisim kaydı oluşturulurken bir hata oluştu.',
-				life: 2000,
-			});
-			return;
-		}
-		await $fetch('/api/products', {
-			method: 'PUT',
-			body: {
-				...newProductData.product,
-				location: currentProductData.product.location,
-				current_status: 'aktif',
-			},
-		});
-
-		const userId = (await supabase.auth.getUser()).data.user?.id;
-
 		const details = `arizali YSC no: ${currentProductData.location.location_id}, yeni YSC no: ${newProductData.location?.location_id}`;
 
-		$fetch('/api/transactions', {
+		const res = await $fetch('/api/products/switch', {
 			method: 'POST',
 			body: {
-				type: 'dolum',
-				user: userId,
-				product_id: newProductData.product?.id,
+				currentProduct: currentProductData.product,
+				newProduct: newProductData.product,
 				details,
 			},
 		});
 
-		callback();
+		if (res.success) {
+			callback();
+			toast.add({
+				severity: 'success',
+				summary: 'Başarılı',
+				detail: 'Degisim kaydı başarıyla oluşturuldu.',
+				life: 2000,
+			});
+			drawerShow.value = true;
 
-		// toast.add({
-		// 	severity: 'success',
-		// 	summary: 'Başarılı',
-		// 	detail: 'Degisim kaydı başarıyla oluşturuldu.',
-		// 	life: 2000,
-		// });
-	}
-	catch (error) {
-		console.error('Error saving fill record:', error);
+		} else {
+			throw new Error('Switch failed');
+		}
+	} catch (error) {
+		console.error('Error switching products:', error);
 		toast.add({
 			severity: 'error',
 			summary: 'Hata',
 			detail: 'Degisim kaydı oluşturulurken bir hata oluştu.',
 			life: 2000,
 		});
-	}
-	finally {
+	} finally {
 		loading.value = false;
-		// emit('close');
-	} 
+
+	}
 }
 
 
@@ -230,23 +205,7 @@ async function createInspectionForm() {
 	loading.value = true;
 	try {
 		const userId = (await supabase.auth.getUser()).data.user?.id;
-		const token = (await supabase.auth.getSession()).data.session?.access_token;
-
-		if (compressedImage.value) {
-			const formData = new FormData();
-			formData.append('file', compressedImage.value);
-
-			const uploadImageResponse = await fetch('/api/upload/inspection-photo', {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-				body: formData,
-			});
-			const result = await uploadImageResponse.json();
-			photo_url.value = result?.signedUrl || null;
-		}
-
+		photo_url.value = await handleUploadImage(compressedImage.value)
 		await $fetch('/api/inspections', {
 			method: 'POST',
 			body: {
@@ -266,6 +225,7 @@ async function createInspectionForm() {
 				fire_extinguisher_id: newProductData.product?.id,
 			},
 		});
+
 	}
 	catch (error) {
 		console.error('Error creating inspection form:', error);
@@ -498,5 +458,10 @@ async function createInspectionForm() {
 				</StepPanel>
 			</StepPanels>
 		</Stepper>
+		<TransactionsSuccessDialog
+			:visible="drawerShow"
+			title="Değişim kaydı başarıyla olusturuldu!"
+			@close="drawerShow = false"
+		/>
 	</div>
 </template>
