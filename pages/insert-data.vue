@@ -5,10 +5,10 @@ import type { TablesInsert } from '~/types/database.types';
 const HYDROSTATIC_TEST_PERIOD = 4; // years
 const toast = useToast();
 const productStatusOptions = [
-	{ label: 'Aktif', value: 'aktif' },
-	{ label: 'Arızalı', value: 'arızalı' },
-	{ label: 'Kayıp', value: 'kayıp' },
-	{ label: 'Yedek', value: 'yedek' },
+	{ label: 'Aktif', value: 'active' },
+	{ label: 'Arızalı', value: 'damaged' },
+	{ label: 'Kayıp', value: 'lost' },
+	{ label: 'Yedek', value: 'spare' },
 ];
 
 const loading = ref(false);
@@ -43,7 +43,7 @@ const form = reactive<{ product: TablesInsert<'products'>; location: TablesInser
 		next_refill_date: null,
 		hydrostatic_test_date: null,
 		next_hydrostatic_test_date: null,
-		current_status: 'aktif',
+		current_status: 'active',
 		location: null,
 	},
 	location: {

@@ -99,3 +99,14 @@ export const imageCompressionOptions = {
 	maxWidthOrHeight: 800,
 	useWebWorker: true,
 };
+
+export const enumsAndLabels = {
+	active:'Aktif',
+	damaged:'Hasarlı',
+	lost:'Kayıp',
+	spare:'Yedek',
+	fill:"Dolum",
+	inspection:'Bakım',
+	change:'Degisim',
+	other:'Diğer',
+}

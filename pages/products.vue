@@ -2,7 +2,7 @@
 // import QRCode from 'qrcode';
 import { header } from '@primeuix/themes/aura/accordion';
 import { FilterMatchMode } from '@primevue/core/api';
-import { headerLabels } from '~/constants';
+import { enumsAndLabels, headerLabels } from '~/constants';
 import type { Tables } from '~/types/database.types';
 
 type ProductWithLocation = Tables<'products'> & {
@@ -28,7 +28,10 @@ const filters = ref({
 const { error, refresh } = await useFetch('/api/products', {
 	onResponse({ response }) {
 		if (response._data) {
-			tabledata.value = response._data;
+			tabledata.value = response._data.map((item: ProductWithLocation) => ({
+				...item,
+				current_status: enumsAndLabels[item.current_status as keyof typeof enumsAndLabels] || item.current_status,
+			}));
 			const uniqueLocations = new Set(
 				response._data.map(
 					(item: ProductWithLocation) => item?.locations?.building_id?.name,

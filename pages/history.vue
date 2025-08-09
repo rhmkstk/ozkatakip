@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { headerLabels } from '~/constants';
+import { enumsAndLabels, headerLabels } from '~/constants';
 import { isCellCustom } from '~/utils';
 
 const tabledata = ref([]);
@@ -9,8 +9,11 @@ const { error } = await useFetch('/api/transactions', {
 	method: 'GET',
 	onResponse({ response }) {
 		if (response._data) {
-			tabledata.value = response._data;
-		}
+			// Map the response data to include labels for enums
+			tabledata.value = response._data.map((item) => ({
+				...item,
+			type: enumsAndLabels[item.type as keyof typeof enumsAndLabels] || item.type,
+			}));		}
 		else {
 			console.error('Error fetching data:', error);
 		}
