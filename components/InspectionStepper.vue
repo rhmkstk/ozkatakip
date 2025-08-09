@@ -3,19 +3,61 @@ import type { FileUploadSelectEvent } from 'primevue';
 import imageCompression from 'browser-image-compression';
 import { imageCompressionOptions } from '~/constants';
 
+type Building = {
+	id: number;
+	name: string;
+	created_at: Date;
+};
+
+type Location = {
+	id: number;
+	created_at: Date;
+	building_id: Building;
+	room: string;
+	location_id: string;
+};
+
+type Product = {
+	id: number;
+	created_at: Date;
+	brand: string;
+	model_type: string;
+	serial_number: number;
+	manufacture_year: Date;
+	pressure_source: string;
+	working_pressure_bar: string;
+	manometer_scale_bar: string | null;
+	test_pressure_bar: number;
+	safety_valve_setting_pressure_bar: string;
+	working_temperature_celsius: string;
+	refill_period: number;
+	refill_date: Date;
+	next_refill_date: Date;
+	hydrostatic_test_date: Date;
+	next_hydrostatic_test_date: Date;
+	current_status: string;
+	location: number;
+	unit: string;
+};
+
 type Props = {
 	currentProductData: {
-		product: unknown;
-		location: unknown;
+		product: Product;
+		location: Location;
 	};
 };
+type NewProductData = {
+	location: Location | null;
+	product: Product | null;
+};
+
 
 const { currentProductData } = defineProps<Props>();
 
 const supabase = useSupabaseClient();
 const toast = useToast();
 const compressedImage = ref<File | null>(null);
-const newProductData = reactive({
+const newProductData = reactive<NewProductData>({
 	location: null,
 	product: null,
 });
@@ -86,7 +128,6 @@ const newProductSummaryCardData = computed(() => {
 	}
 	return [];
 });
-
 async function getNewProductData(newLocationId: string, callback: () => void) {
 	try {
 		loading.value = true;
@@ -104,6 +145,7 @@ async function getNewProductData(newLocationId: string, callback: () => void) {
 		}
 		newProductData.location = location[0];
 		newProductData.product = product[0];
+		callback(); 
 	}
 	catch (error) {
 		console.error('Error fetching product data:', error);
@@ -111,7 +153,6 @@ async function getNewProductData(newLocationId: string, callback: () => void) {
 	}
 	finally {
 		loading.value = false;
-		callback();
 	}
 }
 
@@ -122,7 +163,7 @@ async function applyChanges(callback: () => void) {
 			method: 'PUT',
 			body: {
 				...currentProductData.product,
-				location: newProductData.product.location,
+				location: newProductData.product?.location,
 				current_status: 'arızalı',
 			},
 		});
@@ -147,14 +188,14 @@ async function applyChanges(callback: () => void) {
 
 		const userId = (await supabase.auth.getUser()).data.user?.id;
 
-		const details = `arizali YSC no: ${currentProductData.location.location_id}, yeni YSC no: ${newProductData.location.location_id}`;
+		const details = `arizali YSC no: ${currentProductData.location.location_id}, yeni YSC no: ${newProductData.location?.location_id}`;
 
 		$fetch('/api/transactions', {
 			method: 'POST',
 			body: {
 				type: 'dolum',
 				user: userId,
-				product_id: newProductData.product.id,
+				product_id: newProductData.product?.id,
 				details,
 			},
 		});
@@ -180,8 +221,10 @@ async function applyChanges(callback: () => void) {
 	finally {
 		loading.value = false;
 		// emit('close');
-	}
+	} 
 }
+
+
 
 async function createInspectionForm() {
 	loading.value = true;
@@ -220,7 +263,7 @@ async function createInspectionForm() {
 				note: null,
 				photo_url: photo_url.value,
 				user_id: userId,
-				fire_extinguisher_id: newProductData.product.id,
+				fire_extinguisher_id: newProductData.product?.id,
 			},
 		});
 	}
