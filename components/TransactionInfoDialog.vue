@@ -24,8 +24,9 @@ function handleChangeClick() {
 		:show-header="false"
 		modal
 		@update:visible="closeDialog"
+		class="mx-4"
 	>
-		<div class="flex flex-col items-center pt-4">
+		<div class="flex flex-col items-center pt-4 ">
 			<div class="flex items-center space-x-1">
 				<h3 class="text-lg font-semibold">
 					Bakım kaydı oluşturlamadı.

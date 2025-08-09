@@ -42,10 +42,6 @@ const columns = [
 		accessorKey: 'products.next_refill_date',
 		header: headerLabels.next_refill_date,
 	},
-	{
-		accessorKey: 'result',
-		header: headerLabels.result,
-	},
 ];
 
 const expandColumns = [
@@ -80,9 +76,6 @@ const expandColumns = [
 
 ];
 
-function getValueByPath(obj, path) {
-	return path.split('.').reduce((acc, part) => acc?.[part], obj);
-}
 </script>
 
 <template>
@@ -135,15 +128,6 @@ function getValueByPath(obj, path) {
 					:field="item.accessorKey"
 					:header="item.header"
 				>
-					<template
-						v-if="isCellCustom(item.accessorKey)"
-						#body="slotProps"
-					>
-						<CustomCell
-							:field="item.accessorKey"
-							:value="getValueByPath(slotProps.data, item.accessorKey)"
-						/>
-					</template>
 				</Column>
 				<template #expansion="slotProps">
 					<div class="p-4">
@@ -164,6 +148,7 @@ function getValueByPath(obj, path) {
 									<CustomCell
 										:field="item.accessorKey"
 										:value="expandSlotProps.data[item.accessorKey]"
+										type="fill"
 									/>
 								</template>
 							</Column>

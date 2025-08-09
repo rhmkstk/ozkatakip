@@ -4,6 +4,7 @@ import ZoomImage from './ZoomImage.vue';
 type Props = {
 	field: string;
 	value: unknown;
+	type: string;
 };
 // need better type definitions
 
@@ -23,7 +24,7 @@ const customCells = {
 		props: {
 			class: value
 				? 'ri-check-fill text-3xl text-green-600 font-semibold'
-				: 'ri-close-line text-3xl text-red-600 font-semibold',
+				: props.type === 'fill' ? 'ri-subtract-line text-3xl font-semibold' : 'ri-close-line text-3xl text-red-600 font-semibold',
 		},
 		text: null,
 	}),
