@@ -1,3 +1,5 @@
+import type { Database } from '~/types/database.types';
+
 export const headerLabels = {
 	result: 'Sonuç',
 	photo_url: 'Fotoğraf',
@@ -50,7 +52,7 @@ export const fillLabels = {
 	paint: 'Yaş Boya',
 	hydrostatic_pressure_test: 'Hidrostatik Basınç Testi',
 };
-export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url', 'created_at'];
+export const customCellFields = ['products.refill_date', 'products.next_refill_date', 'result', 'working_mechanism', 'pressure', 'position', 'pin_and_seal', 'mass', 'instruction_and_label', 'hose_and_nozzle', 'control_card', 'body', 'created_at', 'filling', 'trigger_valve', 'manometer', 'wheel', 'paint', 'hydrostatic_pressure_test', 'photo_url', 'created_at','type'];
 
 export const fireExtinguishers = [
 	{
@@ -100,13 +102,16 @@ export const imageCompressionOptions = {
 	useWebWorker: true,
 };
 
-export const enumsAndLabels = {
-	active:'Aktif',
-	damaged:'Hasarlı',
-	lost:'Kayıp',
-	spare:'Yedek',
-	fill:"Dolum",
-	inspection:'Bakım',
-	change:'Degisim',
-	other:'Diğer',
+export const transactionTypeLabels: { [key in Database['public']['Enums']['transaction_types']]: string } = {
+	fill: 'Dolum',
+	inspection: 'Bakım',
+	change: 'Degisim',
+	other: 'Diğer',
 }
+
+export const productStatusTypeLabels: { [key in Database['public']['Enums']['product_status']]: string } = {
+	active: 'Aktif',
+	damaged: 'Hasarlı',
+	lost: 'Kayıp',
+	spare: 'Yedek',
+};

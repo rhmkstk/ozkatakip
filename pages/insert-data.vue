@@ -71,7 +71,7 @@ const resetForm = () => {
 		next_refill_date: null,
 		hydrostatic_test_date: null,
 		next_hydrostatic_test_date: null,
-		current_status: 'aktif',
+		current_status: 'active',
 		location: null,
 		pressure_source: 'Azot(N)',
 	};
@@ -96,7 +96,7 @@ const saveProduct = async () => {
 
 		if (locationResponse.id) {
 			const item = fireExtinguishers.find(f => f.name === form.product.model_type);
-			const year = form.product.manufacture_year.getFullYear();
+			const year = new Date(form.product.manufacture_year).getFullYear();
 			const res = await $fetch('/api/products', {
 				method: 'POST',
 				body: {
