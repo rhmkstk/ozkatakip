@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { productStatusTypeLabels, transactionTypeLabels } from '~/constants';
 import ZoomImage from './ZoomImage.vue';
 
 type Props = {
@@ -34,6 +35,16 @@ const customCells = {
 			alt: 'Product Photo',
 		},
 		text: null,
+	}),
+	type: (value: string) => ({
+		name: 'span',
+		props: {},
+		text: transactionTypeLabels[value as keyof typeof transactionTypeLabels] || value,
+	}),
+	productStatus: (value: string) => ({
+		name: 'span',
+		props: {},
+		text: productStatusTypeLabels[value as keyof typeof productStatusTypeLabels] || value,
 	}),
 };
 const componentDefinitions = {
@@ -74,6 +85,8 @@ const componentDefinitions = {
 	'paint': customCells.boolean,
 	'hydrostatic_pressure_test': customCells.boolean,
 	'photo_url': customCells.photo,
+	'type': customCells.type,
+	'current_status': customCells.productStatus,
 };
 
 const currentComponentData = computed(() => {
