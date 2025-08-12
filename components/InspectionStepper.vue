@@ -171,9 +171,9 @@ async function createInspectionForm() {
   loading.value = true;
   try {
     const userId = (await supabase.auth.getUser()).data.user?.id;
-		if(compressedImage.value) { 
-			photo_url.value = await handleUploadImage(compressedImage.value);
-		}
+    if (compressedImage.value) {
+      photo_url.value = await handleUploadImage(compressedImage.value);
+    }
 
     await $fetch("/api/inspections", {
       method: "POST",
@@ -195,7 +195,6 @@ async function createInspectionForm() {
       },
     });
   } catch (error) {
-    console.error("Error creating inspection form:", error);
     toast.add({
       severity: "error",
       summary: "Hata",

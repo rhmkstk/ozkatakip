@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 		.from('products')
 		.update({
 			location: newProduct.location,
-			current_status: 'arızalı',
+			current_status: 'damaged',
 		})
 		.eq('id', currentProduct.id);
 
@@ -29,14 +29,14 @@ export default defineEventHandler(async (event) => {
 		.from('products')
 		.update({
 			location: currentProduct.location,
-			current_status: 'aktif',
+			current_status: 'active',
 		})
 		.eq('id', newProduct.id);
 
 	if (updateNewError) throw updateNewError;
 
 	const { error: insertTransactionError } = await client.from('transactions').insert({
-		type: 'dolum',
+		type: 'change',
 		user: user.id,
 		product_id: newProduct.id,
 		details,
