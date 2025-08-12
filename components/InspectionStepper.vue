@@ -42,17 +42,20 @@ const drawerShow = ref<boolean>(false);
 const src = ref(null);
 
 async function onFileSelect(event: FileUploadSelectEvent) {
-  const imageFile = event.files[0];
-
-  try {
-    const compressedFile = await imageCompression(
-      imageFile,
-      imageCompressionOptions
-    );
-    compressedImage.value = compressedFile as File;
-  } catch (error) {
-    console.warn(error);
-  }
+	const imageFile = event.files[0];
+	const reader= new FileReader();
+	reader.onload = (e) => {
+		if (e.target && e.target.result) {
+			photo_url.value = e.target.result as string;
+		}
+	};
+	try {
+		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
+		compressedImage.value = compressedFile as File;
+	}
+	catch (error) {
+		console.warn(error);
+	}
 }
 
 const currentProductSummaryCardData = computed(() => {
@@ -150,7 +153,6 @@ async function applyChanges(callback: () => void) {
         detail: "Degisim kaydı başarıyla oluşturuldu.",
         life: 2000,
       });
-      drawerShow.value = true;
     } else {
       throw new Error("Switch failed");
     }
@@ -194,6 +196,7 @@ async function createInspectionForm() {
         fire_extinguisher_id: newProductData.product?.id,
       },
     });
+    drawerShow.value = true;
   } catch (error) {
     toast.add({
       severity: "error",
@@ -241,43 +244,47 @@ async function createInspectionForm() {
               Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
             </h4>
 
-            <div>
-              <form class="mt-auto w-full" @submit.prevent>
-                <div class="form-row">
-                  <div class="form-item">
-                    <label for="building_area">YSC no</label>
-                    <div class="flex space-x-2">
-                      <InputText
-                        id="building_area"
-                        v-model="newProductId"
-                        placeholder="ATM-2"
-                        class="flex-1"
-                      />
-                      <Button
-                        label="Ara"
-                        @click="
-                          getNewProductData(newProductId, () =>
-                            activateCallback('2')
-                          )
-                        "
-                      />
-                    </div>
-                  </div>
-                </div>
-              </form>
-              <Divider align="center">
-                <span class="text-sm">Veya</span>
-              </Divider>
-              <Button
-                class="w-full"
-                icon="ri-camera-fill"
-                outlined
-                label="QR Kod Tara"
-                @click="showScanner = true"
-              />
-            </div>
-          </div>
-          <!-- <div class="p-4">
+						<div>
+							<form
+								class="mt-auto w-full"
+								@submit.prevent
+							>
+								<div class="form-row">
+									<div class="form-item">
+										<label for="building_area">YSC no</label>
+										<div class="flex space-x-2">
+											<InputText
+												id="building_area"
+												v-model="newProductId"
+												placeholder="ATM-2"
+												class="flex-1"
+											/>
+											<Button
+												label="Ara"
+												@click="getNewProductData(newProductId, () => activateCallback('2'))"
+											/>
+										</div>
+									</div>
+								</div>
+							</form>
+							<Divider align="center">
+								<span class="text-sm">Veya</span>
+							</Divider>
+							<Button
+								class="w-full"
+								icon="ri-camera-fill"
+								outlined
+								label="QR Kod Tara"
+								@click="showScanner = true"
+							/>
+							<QRScanner
+								v-if="showScanner"
+								@close="showScanner = false"
+								@scan-complete="(scannedNumber) => newProductId = scannedNumber"
+							/>
+						</div>
+					</div>
+					<!-- <div class="p-4">
 						<div class="flex flex-col items-center mb-6">
 							<i class="ri-checkbox-circle-line text-6xl text-green-600" />
 							<h3 class="text-lg font-semibold mb-2">
@@ -366,22 +373,23 @@ async function createInspectionForm() {
             kaydini tamamla.
           </h4>
 
-          <div class="card flex flex-col items-center gap-6">
-            <FileUpload
-              mode="basic"
-              custom-upload
-              auto
-              severity="secondary"
-              class="p-button-outlined"
-              @select="onFileSelect"
-            />
-            <img
-              v-if="src"
-              :src="src"
-              alt="Image"
-              class="shadow-md rounded-xl h-auto max-w-[180px] object-cover"
-            />
-          </div>
+					<div class="card flex flex-col items-center gap-6">
+						<FileUpload
+							mode="basic"
+							custom-upload
+							auto
+							accept="image/*"
+							severity="secondary"
+							class="p-button-outlined"
+							@select="onFileSelect"
+						/>
+						<img
+							v-if="compressedImage"
+							:src="photo_url"
+							alt="Image"
+							class="shadow-md rounded-xl w-64 sm:w-12"
+						>
+					</div>
 
           <div class="pt-4 border-t border-slate-200 mt-12 flex justify-end">
             <Button
