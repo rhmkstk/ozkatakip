@@ -147,7 +147,7 @@ async function saveInspectionForm() {
 		$fetch('/api/transactions', {
 			method: 'POST',
 			body: {
-				type: 'bakım',
+				type: 'inspection',
 				user: userId,
 				product_id: data.value?.product.id,
 				details: response.id,
