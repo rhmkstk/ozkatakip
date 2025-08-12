@@ -11,27 +11,23 @@ export function addYearToDate(date: Date, year: number): Date {
 }
 
 export async function handleUploadImage(
-  compressedImage: File | null
+  compressedImage: File
 ): Promise<string> {
   const { data } = await useSupabaseClient().auth.getSession();
   const token = data.session?.access_token;
 
-  if (compressedImage) {
-	// formData her seferinde burada local olarak oluşturuldugu için, performansla ilgili bir sorun olmayacak.
-	if (!token) {
-		throw new Error("User is not authenticated");
-	}
-    const formData = new FormData();
-    formData.append("file", compressedImage);
-    const uploadImageResponse = await fetch("/api/upload/inspection-photo", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-    const result = await uploadImageResponse.json();
-    return result?.signedUrl || "";
+  if (!token) {
+    throw new Error("User is not authenticated");
   }
-  return "";
+  const formData = new FormData();
+  formData.append("file", compressedImage);
+  const uploadImageResponse = await fetch("/api/upload/inspection-photo", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  const result = await uploadImageResponse.json();
+  return result?.signedUrl || "";
 }
