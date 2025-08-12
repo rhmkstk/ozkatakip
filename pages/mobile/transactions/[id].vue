@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import imageCompression from 'browser-image-compression';
 import type { FileUploadSelectEvent } from 'primevue';
-import { headerLabels, fillLabels, imageCompressionOptions } from '~/constants';
+import {
+	imageCompressionOptions,
+	inspectionFormFields,
+	fillFormFields,
+} from '~/constants';
 
 definePageMeta({
 	layout: 'mobile',
@@ -10,7 +14,6 @@ definePageMeta({
 const route = useRoute();
 const supabase = useSupabaseClient();
 const toast = useToast();
-
 const activeTab = ref('0');
 const lastInspectionDate = ref<Date | null>(null);
 const showInspectionAlert = ref(false);
@@ -35,7 +38,7 @@ const inspectionForm = reactive({
 	working_mechanism: true,
 	result: true,
 	note: null,
-	photo_url: '',
+	photo_url: null,
 	user_id: null,
 });
 
@@ -62,27 +65,24 @@ const controlFields = [
 	'working_mechanism',
 ];
 
-const { data, status } = await useAsyncData(
-	'product',
-	async () => {
-		const location = await $fetch('/api/locations/getByLocationId', {
-			params: { location_id: route.params.id },
-		});
+const { data, status } = await useAsyncData('product', async () => {
+	const location = await $fetch('/api/locations/getByLocationId', {
+		params: { location_id: route.params.id },
+	});
 
-		if (!location) {
-			throw new Error('Location not found');
-		}
-		const product = await $fetch('/api/products/getByLocationId', {
-			params: { location_id: location[0].id },
-		});
+	if (!location) {
+		throw new Error('Location not found');
+	}
+	const product = await $fetch('/api/products/getByLocationId', {
+		params: { location_id: location[0].id },
+	});
 
-		if (!product || product.length === 0) {
-			throw new Error('Product not found');
-		}
+	if (!product || product.length === 0) {
+		throw new Error('Product not found');
+	}
 
-		return { product: product[0], location: location[0] };
-	},
-);
+	return { product: product[0], location: location[0] };
+});
 
 const inspectionAlert = computed(() => {
 	const formattedDate = lastInspectionDate.value
@@ -93,14 +93,31 @@ const inspectionAlert = computed(() => {
 			})
 		: '';
 
-	return	`  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
+	return `  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
 });
+
+const checkInspectionForm = () => {
+	return controlFields.every(
+		field => inspectionForm[field as keyof typeof inspectionForm] === true,
+	);
+};
 
 async function onFileSelect(event: FileUploadSelectEvent) {
 	const imageFile = event.files[0];
+	const reader = new FileReader();
+	reader.onload = (e) => {
+		if (e.target && e.target.result) {
+			inspectionForm.photo_url = e.target.result as string;
+		}
+	};
+
+	reader.readAsDataURL(imageFile);
 
 	try {
-		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
+		const compressedFile = await imageCompression(
+			imageFile,
+			imageCompressionOptions,
+		);
 		compressedImage.value = compressedFile as File;
 	}
 	catch (error) {
@@ -109,7 +126,7 @@ async function onFileSelect(event: FileUploadSelectEvent) {
 }
 
 async function saveInspectionForm() {
-	const result = controlFields.every(field => inspectionForm[field as keyof typeof inspectionForm] === true);
+	const result = checkInspectionForm();
 	inspectionFormLoading.value = true;
 	try {
 
@@ -159,7 +176,9 @@ async function saveInspectionForm() {
 }
 
 async function saveFillRecord() {
-	const isAnyItemSelected = Object.values(fillForm).some(value => typeof value === 'boolean' && value === true);
+	const isAnyItemSelected = Object.values(fillForm).some(
+		value => typeof value === 'boolean' && value === true,
+	);
 	if (!isAnyItemSelected) {
 		toast.add({
 			severity: 'warn',
@@ -232,7 +251,9 @@ onMounted(async () => {
 
 <template>
 	<div class="h-full">
-		<BaseLoader v-if="status === 'pending' || status === 'idle' || inspectionFormLoading" />
+		<BaseLoader
+			v-if="status === 'pending' || status === 'idle' || inspectionFormLoading"
+		/>
 		<div
 			v-else
 			class="flex flex-col h-full"
@@ -265,16 +286,20 @@ onMounted(async () => {
 
 					<div class="flex items-center space-x-1">
 						<span class="size-1.5 rounded-full bg-green-600" />
-						<span class="text-xs text-slate-500 uppercase">{{ data.product.current_status }}</span>
+						<span class="text-xs text-slate-500 uppercase">{{
+							data.product.current_status
+						}}</span>
 					</div>
 					<div class="flex space-x-1 mt-4">
 						<i class="ri-map-pin-line -mt-0.5" />
-						<span class="text-sm uppercase">{{ data.location.room }}	, {{ data.location.building_id.name }} </span>
+						<span class="text-sm uppercase">{{ data.location.room }} , {{ data.location.building_id.name }}
+						</span>
 					</div>
 					<div class="flex space-x-1 mt-2">
 						<i class="ri-calendar-line -mt-0.5" />
 						<p class="text-sm text-gray-700">
-							Dolum tarihi: <b>{{ data.product.refill_date }}</b>, Hidrastatik test tarihi: <b>{{ data.product.hydrostatic_test_date }}</b>
+							Dolum tarihi: <b>{{ data.product.refill_date }}</b>, Hidrastatik test tarihi:
+							<b>{{ data.product.hydrostatic_test_date }}</b>
 						</p>
 					</div>
 				</div>
@@ -308,82 +333,20 @@ onMounted(async () => {
 								class="space-y-4 m-0"
 								@submit.prevent
 							>
-								<div class="flex items-center gap-2">
+								<div
+									v-for="field in inspectionFormFields"
+									:key="field.key"
+									class="flex items-center gap-2"
+								>
 									<Checkbox
-										v-model="inspectionForm.position"
-										input-id="position"
+										v-model="inspectionForm[field.key as keyof typeof inspectionForm]"
+										:input-id="field.key"
 										binary
 									/>
-									<label for="position"> {{ headerLabels.position }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.body"
-										input-id="body"
-										binary
-									/>
-									<label for="body"> {{ headerLabels.body }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.control_card"
-										input-id="control_card"
-										binary
-									/>
-									<label for="control_card"> {{ headerLabels.control_card }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.hose_and_nozzle"
-										input-id="hose_and_nozzle"
-										binary
-									/>
-									<label for="hose_and_nozzle"> {{ headerLabels.hoze_and_nozzle }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.instruction_and_label"
-										input-id="instruction_and_label"
-										binary
-									/>
-									<label for="instruction_and_label"> {{ headerLabels.instruction_and_label }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.mass"
-										input-id="mass"
-										binary
-									/>
-									<label for="mass"> {{ headerLabels.mass }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.pin_and_seal"
-										input-id="pin_and_seal"
-										binary
-									/>
-									<label for="pin_and_seal"> {{ headerLabels.pin_and_seal }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.pressure"
-										input-id="pressure"
-										binary
-									/>
-									<label for="pressure"> {{ headerLabels.pressure }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="inspectionForm.working_mechanism"
-										input-id="working_mechanism"
-										binary
-									/>
-									<label for="working_mechanism"> {{ headerLabels.working_mechanism }} </label>
+									<label :for="field.key"> {{ field.label }} </label>
 								</div>
 
-								<div
-									class="flex flex-col gap-2"
-								>
+								<div class="flex flex-col gap-2">
 									<label for="note"> Not </label>
 									<Textarea
 										v-model="inspectionForm.note"
@@ -391,11 +354,14 @@ onMounted(async () => {
 									/>
 								</div>
 								<div class="flex flex-col items-start gap-2">
+									<!-- auto attributesi dosyanin select olduktan hemen sonra otomatik olarak update olmasini sagliyor.
+										Ayni zamanda yuklenen dosyanin isminin gozukmesini engelledigi icin kullandim. -->
 									<FileUpload
 										mode="basic"
 										custom-upload
+										auto
 										accept="image/*"
-										class="p-button-outlined"
+										class="p-button-outlined p-button-secondary"
 										choose-label="Resim sec"
 										@select="onFileSelect"
 									>
@@ -407,7 +373,7 @@ onMounted(async () => {
 										v-if="inspectionForm.photo_url"
 										:src="inspectionForm.photo_url"
 										alt="Image"
-										class="shadow-md rounded-xl w-64"
+										class="shadow-md rounded-xl w-64 sm:w-12"
 									>
 								</div>
 								<Button
@@ -422,61 +388,17 @@ onMounted(async () => {
 								class="space-y-4 m-0"
 								@submit.prevent
 							>
-								<div class="flex items-center gap-2">
+								<div
+									v-for="field in fillFormFields"
+									:key="field.key"
+									class="flex items-center gap-2"
+								>
 									<Checkbox
-										v-model="fillForm.filling"
-										input-id="filling"
+										v-model="fillForm[field.key as keyof typeof fillForm]"
+										:input-id="field.key"
 										binary
 									/>
-									<label for="filling"> {{ fillLabels.filling }}  </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="fillForm.trigger_valve"
-										input-id="triggger-valve"
-										binary
-									/>
-									<label for="triggger-valve"> {{ fillLabels.trigger_valve }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="fillForm.manometer"
-										input-id="manometer"
-										binary
-									/>
-									<label for="manometer"> {{ fillLabels.manometer }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="fillForm.hose_and_nozzle"
-										input-id="hose-nozzle"
-										binary
-									/>
-									<label for="hose-nozzle"> {{ fillLabels.hose_and_nozzle }} </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="fillForm.wheel"
-										input-id="wheel"
-										binary
-									/>
-									<label for="wheel"> {{ fillLabels.wheel }}  </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="fillForm.paint"
-										input-id="wet-paint"
-										binary
-									/>
-									<label for="wet-paint"> {{ fillLabels.paint }}  </label>
-								</div>
-								<div class="flex items-center gap-2">
-									<Checkbox
-										v-model="fillForm.hydrostatic_pressure_test"
-										input-id="hydrostatic-pressure-test"
-										binary
-									/>
-									<label for="hydrostatic-pressure-test"> {{ fillLabels.hydrostatic_pressure_test }}  </label>
+									<label :for="field.key"> {{ field.label }} </label>
 								</div>
 								<Button
 									class="w-full mt-4"
@@ -503,39 +425,17 @@ onMounted(async () => {
 				@close="drawersShow.change = false"
 			/>
 		</Drawer>
-		<Dialog
-			v-model:visible="drawersShow.needChange"
-			:show-header="false"
-			:modal="true"
-		>
-			<div class="flex flex-col items-center pt-4">
-				<div class="flex items-center space-x-1">
-					<h3 class="text-lg font-semibold">
-						Bakim kaydi basarıyla olusturuldu!
-					</h3>
-					<i class="ri-check-line text-green-600 text-4xl" />
-				</div>
-
-				<Message
-					severity="warn"
-					class="my-6"
-				>
-					YSC kullanima uygun olmadigi icin degisim gerektirmektedir. Lütfen degisim kaydi olusturunuz!
-				</Message>
-			</div>
-			<template #footer>
-				<Button
-					label="Degisim kaydi olustur"
-					severity="primary"
-					size="large"
-					class="mx-auto"
-					@click="drawersShow.needChange = false; drawersShow.change = true"
-				/>
-			</template>
-		</Dialog>
+		<TransactionInfoDialog
+			v-model:is-active="drawersShow.needChange"
+			@open-change-dialog="drawersShow.change = true"
+		/>
 		<TransactionsSuccessDialog
 			:visible="drawersShow.success"
-			:title="activeTab === '0' ? 'Bakim kaydi basariyla olusturuldu!' : 'Dolum kaydi basariyla olusturuldu!'"
+			:title="
+				activeTab === '0'
+					? 'Bakim kaydi basariyla olusturuldu!'
+					: 'Dolum kaydi basariyla olusturuldu!'
+			"
 			@close="drawersShow.success = false"
 		/>
 	</div>
