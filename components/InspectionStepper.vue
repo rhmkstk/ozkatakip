@@ -49,6 +49,7 @@ async function onFileSelect(event: FileUploadSelectEvent) {
 			photo_url.value = e.target.result as string;
 		}
 	};
+  reader.readAsDataURL(imageFile);
 	try {
 		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
 		compressedImage.value = compressedFile as File;
@@ -220,6 +221,8 @@ async function createInspectionForm() {
             step="1"
             title="Yeni YSC"
             :is-active="activeStep === '1'"
+            :is-done="parseInt(activeStep) > 1"
+
           />
         </Step>
         <Step value="2" as-child>
@@ -227,6 +230,7 @@ async function createInspectionForm() {
             step="2"
             title="Degisim"
             :is-active="activeStep === '2'"
+            :is-done="parseInt(activeStep) > 2"
           />
         </Step>
         <Step value="3" as-child>
@@ -234,6 +238,7 @@ async function createInspectionForm() {
             step="3"
             title="Onay"
             :is-active="activeStep === '3'"
+            :is-done="parseInt(activeStep) > 3"
           />
         </Step>
       </StepList>
@@ -260,6 +265,7 @@ async function createInspectionForm() {
 												class="flex-1"
 											/>
 											<Button
+                      :disabled="!newProductId"
 												label="Ara"
 												@click="getNewProductData(newProductId, () => activateCallback('2'))"
 											/>
@@ -384,7 +390,7 @@ async function createInspectionForm() {
 							@select="onFileSelect"
 						/>
 						<img
-							v-if="compressedImage"
+							v-if="photo_url"
 							:src="photo_url"
 							alt="Image"
 							class="shadow-md rounded-xl w-64 sm:w-12"
