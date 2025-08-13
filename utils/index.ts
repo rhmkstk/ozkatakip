@@ -31,3 +31,6 @@ export async function handleUploadImage(
   const result = await uploadImageResponse.json();
   return result?.signedUrl || "";
 }
+export function getValueByPath(obj, path) {
+	return path.split('.').reduce((acc, part) => acc?.[part], obj);
+}
