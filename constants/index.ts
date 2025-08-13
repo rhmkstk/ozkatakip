@@ -163,3 +163,46 @@ export const fillFormFields = [
 	{ key: 'paint', label: fillLabels.paint },
 	{ key: 'hydrostatic_pressure_test', label: fillLabels.hydrostatic_pressure_test },
 ];
+
+export const userDetails=[{
+  id:"9d464b60-8749-4561-829b-50b1481fce9f",
+  name:"Yahya Özgü",
+  surname:"Özer",
+  role:"user",
+},
+{
+  id:"3541e272-d0b0-4747-8434-9a4b1775e050",
+  name:"Fatih",
+  surname:"Salgür",
+  role:"user",
+},{
+  id:"7a5a5758-e15f-414c-842e-f4590567064f",
+  name:"Alperen",
+  surname:"Karadedeli",
+  role:"user",
+},
+{
+  id:"36351b39-61be-426a-83b0-7365f35fb0b6",
+  name:"Murat",
+  surname:"Aktürk",
+  role:"user",
+},
+{
+  id:"036f4ba0-9e26-4e08-bb4f-b48d7a13bf24",
+  name:"Mehmet",
+  surname:"Yılmaz",
+  role:"admin",
+},
+{
+  id:"8f365113-58df-42f0-8052-a8815c8902de",
+  name:"İlker",
+  surname:"Kızılaslan",
+  role:"admin",
+},
+{
+  id:"fa9004ea-ba91-4c36-9ce6-c8702cdef721",
+  name:"Alaeddin",
+  surname:"Kuran",
+  role:"admin",
+}
+]
