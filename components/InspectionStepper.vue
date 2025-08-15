@@ -147,6 +147,17 @@ async function applyChanges(callback: () => void) {
     });
 
     if (res.success) {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+			const userName = getUserName(userId || "");
+      $fetch('/api/transactions', {
+			method: 'POST',
+			body: {
+				type: 'change',
+				user: userName,
+				product_id: currentProductData.product.id,
+				details: newProductData?.product?.id,
+			},
+		});
       callback();
       toast.add({
         severity: "success",
@@ -174,11 +185,12 @@ async function createInspectionForm() {
   loading.value = true;
   try {
     const userId = (await supabase.auth.getUser()).data.user?.id;
+    const userName = getUserName(userId || "");
     if (compressedImage.value) {
       photo_url.value = await handleUploadImage(compressedImage.value);
     }
 
-    await $fetch("/api/inspections", {
+    const transactionRes = await $fetch("/api/inspections", {
       method: "POST",
       body: {
         position: true,
@@ -197,6 +209,16 @@ async function createInspectionForm() {
         fire_extinguisher_id: newProductData.product?.id,
       },
     });
+
+     $fetch('/api/transactions', {
+			method: 'POST',
+			body: {
+				type: 'inspection',
+				user: userName,
+				product_id: newProductData.product?.id,
+				details: transactionRes.id,
+			},
+		});
     drawerShow.value = true;
   } catch (error) {
     toast.add({
