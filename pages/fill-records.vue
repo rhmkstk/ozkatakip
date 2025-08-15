@@ -128,6 +128,15 @@ const expandColumns = [
 					:field="item.accessorKey"
 					:header="item.header"
 				>
+				<template
+						v-if="isCellCustom(item.accessorKey)"
+						#body="slotProps"
+					>
+						<CustomCell
+							:field="item.accessorKey"
+							:value="getValueByPath(slotProps.data, item.accessorKey)"
+						/>
+					</template>
 				</Column>
 				<template #expansion="slotProps">
 					<div class="p-4">
@@ -149,6 +158,7 @@ const expandColumns = [
 										:field="item.accessorKey"
 										:value="expandSlotProps.data[item.accessorKey]"
 										type="fill"
+										
 									/>
 								</template>
 							</Column>

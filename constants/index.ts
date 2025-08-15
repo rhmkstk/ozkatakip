@@ -72,9 +72,13 @@ export const customCellFields = [
   "paint",
   "hydrostatic_pressure_test",
   "photo_url",
-  "created_at",
   "type",
   "current_status",
+  "manufacture_year",
+  "refill_date",
+  "next_refill_date",
+  "hydrostatic_test_date",
+  "next_hydrostatic_test_date",
 ];
 
 export const fireExtinguishers = [

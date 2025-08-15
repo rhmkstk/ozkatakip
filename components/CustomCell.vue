@@ -5,7 +5,7 @@ import ZoomImage from './ZoomImage.vue';
 type Props = {
 	field: string;
 	value: unknown;
-	type: string;
+	type?: string;
 };
 // need better type definitions
 
@@ -17,6 +17,25 @@ function converIsoString(isoString: string): string {
 	const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are zero-indexed
 	const year = date.getUTCFullYear();
 	return `${day}.${month}.${year}`;
+}
+
+function formatTurkishDate(dateInput?: string | null): string {
+  if (!dateInput) {
+    return "-"; 
+  }
+
+  const date = new Date(dateInput);
+
+  if (isNaN(date.getTime())) {
+    console.warn("Invalid date:", dateInput);
+    return "-"; 
+  }
+
+  return date.toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 const customCells = {
@@ -52,12 +71,12 @@ const componentDefinitions = {
 	'products.refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: value,
+		text: formatTurkishDate(value),
 	}),
 	'products.next_refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: value,
+		text: formatTurkishDate(value),
 		// text: new Date(value).toLocaleDateString('tr-TR', {
 		// 	year: 'numeric',
 		// 	month: '2-digit',
@@ -67,8 +86,34 @@ const componentDefinitions = {
 	'created_at': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: converIsoString(value),
+		text: formatTurkishDate(value),
 	}),
+	'manufacture_year': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: formatTurkishDate(value),
+	}),
+	'hydrostatic_test_date': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: formatTurkishDate(value),
+	}),
+	'next_hydrostatic_test_date': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: formatTurkishDate(value),
+	}),
+	'refill_date': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: formatTurkishDate(value),
+	}),
+	'next_refill_date': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: formatTurkishDate(value),
+	}),
+
 	'result': customCells.boolean,
 	'position': customCells.boolean,
 	'body': customCells.boolean,
