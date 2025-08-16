@@ -6,7 +6,7 @@ const props = defineProps<Props>();
 </script>
 
 <template>
-	<div class="flex items-center space-x-4 mb-6 p-6 -m-6 shadow-sm">
+	<div class="flex items-center space-x-4 mb-6 p-6 -m-6 sticky -top-6 z-10 bg-white ">
 		<slot />
 		<h2
 			v-if="props.title"

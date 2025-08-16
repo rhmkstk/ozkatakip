@@ -1,6 +1,10 @@
 <script setup lang="ts">
+
+import { userDetails } from '~/constants';
+
 // No additional setup needed
 const supabase = useSupabaseClient();
+const currentUserDetails=ref<typeof userDetails[0] | null>(null);
 const logout = async () => {
 	const { error } = await supabase.auth.signOut();
 	if (error) {
@@ -10,6 +14,12 @@ const logout = async () => {
 		await navigateTo('/login');
 	}
 };
+onMounted(async () => {
+	const { data } = await supabase.auth.getUser();
+	const id = data?.user?.id;
+	currentUserDetails.value = userDetails.find(user => user.id === id) || null
+	console.log('User details:', currentUserDetails.value);
+});
 
 const menuItems = [
 	{ name: 'Bakım kayıtları', path: '/', icon: 'ri-booklet-line' },
@@ -41,12 +51,12 @@ const sidebarExpanded = ref(true);
 			class="sidebar py-14 px-12 text-gray-950 flex flex-col"
 		>
 			<div class="border-b pb-6 border-slate-300 flex justify-between">
-				<div class="flex items-center space-x-3">
+				<div v-if="currentUserDetails" class="flex items-center space-x-3">
 					<span class="size-11 bg-blue-400 rounded-full shrink-0" />
 					<div>
-						<span class="text-[10px] text-gray-500">YÖNETİCİ</span>
+						<span class="text-[10px] text-gray-500">{{ currentUserDetails.role ==="admin" ? 'YÖNETİCİ': 'KULLANICI' }}</span>
 						<p class="font-bold  text-sm">
-							Yahya Özer
+							{{ currentUserDetails.name }} {{ currentUserDetails.surname }}
 						</p>
 					</div>
 				</div>
