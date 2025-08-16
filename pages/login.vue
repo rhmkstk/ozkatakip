@@ -35,8 +35,12 @@ const login = async () => {
 		console.error('Giriş başarısız:', error.message);
 	}
 	else {
-		console.info('Giriş başarılı - Kullanici ID:', data.user.id);
-		navigateTo('/');
+		const userRole = getUserDetail(data.user.id)?.role || 'unknown';
+		if(userRole === 'admin') {
+			navigateTo('/');	
+		}else {
+			navigateTo('/mobile');
+		}
 	}
 	loading.value = false;
 };

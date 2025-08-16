@@ -143,12 +143,13 @@ async function saveInspectionForm() {
 		});
 
 		const userId = (await supabase.auth.getUser()).data.user?.id;
+		const userName = getUserName(userId || "");
 
 		$fetch('/api/transactions', {
 			method: 'POST',
 			body: {
 				type: 'inspection',
-				user: userId,
+				user: userName,
 				product_id: data.value?.product.id,
 				details: response.id,
 			},
@@ -200,12 +201,13 @@ async function saveFillRecord() {
 
 		if (response) {
 			const userId = (await supabase.auth.getUser()).data.user?.id;
+			const userName = getUserName(userId || "");
 
 			$fetch('/api/transactions', {
 				method: 'POST',
 				body: {
 					type: 'dolum',
-					user: userId,
+					user: userName,
 					product_id: data.value?.product.id,
 					details: response.id,
 				},
