@@ -30,7 +30,9 @@ export async function handleUploadImage(
     body: formData,
   });
   const result = await uploadImageResponse.json();
-  return result?.signedUrl || "";
+
+  console.log("Upload result:", result);
+  return result?.filePath || "";
 }
 export function getValueByPath(obj, path) {
 	return path.split('.').reduce((acc, part) => acc?.[part], obj);

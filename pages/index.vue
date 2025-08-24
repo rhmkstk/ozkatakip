@@ -126,7 +126,6 @@ const expandColumns = [
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"
-				size="large"
 				class="text-sm"
 
 				:row-class="(rowData) => (rowData.result ? '' : '!bg-red-100')"

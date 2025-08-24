@@ -172,7 +172,7 @@ export const userDetails=[{
   id:"9d464b60-8749-4561-829b-50b1481fce9f",
   name:"Yahya Özgü",
   surname:"Özer",
-  role:"user",
+  role:"admin",
 },
 {
   id:"3541e272-d0b0-4747-8434-9a4b1775e050",

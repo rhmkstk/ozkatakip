@@ -46,7 +46,8 @@ const sidebarExpanded = ref(true);
     >
       <div class="border-b pb-6 border-slate-300 flex justify-between">
         <div class="flex items-center space-x-3">
-          <span class="size-11 bg-blue-400 rounded-full shrink-0" />
+          <!-- <span class="size-11 bg-blue-400 rounded-full shrink-0" /> -->
+					<img src="https://steela.ir/en/wp-content/uploads/2022/11/User-Avatar-in-Suit-PNG.png" alt="user avaatar" class="size-11 rounded-full shrink-0">
           <div>
             <span class="text-[10px] text-gray-500">YÖNETİCİ</span>
             <p class="font-bold text-sm">Yahya Özer</p>

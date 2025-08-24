@@ -24,16 +24,16 @@ export default defineEventHandler(async (event) => {
 			return uploadError;
 		}
 
-		const { data, erorr: signedUrlError } = await event.context.supabase.storage
-			.from('inspection-photos')
-			.createSignedUrl(filePath, 60 * 60); // URL valid for 1 hour
+		// const { data, erorr: signedUrlError } = await event.context.supabase.storage
+		// 	.from('inspection-photos')
+		// 	.createSignedUrl(filePath, 60 * 5); // URL valid for 1 hour
 
-		if (signedUrlError) {
-			console.error('createSignedUrl failed:', signedUrlError.message);
-			return signedUrlError;
-		}
+		// if (signedUrlError) {
+		// 	console.error('createSignedUrl failed:', signedUrlError.message);
+		// 	return signedUrlError;
+		// }
 
-		return data;
+		return {filePath};
 	}
 	catch (error: unknown) {
 		console.log('ERROR:', error);
