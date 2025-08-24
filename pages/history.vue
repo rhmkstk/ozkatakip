@@ -10,9 +10,7 @@ const { error } = await useFetch('/api/transactions', {
 	onResponse({ response }) {
 		if (response._data) {
 			// Map the response data to include labels for enums
-			tabledata.value = response._data.map(item => ({
-				...item,
-			}));
+			tabledata.value = response._data
 		}
 		else {
 			console.error('Error fetching data:', error);
