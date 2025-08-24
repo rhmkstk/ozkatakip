@@ -15,21 +15,6 @@ const props = defineProps<Props>();
 // Store a map of product.id to QR data URL
 const qrCodes = ref<Record<string, string>>({});
 
-// const ModelTypeAbbrs = {
-// 	'5 KG KARBONDİOKSİT GAZLI': '5 KG CO2',
-// 	'10 KG KARBONDİOKSİT GAZLI': '10 KG CO2',
-// 	'6 KG ABC KURU KİMYEVİ TOZLU': '6 KG KKT',
-// 	'2 KG ABC KURU KİMYEVİ TOZLU': '2 KG KKT',
-// 	'12 KG ABC KURU KİMYEVİ TOZLU': '12 KG KKT',
-// 	'25 KG ABC KURU KİMYEVİ TOZLU': '25 KG KKT',
-// 	'50 KG ABC KURU KİMYEVİ TOZLU': '50 KG KKT',
-// 	'2 KG BIOVERSAL KOPUKLU': '2 KG BIO',
-// 	'6 KG BIOVERSAL KOPUKLU': '6 KG BIO',
-// 	'9 KG BIOVERSAL KOPUKLU': '9 KG BIO',
-// 	'25 KG BIOVERSAL KOPUKLU': '25 KG BIO',
-// 	'50 KG BIOVERSAL KOPUKLU': '50 KG BIO',
-// };
-
 onMounted(async () => {
 	for (const product of props.products) {
 		try {

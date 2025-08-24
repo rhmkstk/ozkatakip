@@ -31,7 +31,6 @@ export async function handleUploadImage(
   });
   const result = await uploadImageResponse.json();
 
-  console.log("Upload result:", result);
   return result?.filePath || "";
 }
 export function getValueByPath(obj, path) {

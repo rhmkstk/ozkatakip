@@ -109,6 +109,7 @@ const expandColumns = [
 				v-model="date"
 				view="month"
 				date-format="mm/yy"
+				size="small"
 			/>
 		</PageHeader>
 		<EmptyState v-if="!tabledata.length">

@@ -66,6 +66,11 @@ const customCells = {
 		props: {},
 		text: productStatusTypeLabels[value as keyof typeof productStatusTypeLabels] || value,
 	}),
+	userName: (value: string) => ({
+		name: 'span',
+		props: {},
+		text: getUserName(value),
+	}),
 };
 const componentDefinitions = {
 	'products.refill_date': (value: string) => ({
@@ -133,6 +138,7 @@ const componentDefinitions = {
 	'photo_url': customCells.photo,
 	'type': customCells.type,
 	'current_status': customCells.productStatus,
+	'user': customCells.userName,
 };
 
 const currentComponentData = computed(() => {

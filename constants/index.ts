@@ -79,6 +79,7 @@ export const customCellFields = [
   "next_refill_date",
   "hydrostatic_test_date",
   "next_hydrostatic_test_date",
+  "user",
 ];
 
 export const fireExtinguishers = [

@@ -50,6 +50,7 @@ const columns = [
 				v-model="date"
 				view="month"
 				date-format="mm/yy"
+				size="small"
 			/>
 		</PageHeader>
 

@@ -85,6 +85,7 @@ const expandColumns = [
 				v-model="date"
 				view="month"
 				date-format="mm/yy"
+				size="small"
 			/>
 		</PageHeader>
 		<!-- <div class="pb-6">

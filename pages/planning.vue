@@ -172,6 +172,7 @@ const getFilteredDates = computed(() => {
 				show-icon
 				class=" w-64"
 				selection-mode="range"
+				size="small"
 				@update:model-value="onDateRangeChange"
 			/>
 		</PageHeader>
