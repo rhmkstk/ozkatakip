@@ -1,5 +1,6 @@
-import { customCellFields } from "~/constants";
+import { customCellFields, userDetails } from "~/constants";
 import { useSupabaseClient } from "#imports";
+
 export function isCellCustom(cell: string): boolean {
   return customCellFields.includes(cell);
 }
@@ -29,8 +30,19 @@ export async function handleUploadImage(
     body: formData,
   });
   const result = await uploadImageResponse.json();
-  return result?.signedUrl || "";
+
+  console.log("Upload result:", result);
+  return result?.filePath || "";
 }
 export function getValueByPath(obj, path) {
 	return path.split('.').reduce((acc, part) => acc?.[part], obj);
+}
+
+export function getUserDetail(userId: string) {
+  const user = userDetails.find((user) => user.id === userId);
+  return user || null;
+}
+export function getUserName(userId: string) {
+  const user = getUserDetail(userId) || null;
+  return user ? `${user.name} ${user.surname}` : userId;
 }

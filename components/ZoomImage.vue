@@ -26,9 +26,9 @@ onUnmounted(() => {
 		<!-- Thumbnail with hover zoom -->
 		<button @click="showModal = true">
 			<img
-				:src="src"
+				:src="`/api/storage/inspection-photos/${encodeURIComponent(src)}`"
 				alt="Zoomable"
-				class="transition-transform duration-300 ease-in-out transform hover:scale-110 cursor-pointer"
+				class="transition-transform duration-300 ease-in-out transform hover:scale-110 cursor-pointer size-20 object-cover rounded-md"
 			>
 		</button>
 
@@ -57,7 +57,7 @@ onUnmounted(() => {
 					</button>
 					<!-- Full-height Image -->
 					<img
-						:src="src"
+						:src="`/api/storage/inspection-photos/${encodeURIComponent(src)}`"
 						alt="Full view"
 						class="object-contain h-screen w-full"
 					>
