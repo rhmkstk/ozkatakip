@@ -177,6 +177,7 @@ const handleDeleteProducts = async () => {
           :options="locations"
           placeholder="Bulundugu bina/alan sefc"
           class="w-full md:w-56"
+          size="small"
         />
         <template #right>
           <Button
@@ -184,6 +185,7 @@ const handleDeleteProducts = async () => {
             outlined
             label="QR Kod Oluştur"
             icon="ri-qr-code-line"
+            size="small"
             @click="generateQRCodes"
           />
 
@@ -193,6 +195,7 @@ const handleDeleteProducts = async () => {
             outlined
             label="Ürünleri Sil"
             icon="ri-delete-bin-5-line"
+            size="small"
             @click="deleteProductConfirmModal = true"
           />
         </template>
@@ -253,7 +256,19 @@ const handleDeleteProducts = async () => {
         </template>
       </DataTable>
     </div>
-    <Dialog v-model:visible="showQRModal" modal header="QR Kod Listesi">
+    <Dialog v-model:visible="showQRModal" modal>
+      <template #header>
+        <div class="flex justify-between items-center w-full">
+          <h2 class="text-xl font-semibold">QR Kod Listesi</h2>
+          <Button
+            icon="ri-printer-line"
+            class="mr-2"
+            label="Yazdır"
+            severity="secondary"
+            @click="showQRModal = false"
+          />
+        </div>
+      </template>
       <DisplayQrCodes :products="selectedProducts" />
     </Dialog>
     <Dialog

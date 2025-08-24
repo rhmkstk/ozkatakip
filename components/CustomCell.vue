@@ -44,7 +44,7 @@ const customCells = {
 		props: {
 			class: value
 				? 'ri-check-fill text-3xl text-green-600 font-semibold'
-				: props.type === 'fill' ? 'ri-subtract-line text-3xl font-semibold' : 'ri-close-line text-3xl text-red-600 font-semibold',
+				: props.type === 'fill' ? 'ri-subtract-line text-3xl font-semibold text-gray-500' : 'ri-close-line text-3xl text-red-600 font-semibold',
 		},
 		text: null,
 	}),
@@ -65,6 +65,11 @@ const customCells = {
 		name: 'span',
 		props: {},
 		text: productStatusTypeLabels[value as keyof typeof productStatusTypeLabels] || value,
+	}),
+	userName: (value: string) => ({
+		name: 'span',
+		props: {},
+		text: getUserName(value),
 	}),
 };
 const componentDefinitions = {
@@ -133,6 +138,7 @@ const componentDefinitions = {
 	'photo_url': customCells.photo,
 	'type': customCells.type,
 	'current_status': customCells.productStatus,
+	'user': customCells.userName,
 };
 
 const currentComponentData = computed(() => {

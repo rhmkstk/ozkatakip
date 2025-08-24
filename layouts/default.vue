@@ -1,6 +1,10 @@
 <script setup lang="ts">
+
+import { userDetails } from '~/constants';
+
 // No additional setup needed
 const supabase = useSupabaseClient();
+const currentUserDetails=ref<typeof userDetails[0] | null>(null);
 const logout = async () => {
   const { error } = await supabase.auth.signOut();
   if (error) {
@@ -9,6 +13,11 @@ const logout = async () => {
     await navigateTo("/login");
   }
 };
+onMounted(async () => {
+	const { data } = await supabase.auth.getUser();
+	const id = data?.user?.id;
+	currentUserDetails.value = userDetails.find(user => user.id === id) || null
+});
 
 const menuItems = [
   { name: "Bakım kayıtları", path: "/", icon: "ri-booklet-line" },
@@ -39,21 +48,25 @@ const sidebarExpanded = ref(true);
 </script>
 
 <template>
-  <div class="flex w-full max-w-full h-screen bg-slate-100">
-    <div
-      v-show="sidebarExpanded"
-      class="sidebar py-14 px-8 text-gray-950 flex flex-col"
-    >
-      <div class="border-b pb-6 border-slate-300 flex justify-between">
-        <div class="flex items-center space-x-3">
-          <!-- <span class="size-11 bg-blue-400 rounded-full shrink-0" /> -->
-					<img src="https://steela.ir/en/wp-content/uploads/2022/11/User-Avatar-in-Suit-PNG.png" alt="user avaatar" class="size-11 rounded-full shrink-0">
-          <div>
-            <span class="text-[10px] text-gray-500">YÖNETİCİ</span>
-            <p class="font-bold text-sm">Yahya Özer</p>
-          </div>
-        </div>
-      </div>
+	<div class="flex w-full max-w-full h-screen bg-slate-100">
+		<div
+			v-show="sidebarExpanded"
+			class="sidebar py-14 px-12 text-gray-950 flex flex-col"
+		>
+			<div v-if="currentUserDetails" class="border-b pb-6 border-slate-300 flex justify-between">
+				<div v-if="currentUserDetails" class="flex items-center space-x-3">
+					<img
+            :src="`assets/user_avatar.jpg`"
+            alt="profile image"
+            class="size-11 rounded-full object-cover" />
+					<div>
+						<span class="text-[10px] text-gray-500">{{ currentUserDetails.role ==="admin" ? 'YÖNETİCİ': 'KULLANICI' }}</span>
+						<p class="font-bold  text-sm">
+							{{ currentUserDetails.name }} {{ currentUserDetails.surname }}
+						</p>
+					</div>
+				</div>
+			</div>
 
       <!-- <div class="user">
         <img
@@ -65,12 +78,12 @@ const sidebarExpanded = ref(true);
         <p class="text-gray-400">samantha@email.com</p>
       </div> -->
       <nav class="mt-8">
-        <ul class="text-gray-950">
+        <ul class="text-gray-950 space-y-2">
           <li v-for="item in menuItems" :key="item.name">
             <NuxtLink
               :to="item.path"
-              class="flex items-center px-2 py-2 space-x-1.5 border rounded-lg border-slate-100"
-              active-class="!text-blue-500 !border-blue-500 rounded-lg shadow-sm"
+              class="flex items-center px-2 py-2 space-x-1.5 rounded-lg"
+              active-class="!bg-white shadow-sm"
             >
               <i :class="item.icon" class="text-lg" />
               <span>{{ item.name }}</span>

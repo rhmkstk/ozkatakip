@@ -148,12 +148,11 @@ async function applyChanges(callback: () => void) {
 
     if (res.success) {
       const userId = (await supabase.auth.getUser()).data.user?.id;
-			const userName = getUserName(userId || "");
       $fetch('/api/transactions', {
 			method: 'POST',
 			body: {
 				type: 'change',
-				user: userName,
+				user: userId,
 				product_id: currentProductData.product.id,
 				details: newProductData?.product?.id,
 			},
@@ -185,7 +184,6 @@ async function createInspectionForm() {
   loading.value = true;
   try {
     const userId = (await supabase.auth.getUser()).data.user?.id;
-    const userName = getUserName(userId || "");
     if (compressedImage.value) {
       photo_url.value = await handleUploadImage(compressedImage.value);
     }
@@ -214,7 +212,7 @@ async function createInspectionForm() {
 			method: 'POST',
 			body: {
 				type: 'inspection',
-				user: userName,
+				user: userId,
 				product_id: newProductData.product?.id,
 				details: transactionRes.id,
 			},
