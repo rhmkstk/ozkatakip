@@ -36,7 +36,6 @@ const supportItems = [
   {
     name: "Çıkış yap",
     icon: "ri-logout-circle-r-line",
-    path: "/logout",
     action: logout,
   },
 ];

@@ -131,6 +131,15 @@ const expandColuns = [
 const generateQRCodes = () => {
   showQRModal.value = true;
 };
+const downloadPdf = async () => {
+  const url = await generateLabelsPdf(selectedProducts.value);
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "etiketler.pdf"
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 
 const handleDeleteProducts = async () => {
   if (selectedProducts.value.length === 0) return;
@@ -263,9 +272,9 @@ const handleDeleteProducts = async () => {
           <Button
             icon="ri-printer-line"
             class="mr-2"
-            label="Yazdır"
+            label="PDF Indir"
             severity="secondary"
-            @click="showQRModal = false"
+            @click="downloadPdf"
           />
         </div>
       </template>
