@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import Aura from '@primeuix/themes/aura';
-import { PrimeVueLocaleOptions } from 'primevue';
+// import { PrimeVueLocaleOptions } from 'primevue';
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
