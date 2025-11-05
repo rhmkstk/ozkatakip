@@ -242,7 +242,6 @@ async function createInspectionForm() {
             title="Yeni YSC"
             :is-active="activeStep === '1'"
             :is-done="parseInt(activeStep) > 1"
-
           />
         </Step>
         <Step value="2" as-child>

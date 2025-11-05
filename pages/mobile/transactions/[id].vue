@@ -93,6 +93,7 @@ const inspectionAlert = computed(() => {
       })
     : "";
 
+
   return `  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
 });
 
@@ -237,7 +238,9 @@ onMounted(async () => {
     params: { location_id: id },
   });
 
+
   if (isInLast30Days(data[0].created_at)) {
+    lastInspectionDate.value = new Date(data[0].created_at);
     showInspectionAlert.value = true;
   }
 });

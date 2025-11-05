@@ -12,8 +12,6 @@ let scanner: Html5Qrcode | null = null;
 const qrRegionId = 'qr-reader';
 
 const handleQrScan = async () => {
-	await nextTick(); // ✅ Wait for <div id="qr-reader"> to be rendered
-
 	try {
 		scanner = new Html5Qrcode(qrRegionId);
 		await scanner.start(
@@ -46,8 +44,9 @@ const handleQrScan = async () => {
 	}
 };
 
-onMounted(() => {
-	handleQrScan();
+onMounted(async () => {
+	await nextTick(); // ✅ Wait for <div id="qr-reader"> to be rendered
+	await handleQrScan();
 });
 
 onUnmounted(() => {
