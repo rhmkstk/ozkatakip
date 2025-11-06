@@ -53,6 +53,14 @@ const fillForm = reactive({
   user_id: null,
 });
 
+const isLoading = computed(() => {
+  return (
+    status.value === "pending" ||
+    status.value === "idle" ||
+    inspectionFormLoading.value
+  );
+});
+
 const controlFields = [
   "position",
   "body",
@@ -65,7 +73,7 @@ const controlFields = [
   "working_mechanism",
 ];
 
-const { data, status } = await useAsyncData("product", async () => {
+const { data, status, error } = await useAsyncData("product", async () => {
   const location = await $fetch("/api/locations/getByLocationId", {
     params: { location_id: route.params.id },
   });
@@ -92,7 +100,6 @@ const inspectionAlert = computed(() => {
         year: "numeric",
       })
     : "";
-
 
   return `  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
 });
@@ -185,27 +192,29 @@ async function saveFillRecord() {
     return;
   }
   inspectionFormLoading.value = true;
+  const userId = (await supabase.auth.getUser()).data.user?.id;
   try {
     const response = await $fetch("/api/fill", {
       method: "POST",
       body: {
         ...fillForm,
         product_id: data.value?.product.id,
+        user_id: userId,
       },
     });
 
     if (response) {
       const refilPeriod = data.value?.product.refill_period || 2;
       const fillDate = new Date().toISOString().split("T")[0];
-      const refillDate = new Date()
+      const refillDate = new Date();
       refillDate.setFullYear(refillDate.getFullYear() + Number(refilPeriod));
       const formattedRefillDate = refillDate.toISOString().split("T")[0];
       await $fetch("/api/products", {
         method: "PUT",
         body: {
           ...data.value?.product,
-          fill_date: fillDate,
-          refill_date: formattedRefillDate,
+          refill_date: fillDate,
+          next_refill_date: formattedRefillDate,
           current_status: "active",
         },
       });
@@ -214,7 +223,7 @@ async function saveFillRecord() {
       $fetch("/api/transactions", {
         method: "POST",
         body: {
-          type: "dolum",
+          type: "fill",
           user: userId,
           product_id: data.value?.product.id,
           details: response.id,
@@ -252,7 +261,6 @@ onMounted(async () => {
     params: { location_id: id },
   });
 
-
   if (isInLast30Days(data[0].created_at)) {
     lastInspectionDate.value = new Date(data[0].created_at);
     showInspectionAlert.value = true;
@@ -262,19 +270,25 @@ onMounted(async () => {
 
 <template>
   <div class="h-full">
-    <BaseLoader
-      v-if="status === 'pending' || status === 'idle' || inspectionFormLoading"
-    />
-    <div v-else class="flex flex-col h-full">
-      <header class="flex items-center space-x-2 mb-6">
-        <Button
-          icon="ri-arrow-left-fill"
-          severity="secondary"
-          label="Geri"
-          aria-label="go back"
-          @click="$router.push('/mobile')"
-        />
-      </header>
+    <BaseLoader v-if="isLoading" />
+    <header class="flex items-center space-x-2 mb-6">
+      <Button
+        icon="ri-arrow-left-fill"
+        severity="secondary"
+        label="Geri"
+        aria-label="go back"
+        @click="$router.push('/mobile')"
+      />
+    </header>
+    <div v-if="!isLoading && status === 'error'" class="py-2 flex flex-col gap-y-8">
+      <p class="text-lg">Aradiginiz YSC bulunamadi! Geri donup farkli mevcut bir YSC ile islem yapabilirsiniz</p>
+      <Button
+        label="Geri"
+        @click="$router.push('/mobile')"
+      />
+    </div>
+
+    <div v-else-if="!isLoading" class="flex flex-col h-full">
       <div
         v-if="data?.product"
         class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex"
