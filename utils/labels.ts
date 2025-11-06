@@ -1,95 +1,78 @@
-// /utils/labels.client.ts   ⬅️ client-only kalsın
-import QRCode from 'qrcode'
-import { jsPDF } from 'jspdf'
-import 'svg2pdf.js' // ⬅️ default export YOK; side-effect import
+import QRCode from "qrcode"
+import { jsPDF } from "jspdf"
 
-type ProductWithLocation = {
-  id: string
-  unit: string | null
-  model_type: string | null
-  serial_number: string | null
-  brand: string | null
-  manufacture_year: string | null
-  locations: { location_id: string | number | null } | null
+function getShortModelName(modelType: string | null | undefined) {
+  if (!modelType) return ""
+
+  const mappings: { [key in "Karbondioksit gazli" | "Kuru Kimyevi Tozlu" | "Bioversal köpüklü"]: string } = {
+    "Karbondioksit gazli": "CO2",
+    "Kuru Kimyevi Tozlu": "KKT",
+    "Bioversal köpüklü": "BIO",
+  }
+
+  return mappings[modelType as keyof typeof mappings] || modelType
 }
 
-const LABEL_WIDTH_MM = 50
-const LABEL_MIN_HEIGHT_MM = 35
-const PADDING_MM = 3
-const QR_SIZE_MM = 24
-const GAP_MM = 3
+export async function generateLabelsPdf(products) {
+  const PADDING = 1
+  const QR = 12
+  const GAP = 3
+  const WIDTH = 50
+  const FONT = 6
+  const LINE_H = 3
 
-function computeLabelHeight(lines: string[], lineHeight = 4) {
-  const textHeight = lines.length * lineHeight + 1
-  const contentHeight = Math.max(QR_SIZE_MM, textHeight)
-  return Math.max(LABEL_MIN_HEIGHT_MM, PADDING_MM * 2 + contentHeight)
-}
-
-export async function generateLabelsPdf(products: ProductWithLocation[]) {
-  let doc: jsPDF | null = null
+  let doc = null
 
   for (let i = 0; i < products.length; i++) {
     const p = products[i]
-    const locationId = String(p.locations?.location_id ?? '')
 
-    // 1) SVG QR üret
-    const qrSvg = await QRCode.toString(locationId, {
-      type: 'svg',
-      errorCorrectionLevel: 'Q',
-      margin: 0
-    })
-
-    // 2) Metin satırları
     const lines = [
-      `Model/Tip: ${[p.unit, p.model_type].filter(Boolean).join(' ') || '-'}`,
-      `Seri No: ${p.serial_number || '-'}`,
-      `Marka: ${p.brand || '-'}`,
-      `Üretim: ${p.manufacture_year?.slice(0, 4) || '-'}`,
-      `Lokasyon: ${locationId || '-'}`
+      `Model: ${[p.unit, getShortModelName(p.model_type)].filter(Boolean).join(" ") || "-"}`,
+      `Seri No: ${p.serial_number || "-"}`,
+      `Marka: ${p.brand || "-"}`,
+      `Üretim: ${p.manufacture_year?.slice(0, 4) || "-"}`
     ]
 
-    const labelHeight = computeLabelHeight(lines)
+    const textHeight = lines.length * LINE_H
+    const contentHeight = Math.max(QR, textHeight)
+    const height = contentHeight + PADDING * 2 // gerçek yükseklik (mm)
 
-    if (i === 0) {
+    // ✅ SAYFAYI LANDSCAPE oluştur → 50mm genişlik GERÇEKTEN genişlik olur
+    if (!doc) {
       doc = new jsPDF({
-        unit: 'mm',
-        format: [LABEL_WIDTH_MM, labelHeight],
-        compress: true
+        orientation: "landscape",
+        unit: "mm",
+        format: [height, WIDTH]     // height = kısa kenar, WIDTH = uzun kenar
       })
     } else {
-      doc!.addPage([LABEL_WIDTH_MM, labelHeight])
+      doc.addPage([height, WIDTH], "landscape")
     }
 
-    const startX = PADDING_MM
-    const startY = PADDING_MM
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(FONT)
 
-    // 3) QR yerleştir — doc.svg ile
-    const parser = new DOMParser()
-    const svgDoc = parser.parseFromString(qrSvg, 'image/svg+xml').documentElement
+    const startX = PADDING
+    const startY = PADDING
 
-    // width/height ver; ölçekleme derdi yok
-    await (doc as any)!.svg(svgDoc as unknown as SVGElement, {
-      x: startX,
-      y: startY,
-      width: QR_SIZE_MM,
-      height: QR_SIZE_MM
+    // ✅ QR PNG (sorunsuz)
+    const qr = await QRCode.toDataURL(String(p.locations?.location_id ?? "-"), {
+      type: "image/png",
+      margin: 0
     })
+    doc.addImage(qr, "PNG", startX, startY, QR, QR)
 
-    // 4) Metin bloğu
-    const textX = startX + QR_SIZE_MM + GAP_MM
-    const textYStart = startY + 2
-    const lineHeight = 4
-
-    doc!.setFontSize(9)
-    lines.forEach((line, idx) => {
-      doc!.text(line, textX, textYStart + idx * lineHeight, {
-        align: 'left',
-        baseline: 'top'
+    // ✅ METİN
+    const textX = startX + QR + GAP
+    let y = startY                  // tam üst padding'den başla
+    
+    for (const ln of lines) {
+      doc.text(ln, textX, y, {
+        align: "left",
+        baseline: "top",            // ⬅️ kritik: üstten hizala
       })
-    })
+      y += LINE_H
+    }
   }
 
-  const blob = doc!.output('blob')
-  const url = URL.createObjectURL(blob)
-  return url
+  return URL.createObjectURL(doc.output("blob"))
 }

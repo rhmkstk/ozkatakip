@@ -1,30 +1,36 @@
 export default defineEventHandler(async (event) => {
-	const body = await readBody(event);
-	const ids = body?.ids as string[] | undefined;
+  const body = await readBody(event);
+  const ids = body?.ids as string[] | undefined;
 
-	if (!Array.isArray(ids) || ids.length === 0) {
-		throw createError({
-			statusCode: 400,
-			message: 'An array of product IDs is required',
-		});
-	}
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw createError({ statusCode: 400, message: "An array of product IDs is required" });
+  }
 
-	const { data, error } = await event.context.supabase
-		.from('products')
-		.delete()
-		.in('id', ids)
-		.select(); // returns deleted rows
+  // 1) Önce bağlı inspections kayıtlarını sil
+  const { error: inspErr, count: inspCount } = await event.context.supabase
+    .from("inspections")
+    .delete({ count: "exact" })
+    .in("fire_extinguisher_id", ids);
 
-	if (error) {
-		throw createError({
-			statusCode: 500,
-			message: error.message,
-		});
-	}
+  if (inspErr) {
+    throw createError({ statusCode: 500, message: `Failed to delete inspections: ${inspErr.message}` });
+  }
 
-	return {
-		message: 'Products deleted successfully',
-		count: data.length,
-		deleted: data,
-	};
+  // 2) Sonra products'u sil
+  const { data: deletedProducts, error: prodErr } = await event.context.supabase
+    .from("products")
+    .delete()
+    .in("id", ids)
+    .select(); // silinen satırları geri döndür
+
+  if (prodErr) {
+    throw createError({ statusCode: 500, message: `Failed to delete products: ${prodErr.message}` });
+  }
+
+  return {
+    message: "Products deleted successfully",
+    inspectionsDeleted: inspCount ?? null,
+    productsDeleted: deletedProducts.length,
+    deleted: deletedProducts,
+  };
 });

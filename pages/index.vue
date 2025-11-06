@@ -55,47 +55,47 @@ const columns = [
 const expandColumns = [
 	{
 		accessorKey: 'photo_url',
-		header: 'Fotoğraf',
+		header: headerLabels.photo_url,
 	},
 	{
 		accessorKey: 'note',
-		header: 'Not',
+		header: headerLabels.note,
 	},
 	{
 		accessorKey: 'body',
-		header: 'Gövde',
+		header: headerLabels.body,
 	},
 	{
 		accessorKey: 'control_card',
-		header: 'Kontrol kartı',
+		header: headerLabels.control_card,
 	},
 	{
 		accessorKey: 'hose_and_nozzle',
-		header: 'Hortum ve memesi',
+		header: headerLabels.hoze_and_nozzle,
 	},
 	{
 		accessorKey: 'instruction_and_label',
-		header: 'Talimat ve etiket',
+		header: headerLabels.instruction_and_label,
 	},
 	{
 		accessorKey: 'mass',
-		header: 'Kütle',
+		header: headerLabels.mass,
 	},
 	{
 		accessorKey: 'pin_and_seal',
-		header: 'Pim ve conta',
+		header: headerLabels.pin_and_seal,
 	},
 	{
 		accessorKey: 'position',
-		header: 'Pozisyon',
+		header: headerLabels.position,
 	},
 	{
 		accessorKey: 'pressure',
-		header: 'Basınç',
+		header: headerLabels.pressure,
 	},
 	{
 		accessorKey: 'working_mechanism',
-		header: 'Çalışma mekanizması',
+		header: headerLabels.working_mechanism,
 	},
 ];
 

@@ -6,7 +6,7 @@ export const headerLabels = {
   note: "Not",
   body: "Gövde",
   control_card: "Kontrol kartı",
-  hoze_and_nozzle: "Hortum ve memesi",
+  hoze_and_nozzle: "Hortum / Lans",
   instruction_and_label: "Talimat ve etiket",
   mass: "Kütle",
   pin_and_seal: "Pim ve mühür",

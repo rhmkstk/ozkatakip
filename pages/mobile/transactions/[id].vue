@@ -195,6 +195,20 @@ async function saveFillRecord() {
     });
 
     if (response) {
+      const refilPeriod = data.value?.product.refill_period || 2;
+      const fillDate = new Date().toISOString().split("T")[0];
+      const refillDate = new Date()
+      refillDate.setFullYear(refillDate.getFullYear() + Number(refilPeriod));
+      const formattedRefillDate = refillDate.toISOString().split("T")[0];
+      await $fetch("/api/products", {
+        method: "PUT",
+        body: {
+          ...data.value?.product,
+          fill_date: fillDate,
+          refill_date: formattedRefillDate,
+          current_status: "active",
+        },
+      });
       const userId = (await supabase.auth.getUser()).data.user?.id;
 
       $fetch("/api/transactions", {

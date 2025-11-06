@@ -33,7 +33,7 @@ onMounted(async () => {
 		<div
 			v-for="product in products"
 			:key="product.id"
-			class="flex items-center"
+			class="flex"
 		>
 			<img
 				:src="qrCodes[product.id]"
@@ -41,7 +41,7 @@ onMounted(async () => {
 				class="size-64"
 			>
 			<div class="flex items-center">
-				<div class="flex flex-col space-y-2 align-baseline space-x-3 font-semibold">
+				<div class="flex flex-col space-y-2 align-baseline space-x-3 font-bold">
 					<p class="text-left">
 						Modeli/Tipi: {{ product.unit }} {{ product.model_type }}
 					</p>

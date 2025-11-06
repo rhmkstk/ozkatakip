@@ -229,6 +229,14 @@ async function createInspectionForm() {
     loading.value = false;
   }
 }
+
+// function handleScanComplete(scannedNumber: string) {
+//   newProductId.value = scannedNumber;
+//   showScanner.value = false;
+//   getNewProductData(scannedNumber, () => {
+//     activeStep.value = "2";
+//   });
+// }
 </script>
 
 <template>
@@ -305,7 +313,13 @@ async function createInspectionForm() {
 							<QRScanner
 								v-if="showScanner"
 								@close="showScanner = false"
-								@scan-complete="(scannedNumber) => newProductId = scannedNumber"
+								@scan-complete="(scannedNumber: string) => {
+                  newProductId = scannedNumber;
+                  showScanner = false;
+                  getNewProductData(scannedNumber, () => {
+                    activateCallback('2');
+                  });
+                }"
 							/>
 						</div>
 					</div>
