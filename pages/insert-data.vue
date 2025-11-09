@@ -10,6 +10,12 @@ const productStatusOptions = [
   { label: "Kayıp", value: "lost" },
   { label: "Yedek", value: "spare" },
 ];
+const refillPeriodOptions = [
+  { label: "1 yıl", value: 1 },
+  { label: "2 yıl", value: 2 },
+  { label: "3 yıl", value: 3 },
+  { label: "4 yıl", value: 4 },
+];
 
 const loading = ref(false);
 const newBuilding = ref({
@@ -227,7 +233,7 @@ watch(
         </div>
         <div class="form-row">
           <div class="form-item">
-            <label for="location">Bulundugu oda</label>
+            <label for="location">Bulunduğu yer</label>
             <InputText id="location" v-model="form.location.room" />
           </div>
           <div class="form-item">
@@ -322,12 +328,20 @@ watch(
           </div>
           <div class="form-item">
             <label for="refill_period">{{ headerLabels.refill_period }}</label>
-            <InputNumber
+            <Select
+              id="refill_period"
+              v-model="form.product.refill_period"
+              :options="refillPeriodOptions"
+              option-label="label"
+              option-value="value"
+              placeholder="Yeniden dolum periyodu secin"
+            />
+            <!-- <InputNumber
               id="refill_period"
               v-model="form.product.refill_period"
               :use-grouping="false"
               fluid
-            />
+            /> -->
           </div>
         </div>
         <div class="form-row">

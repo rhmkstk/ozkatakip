@@ -5,6 +5,7 @@ import {
   imageCompressionOptions,
   inspectionFormFields,
   fillFormFields,
+  productStatusTypeLabels,
 } from "~/constants";
 
 definePageMeta({
@@ -309,7 +310,7 @@ onMounted(async () => {
           <div class="flex items-center space-x-1">
             <span class="size-1.5 rounded-full bg-green-600" />
             <span class="text-xs text-slate-500 uppercase">{{
-              data.product.current_status
+              productStatusTypeLabels[data.product.current_status as keyof typeof productStatusTypeLabels]
             }}</span>
           </div>
           <div class="flex space-x-1 mt-4">
@@ -367,6 +368,7 @@ onMounted(async () => {
                     accept="image/*"
                     class="p-button-outlined p-button-secondary"
                     choose-label="Resim sec"
+                    :pt="{ input: {capture: 'environment'} }"
                     @select="onFileSelect"
                   >
                     <template #chooseicon>

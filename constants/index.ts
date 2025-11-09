@@ -22,7 +22,7 @@ export const headerLabels = {
   location_id: "YSC no",
   serial_number: "Seri no",
   brand: "Markası",
-  date: "Tarih",
+  date: "Kontrol tarihi",
   manufacture_year: "Üretim tarihi",
   refill_period: "Yeniden dolum periyodu",
   hydrostatic_test_date: "Hidrostatik test tarihi",

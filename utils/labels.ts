@@ -15,7 +15,7 @@ function getShortModelName(modelType: string | null | undefined) {
 
 export async function generateLabelsPdf(products) {
   const PADDING = 1
-  const QR = 12
+  const QR = 4
   const GAP = 3
   const WIDTH = 50
   const FONT = 6
@@ -34,7 +34,7 @@ export async function generateLabelsPdf(products) {
     ]
 
     const textHeight = lines.length * LINE_H
-    const contentHeight = Math.max(QR, textHeight)
+    const contentHeight = QR + GAP + textHeight
     const height = contentHeight + PADDING * 2 // gerçek yükseklik (mm)
 
     // ✅ SAYFAYI LANDSCAPE oluştur → 50mm genişlik GERÇEKTEN genişlik olur
@@ -51,23 +51,23 @@ export async function generateLabelsPdf(products) {
     doc.setFont("helvetica", "bold")
     doc.setFontSize(FONT)
 
-    const startX = PADDING
     const startY = PADDING
+    const centerX = WIDTH / 2
 
     // ✅ QR PNG (sorunsuz)
     const qr = await QRCode.toDataURL(String(p.locations?.location_id ?? "-"), {
       type: "image/png",
       margin: 0
     })
-    doc.addImage(qr, "PNG", startX, startY, QR, QR)
+    const qrX = centerX - QR / 2
+    doc.addImage(qr, "PNG", qrX, startY, QR, QR)
 
     // ✅ METİN
-    const textX = startX + QR + GAP
-    let y = startY                  // tam üst padding'den başla
-    
+    let y = startY + QR + GAP       // QR'nin hemen altına yerleştir
+
     for (const ln of lines) {
-      doc.text(ln, textX, y, {
-        align: "left",
+      doc.text(ln, centerX, y, {
+        align: "center",
         baseline: "top",            // ⬅️ kritik: üstten hizala
       })
       y += LINE_H

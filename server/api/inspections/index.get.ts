@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
 	try {
 		const { data, error } = await event.context.supabase
 			.from('inspections')
-			.select('*, products(brand,model_type,refill_date,next_refill_date,locations(*, building_id(*)))');
+			.select('*, products(brand,model_type,refill_date,unit,next_refill_date,locations(*, building_id(*)))');
 
 		if (error) {
 			throw createError({
