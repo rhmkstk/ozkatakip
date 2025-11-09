@@ -101,6 +101,10 @@ const expandColumns = [
     accessorKey: "working_mechanism",
     header: headerLabels.working_mechanism,
   },
+  {
+    accessorKey: "is_expiry",
+    header: headerLabels.is_expiry,
+  },
 ];
 </script>
 

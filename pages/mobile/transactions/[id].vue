@@ -29,6 +29,7 @@ const drawersShow = reactive({
 const inspectionForm = reactive({
   fire_extinguisher_id: null,
   position: true,
+  is_expiry: true,
   body: true,
   control_card: true,
   hose_and_nozzle: true,
@@ -72,6 +73,7 @@ const controlFields = [
   "pin_and_seal",
   "pressure",
   "working_mechanism",
+  "is_expiry",
 ];
 
 const { data, status, error } = await useAsyncData("product", async () => {

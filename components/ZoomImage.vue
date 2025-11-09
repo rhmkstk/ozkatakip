@@ -1,6 +1,6 @@
 <script setup lang="ts">
 type Props = {
-	src: string;
+	src: string | null;
 };
 defineProps<Props>();
 
@@ -24,7 +24,7 @@ onUnmounted(() => {
 <template>
 	<div>
 		<!-- Thumbnail with hover zoom -->
-		<button @click="showModal = true">
+		<button v-if="src" @click="showModal = true">
 			<img
 				:src="`/api/storage/inspection-photos/${encodeURIComponent(src)}`"
 				alt="Zoomable"
@@ -57,6 +57,7 @@ onUnmounted(() => {
 					</button>
 					<!-- Full-height Image -->
 					<img
+						v-if="src"
 						:src="`/api/storage/inspection-photos/${encodeURIComponent(src)}`"
 						alt="Full view"
 						class="object-contain h-screen w-full"

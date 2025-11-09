@@ -40,6 +40,7 @@ export const headerLabels = {
   product_id: "Ürün ID",
   details: "Detaylar",
   type: "İşem Tipi",
+  is_expiry: "Son kullanma tarihi",
 };
 
 export const fillLabels = {
@@ -157,6 +158,7 @@ export const inspectionFormFields = [
 	{ key: 'pin_and_seal', label: headerLabels.pin_and_seal },
 	{ key: 'pressure', label: headerLabels.pressure },
 	{ key: 'working_mechanism', label: headerLabels.working_mechanism },
+	{ key: 'is_expiry', label: headerLabels.is_expiry },
 ];
 
 export const fillFormFields = [

@@ -134,6 +134,7 @@ const componentDefinitions = {
 	'manometer': customCells.boolean,
 	'wheel': customCells.boolean,
 	'paint': customCells.boolean,
+	'is_expiry': customCells.boolean,
 	'hydrostatic_pressure_test': customCells.boolean,
 	'photo_url': customCells.photo,
 	'type': customCells.type,
