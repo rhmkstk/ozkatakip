@@ -2,6 +2,27 @@ import QRCode from "qrcode";
 import { jsPDF } from "jspdf";
 import { generateQrCodeUrl } from "./index";
 
+function setPageSize(doc: jsPDF, width: number, height: number) {
+  const pageSize = doc.internal.pageSize as {
+    setWidth?: (value: number) => void;
+    setHeight?: (value: number) => void;
+    width?: number;
+    height?: number;
+  };
+
+  if (pageSize.setWidth) {
+    pageSize.setWidth(width);
+  } else {
+    pageSize.width = width;
+  }
+
+  if (pageSize.setHeight) {
+    pageSize.setHeight(height);
+  } else {
+    pageSize.height = height;
+  }
+}
+
 function getShortModelName(modelType: string | null | undefined) {
   if (!modelType) return "";
 
@@ -21,13 +42,13 @@ function getShortModelName(modelType: string | null | undefined) {
 
 export async function generateLabelsPdf(products) {
   const PADDING = 1;
-  const QR = 4;
+  const QR = 16;
   const GAP = 3;
   const WIDTH = 50;
   const FONT = 6;
   const LINE_H = 3;
 
-  let doc = null;
+  let doc: jsPDF | null = null;
 
   for (let i = 0; i < products.length; i++) {
     const p = products[i];
@@ -47,13 +68,15 @@ export async function generateLabelsPdf(products) {
 
     if (!doc) {
       doc = new jsPDF({
-        orientation: "landscape",
+        orientation: "portrait",
         unit: "mm",
         format: [height, WIDTH],
       });
     } else {
-      doc.addPage([height, WIDTH], "landscape");
+      doc.addPage([height, WIDTH], "portrait");
     }
+
+    setPageSize(doc, WIDTH, height);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(FONT);
