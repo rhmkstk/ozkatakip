@@ -18,7 +18,8 @@ const qrCodes = ref<Record<string, string>>({});
 onMounted(async () => {
 	for (const product of props.products) {
 		try {
-			const dataUrl = await QRCode.toDataURL(String(product.locations?.location_id) || '');
+			const qrUrl = generateQrCodeUrl(String(product.locations?.location_id) || '');
+			const dataUrl = await QRCode.toDataURL(qrUrl);
 			qrCodes.value[product.id] = dataUrl;
 		}
 		catch (err) {

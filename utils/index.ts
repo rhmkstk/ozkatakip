@@ -45,3 +45,7 @@ export function getUserName(userId: string) {
   const user = getUserDetail(userId) || null;
   return user ? `${user.name} ${user.surname}` : userId;
 }
+
+export function generateQrCodeUrl(locationId: string) {
+  return `${window.location.origin}/inspections/${locationId}`;
+}

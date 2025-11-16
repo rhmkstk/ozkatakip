@@ -3,7 +3,7 @@ definePageMeta({
 	layout: 'mobile',
 });
 
-const productId = ref<string | null>('');
+const locationId = ref<string | null>('');
 const showScanner = ref(false);
 </script>
 
@@ -33,7 +33,7 @@ const showScanner = ref(false);
 						<div class="flex space-x-2">
 							<InputText
 								id="building_area"
-								v-model="productId"
+								v-model="locationId"
 								placeholder="ATM-2"
 								size="large"
 								class="flex-1"
@@ -41,7 +41,7 @@ const showScanner = ref(false);
 							<Button
 								size="large"
 								label="Ara"
-								@click="$router.push(`/mobile/transactions/${productId}`)"
+								@click="$router.push(`/mobile/transactions/${locationId}`)"
 							/>
 						</div>
 					</div>
@@ -62,7 +62,7 @@ const showScanner = ref(false);
 			<QRScanner
 				v-if="showScanner"
 				@close="showScanner = false"
-				@scan-complete="(scannedNumber) => $router.push(`/mobile/transactions/${scannedNumber}`)"
+				@scan-complete="(locationId) => $router.push(`/mobile/transactions/${locationId}`)"
 			/>
 		</div>
 	</div>

@@ -30,7 +30,9 @@ const handleQrScan = async () => {
 						console.warn('Scanned number is empty or invalid.');
 						return;
 					}
-					emit('scanComplete', scannedNumber);
+					const splitedUrl = scannedNumber.split('/')
+					const locationId = splitedUrl[splitedUrl.length - 1];
+					emit('scanComplete', locationId);
 				});
 			},
 			(errorMessage) => {

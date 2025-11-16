@@ -55,7 +55,8 @@ export async function generateLabelsPdf(products) {
     const centerX = WIDTH / 2
 
     // ✅ QR PNG (sorunsuz)
-    const qr = await QRCode.toDataURL(String(p.locations?.location_id ?? "-"), {
+    const qrData = generateQrCodeUrl(p.locations?.location_id ?? "-")
+    const qr = await QRCode.toDataURL(qrData, {
       type: "image/png",
       margin: 0
     })

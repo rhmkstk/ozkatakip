@@ -1,3 +1,8 @@
+import { serverSupabaseServiceRole } from '#supabase/server';
+import { useRuntimeConfig } from '#imports';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '~/types/database.types';
+
 export default defineEventHandler(async (event) => {
 	try {
 		const locationID = getQuery(event).location_id;
@@ -9,27 +14,59 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		const { data, error } = await event.context.supabase
-			.from('inspections')
-			.select(`created_at`)
-			.eq('products.locations.location_id', locationID)
+			const supabase =
+				process.env.SUPABASE_SERVICE_KEY
+					? await serverSupabaseServiceRole<Database>(event)
+					: (() => {
+							const config = useRuntimeConfig(event);
+							const supabaseUrl = config.supabase?.url || config.public?.supabaseUrl;
+							const supabaseAnonKey = process.env.SUPABASE_KEY || config.supabase?.key || config.public?.supabaseKey;
+
+							if (!supabaseUrl || !supabaseAnonKey) {
+								throw createError({
+									statusCode: 500,
+									message: 'Supabase configuration is missing',
+								});
+							}
+
+							return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+								auth: {
+									persistSession: false,
+								},
+							});
+						})();
+
+			const { data, error } = await supabase
+				.from('inspections')
+			.select(`
+        *,
+        products!inner(
+          id,
+          brand,
+          model_type,
+          serial_number,
+          unit,
+          refill_date,
+          next_refill_date,
+          locations!inner(
+            id,
+            location_id,
+            room,
+            building_id(*)
+          )
+        )
+      `)
+				.eq('products.locations.location_id', String(locationID))
 			.not('created_at', 'is', null)
 			.order('created_at', { ascending: false })
-			.limit(1).select(`
-    created_at,
-    products!inner(
-      locations!inner(
-        location_id
-      )
-    )
-  `);
-		if (error instanceof Error) {
+			.limit(1);
+		if (error) {
 			throw createError({
-				name: error.name,
+				statusCode: 500,
 				message: error.message,
 			});
 		}
-		return data;
+		return data ?? [];
 	}
 	catch (error: unknown) {
 		console.log('ERROR:', error);
