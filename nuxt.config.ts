@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import Aura from '@primeuix/themes/aura';
-// import { PrimeVueLocaleOptions } from 'primevue';
+import { tr as primeLocaleTr } from 'primelocale/js/tr.js';
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -60,6 +60,7 @@ export default defineNuxtConfig({
 					cssLayer: false,
 				},
 			},
+			locale: primeLocaleTr,
 		},
 	},
 	supabase: {
