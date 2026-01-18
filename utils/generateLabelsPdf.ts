@@ -43,65 +43,35 @@ function getShortModelName(modelType: string | null | undefined) {
 export async function generateLabelsPdf(products) {
   // === TARGET: QR tam 5cm (50mm) genişlikte basılsın ===
   const WIDTH_MM = 50 // 5cm = 50mm
-  const QR_SIZE_MM = WIDTH_MM // QR görselini sayfanın tamamına yay
-  const GAP_MM = 4
-
-  // Metinleri biraz daha okunur yapalım
-  const FONT_PT = 9
-  const LINE_H_MM = 4
+  const HEIGHT_MM = 50 // sadece QR olacak
+  const QR_SIZE_MM = 50
 
   let doc: jsPDF | null = null
 
   for (let i = 0; i < products.length; i++) {
     const p = products[i]
 
-    const lines = [
-      `Model: ${[p.unit, getShortModelName(p.model_type)].filter(Boolean).join(" ") || "-"}`,
-      `Seri No: ${p.serial_number || "-"}`,
-      `Marka: ${p.brand || "-"}`,
-      `Üretim: ${p.manufacture_year?.slice(0, 4) || "-"}`,
-    ]
-
-    const textHeight = lines.length * LINE_H_MM
-    const heightMM = QR_SIZE_MM + GAP_MM + textHeight
-
     if (!doc) {
       doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        // DİKKAT: jsPDF format = [width, height]
-        format: [WIDTH_MM, heightMM],
+        format: [WIDTH_MM, HEIGHT_MM], // [width, height]
       })
     } else {
-      // DİKKAT: addPage format = [width, height]
-      doc.addPage([WIDTH_MM, heightMM], "portrait")
+      doc.addPage([WIDTH_MM, HEIGHT_MM], "portrait")
     }
 
     // --- QR üretimi ---
-    // quiet zone (beyaz çerçeve) için margin ekliyoruz
-    // QR toplamda yine 50mm'e çizilecek.
     const qrData = generateQrCodeUrl(p.locations?.location_id ?? "-")
     const qr = await QRCode.toDataURL(qrData, {
       type: "image/png",
-      margin: 2, // 0 yerine 2: okunurluk için iyi
+      margin: 2,
       errorCorrectionLevel: "M",
-      // scale: 8, // istersen açabilirsin, PNG netliğini artırır
+      // scale: 8, // istersen açabilirsin (daha net PNG)
     })
 
-    // QR: (0,0) noktasından başlayıp TAM 50mm'e bas
+    // QR: sayfayı tamamen doldur
     doc.addImage(qr, "PNG", 0, 0, QR_SIZE_MM, QR_SIZE_MM)
-
-    // --- Metin ---
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(FONT_PT)
-
-    const centerX = WIDTH_MM / 2
-    let y = QR_SIZE_MM + GAP_MM
-
-    for (const ln of lines) {
-      doc.text(ln, centerX, y, { align: "center", baseline: "top" })
-      y += LINE_H_MM
-    }
   }
 
   if (!doc) {
