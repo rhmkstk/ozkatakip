@@ -41,12 +41,15 @@ function getShortModelName(modelType: string | null | undefined) {
 }
 
 export async function generateLabelsPdf(products) {
-  const PADDING = 1;
-  const QR = 16;
+  const WIDTH = 50;      // mm -> 5cm
+  const PADDING = 0;     // QR tam 5cm olsun istiyorsan 0 öneririm
   const GAP = 3;
-  const WIDTH = 50;
+
   const FONT = 6;
   const LINE_H = 3;
+
+  // QR'ı sayfa genişliği kadar bas (padding varsa düş)
+  const QR = WIDTH - PADDING * 2;
 
   let doc: jsPDF | null = null;
 
@@ -54,9 +57,7 @@ export async function generateLabelsPdf(products) {
     const p = products[i];
 
     const lines = [
-      `Model: ${[p.unit, getShortModelName(p.model_type)]
-        .filter(Boolean)
-        .join(" ") || "-"}`,
+      `Model: ${[p.unit, getShortModelName(p.model_type)].filter(Boolean).join(" ") || "-"}`,
       `Seri No: ${p.serial_number || "-"}`,
       `Marka: ${p.brand || "-"}`,
       `Üretim: ${p.manufacture_year?.slice(0, 4) || "-"}`,
@@ -70,29 +71,37 @@ export async function generateLabelsPdf(products) {
       doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: [height, WIDTH],
+        // DİKKAT: format [width, height] olmalı
+        format: [WIDTH, height],
       });
     } else {
-      doc.addPage([height, WIDTH], "portrait");
+      // DİKKAT: addPage de [width, height]
+      doc.addPage([WIDTH, height], "portrait");
     }
 
+    // setPageSize kullanıyorsan da width,height olarak ver
     setPageSize(doc, WIDTH, height);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(FONT);
 
     const startY = PADDING;
-    const centerX = WIDTH / 2;
+    const startX = PADDING;
 
     const qrData = generateQrCodeUrl(p.locations?.location_id ?? "-");
     const qr = await QRCode.toDataURL(qrData, {
       type: "image/png",
       margin: 0,
+      // istersen daha net basım için:
+      // errorCorrectionLevel: "M",
+      // scale: 8,
     });
-    const qrX = centerX - QR / 2;
-    doc.addImage(qr, "PNG", qrX, startY, QR, QR);
+
+    // QR: sol üstten başlayıp tam genişlikte bas
+    doc.addImage(qr, "PNG", startX, startY, QR, QR);
 
     let y = startY + QR + GAP;
+    const centerX = WIDTH / 2;
 
     for (const ln of lines) {
       doc.text(ln, centerX, y, {
@@ -101,6 +110,10 @@ export async function generateLabelsPdf(products) {
       });
       y += LINE_H;
     }
+  }
+
+  if (!doc) {
+    throw new Error("No products to generate PDF.");
   }
 
   return URL.createObjectURL(doc.output("blob"));
