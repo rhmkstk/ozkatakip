@@ -3,6 +3,7 @@
 import { FilterMatchMode } from "@primevue/core/api";
 import { headerLabels } from "~/constants";
 import type { Tables } from "~/types/database.types";
+import { generateBradyLabelPngUrls } from "~/utils/generateLabelsPdf";
 
 type ProductWithLocation = Tables<"products"> & {
   locations: Tables<"locations"> | null;
@@ -131,14 +132,32 @@ const expandColuns = [
 const generateQRCodes = () => {
   showQRModal.value = true;
 };
-const downloadPdf = async () => {
-  const url = await generateLabelsPdf(selectedProducts.value);
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "etiketler.pdf"
-  a.click()
-  URL.revokeObjectURL(url)
+// const downloadPdf = async () => {
+//   const url = await generateLabelsPdf(selectedProducts.value);
+//   const a = document.createElement("a")
+//   a.href = url
+//   a.download = "etiketler.pdf"
+//   a.click()
+//   URL.revokeObjectURL(url)
+// }
+
+const downloadPngLabels = async () => {
+  const urls = await generateBradyLabelPngUrls(selectedProducts.value)
+
+  urls.forEach((url, index) => {
+    const product = selectedProducts.value[index]
+
+    const fileName = `etiket_${product.serial_number || index + 1}.png`
+
+    const a = document.createElement("a")
+    a.href = url
+    a.download = fileName
+    a.click()
+
+    URL.revokeObjectURL(url)
+  })
 }
+
 
 
 const handleDeleteProducts = async () => {
@@ -274,7 +293,7 @@ const handleDeleteProducts = async () => {
             class="mr-2"
             label="PDF Indir"
             severity="secondary"
-            @click="downloadPdf"
+            @click="downloadPngLabels"
           />
         </div>
       </template>

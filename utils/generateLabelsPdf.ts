@@ -111,3 +111,86 @@ export async function generateLabelsPdf(products) {
   return URL.createObjectURL(doc.output("blob"))
 }
 
+type Product = any // sende zaten var
+
+export async function generateBradyLabelPngUrls(products: Product[]) {
+  // Brady M610 + 2.00" kartuş için mantıklı varsayım: 300 DPI
+  const DPI = 300
+  const INCH_WIDTH = 2.0
+  const W = Math.round(INCH_WIDTH * DPI) // 600 px
+
+  const GAP = 18 // px
+  const FONT = 18 // px
+  const LINE_H = 22 // px
+  const TEXT_PAD_TOP = 8 // px
+  const QR_MARGIN_MODULES = 2
+
+  const urls: string[] = []
+
+  for (const p of products) {
+    const lines = [
+      `Model: ${[p.unit, getShortModelName(p.model_type)].filter(Boolean).join(" ") || "-"}`,
+      `Seri No: ${p.serial_number || "-"}`,
+      `Marka: ${p.brand || "-"}`,
+      `Üretim: ${p.manufacture_year?.slice(0, 4) || "-"}`,
+    ]
+
+    // QR'ı yüksek çözünürlükte üret (600px)
+    const qrData = generateQrCodeUrl(p.locations?.location_id ?? "-")
+    const qrDataUrl = await QRCode.toDataURL(qrData, {
+      type: "image/png",
+      margin: QR_MARGIN_MODULES,
+      width: W,
+      errorCorrectionLevel: "M",
+    })
+
+    // Yükseklik: QR + boşluk + metin
+    const textHeight = lines.length * LINE_H + TEXT_PAD_TOP
+    const H = W + GAP + textHeight
+
+    const canvas = document.createElement("canvas")
+    canvas.width = W
+    canvas.height = H
+    const ctx = canvas.getContext("2d")
+    if (!ctx) throw new Error("Canvas context not available")
+
+    // arka plan beyaz
+    ctx.fillStyle = "#fff"
+    ctx.fillRect(0, 0, W, H)
+
+    // QR'ı çiz
+    const img = await loadImage(qrDataUrl)
+    ctx.drawImage(img, 0, 0, W, W)
+
+    // Metin
+    ctx.fillStyle = "#000"
+    ctx.font = `bold ${FONT}px Arial`
+    ctx.textAlign = "center"
+    ctx.textBaseline = "top"
+
+    let y = W + GAP + TEXT_PAD_TOP
+    const cx = W / 2
+
+    for (const ln of lines) {
+      ctx.fillText(ln, cx, y)
+      y += LINE_H
+    }
+
+    const blob: Blob = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b!), "image/png", 1)
+    )
+
+    urls.push(URL.createObjectURL(blob))
+  }
+
+  return urls
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const im = new Image()
+    im.onload = () => resolve(im)
+    im.onerror = reject
+    im.src = src
+  })
+}
