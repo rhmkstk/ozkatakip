@@ -41,80 +41,73 @@ function getShortModelName(modelType: string | null | undefined) {
 }
 
 export async function generateLabelsPdf(products) {
-  const WIDTH = 50;      // mm -> 5cm
-  const PADDING = 0;     // QR tam 5cm olsun istiyorsan 0 öneririm
-  const GAP = 3;
+  // === TARGET: QR tam 5cm (50mm) genişlikte basılsın ===
+  const WIDTH_MM = 50 // 5cm = 50mm
+  const QR_SIZE_MM = WIDTH_MM // QR görselini sayfanın tamamına yay
+  const GAP_MM = 4
 
-  const FONT = 6;
-  const LINE_H = 3;
+  // Metinleri biraz daha okunur yapalım
+  const FONT_PT = 9
+  const LINE_H_MM = 4
 
-  // QR'ı sayfa genişliği kadar bas (padding varsa düş)
-  const QR = WIDTH - PADDING * 2;
-
-  let doc: jsPDF | null = null;
+  let doc: jsPDF | null = null
 
   for (let i = 0; i < products.length; i++) {
-    const p = products[i];
+    const p = products[i]
 
     const lines = [
       `Model: ${[p.unit, getShortModelName(p.model_type)].filter(Boolean).join(" ") || "-"}`,
       `Seri No: ${p.serial_number || "-"}`,
       `Marka: ${p.brand || "-"}`,
       `Üretim: ${p.manufacture_year?.slice(0, 4) || "-"}`,
-    ];
+    ]
 
-    const textHeight = lines.length * LINE_H;
-    const contentHeight = QR + GAP + textHeight;
-    const height = contentHeight + PADDING * 2;
+    const textHeight = lines.length * LINE_H_MM
+    const heightMM = QR_SIZE_MM + GAP_MM + textHeight
 
     if (!doc) {
       doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        // DİKKAT: format [width, height] olmalı
-        format: [WIDTH, height],
-      });
+        // DİKKAT: jsPDF format = [width, height]
+        format: [WIDTH_MM, heightMM],
+      })
     } else {
-      // DİKKAT: addPage de [width, height]
-      doc.addPage([WIDTH, height], "portrait");
+      // DİKKAT: addPage format = [width, height]
+      doc.addPage([WIDTH_MM, heightMM], "portrait")
     }
 
-    // setPageSize kullanıyorsan da width,height olarak ver
-    setPageSize(doc, WIDTH, height);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(FONT);
-
-    const startY = PADDING;
-    const startX = PADDING;
-
-    const qrData = generateQrCodeUrl(p.locations?.location_id ?? "-");
+    // --- QR üretimi ---
+    // quiet zone (beyaz çerçeve) için margin ekliyoruz
+    // QR toplamda yine 50mm'e çizilecek.
+    const qrData = generateQrCodeUrl(p.locations?.location_id ?? "-")
     const qr = await QRCode.toDataURL(qrData, {
       type: "image/png",
-      margin: 0,
-      // istersen daha net basım için:
-      // errorCorrectionLevel: "M",
-      // scale: 8,
-    });
+      margin: 2, // 0 yerine 2: okunurluk için iyi
+      errorCorrectionLevel: "M",
+      // scale: 8, // istersen açabilirsin, PNG netliğini artırır
+    })
 
-    // QR: sol üstten başlayıp tam genişlikte bas
-    doc.addImage(qr, "PNG", startX, startY, QR, QR);
+    // QR: (0,0) noktasından başlayıp TAM 50mm'e bas
+    doc.addImage(qr, "PNG", 0, 0, QR_SIZE_MM, QR_SIZE_MM)
 
-    let y = startY + QR + GAP;
-    const centerX = WIDTH / 2;
+    // --- Metin ---
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(FONT_PT)
+
+    const centerX = WIDTH_MM / 2
+    let y = QR_SIZE_MM + GAP_MM
 
     for (const ln of lines) {
-      doc.text(ln, centerX, y, {
-        align: "center",
-        baseline: "top",
-      });
-      y += LINE_H;
+      doc.text(ln, centerX, y, { align: "center", baseline: "top" })
+      y += LINE_H_MM
     }
   }
 
   if (!doc) {
-    throw new Error("No products to generate PDF.");
+    throw new Error("No products to generate PDF.")
   }
 
-  return URL.createObjectURL(doc.output("blob"));
+  return URL.createObjectURL(doc.output("blob"))
 }
+
