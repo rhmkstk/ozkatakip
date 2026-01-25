@@ -1,6 +1,6 @@
 import { customCellFields, userDetails } from "~/constants";
 
-export { generateLabelsPdf } from "./generateLabelsPdf";
+export { generateLabelsPng } from "./generateLabelsPng";
 export { handleUploadImage } from "./handleUploadImage";
 
 export function isCellCustom(cell: string): boolean {

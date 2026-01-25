@@ -32,8 +32,8 @@ const { error, refresh } = await useFetch("/api/products", {
       }));
       const uniqueLocations = new Set(
         response._data.map(
-          (item: ProductWithLocation) => item?.locations?.building_id?.name
-        )
+          (item: ProductWithLocation) => item?.locations?.building_id?.name,
+        ),
       );
       locations.value = Array.from(uniqueLocations as Set<string>).sort();
     } else {
@@ -132,19 +132,22 @@ const generateQRCodes = () => {
   showQRModal.value = true;
 };
 const downloadPdf = async () => {
-  const url = await generateLabelsPdf(selectedProducts.value);
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "etiketler.pdf"
-  a.click()
-  URL.revokeObjectURL(url)
-}
+  const urls = await generateLabelsPng(selectedProducts.value);
+
+  urls.forEach((url, index) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `etiket-${index + 1}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+};
 
 const handleDeleteProducts = async () => {
   if (selectedProducts.value.length === 0) return;
 
   const productIds = (selectedProducts.value as Array<{ id: number }>).map(
-    (product) => product.id.toString()
+    (product) => product.id.toString(),
   );
   loading.value = true;
   try {
