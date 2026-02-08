@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // import QRCode from 'qrcode';
 import { FilterMatchMode } from "@primevue/core/api";
+import { isConstructorDeclaration } from "typescript";
 import { headerLabels } from "~/constants";
 import type { Tables } from "~/types/database.types";
 
@@ -15,13 +16,19 @@ const expandedRows = ref<ProductWithLocation[]>([]);
 const selectedProducts = ref<ProductWithLocation[]>([]);
 const showQRModal = ref(false);
 const deleteProductConfirmModal = ref(false);
-const selectedLocation = ref<string | null>(null);
 const locations = ref<string[]>([]);
 const filters = ref({
   "locations.building_id.name": {
     value: null,
     matchMode: FilterMatchMode.STARTS_WITH,
   },
+});
+const editProductModal = ref(false);
+const selectedLocationTitle = computed(() => {
+  const location = filters.value["locations.building_id.name"].value;
+  return location
+    ? `${location} konumundaki tüpler listeleniyor`
+    : "Tüm lokasyonlardaki tüpler listeleniyor";
 });
 
 const { error, refresh } = await useFetch("/api/products", {
@@ -35,7 +42,9 @@ const { error, refresh } = await useFetch("/api/products", {
           (item: ProductWithLocation) => item?.locations?.building_id?.name,
         ),
       );
+
       locations.value = Array.from(uniqueLocations as Set<string>).sort();
+      selectedProducts.value = [];
     } else {
       console.error("Error fetching data:", error);
     }
@@ -131,6 +140,11 @@ const expandColuns = [
 const generateQRCodes = () => {
   showQRModal.value = true;
 };
+
+const openEditModal = () => {
+  editProductModal.value = true;
+};
+
 const downloadPdf = async () => {
   const urls = await generateLabelsPng(selectedProducts.value);
 
@@ -180,15 +194,14 @@ const handleDeleteProducts = async () => {
   <div>
     <BaseLoader v-if="loading" />
     <div>
-      <PageHeader
-        :title="`${selectedLocation} konumundaki tüpler listeleniyor`"
-      >
+      <PageHeader :title="selectedLocationTitle">
         <Select
           v-model="filters['locations.building_id.name'].value"
           :options="locations"
           placeholder="Bulundugu bina/alan sefc"
           class="w-full md:w-56"
           size="small"
+          show-clear
         />
         <template #right>
           <Button
@@ -198,6 +211,17 @@ const handleDeleteProducts = async () => {
             icon="ri-qr-code-line"
             size="small"
             @click="generateQRCodes"
+          />
+
+          <Button
+            v-if="selectedProducts.length === 1"
+            outlined
+            label="Düzenle"
+            icon="ri-edit-line"
+            size="small"
+            severity="info"
+            :disabled="selectedProducts.length !== 1"
+            @click="openEditModal"
           />
 
           <Button
@@ -307,5 +331,10 @@ const handleDeleteProducts = async () => {
         />
       </template>
     </Dialog>
+    <ProductEditDialog
+      v-model:visible="editProductModal"
+      :product="selectedProducts.length === 1 ? selectedProducts[0] : undefined"
+      @updated="refresh"
+    />
   </div>
 </template>

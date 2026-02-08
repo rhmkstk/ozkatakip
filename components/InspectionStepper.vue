@@ -420,6 +420,7 @@ async function createInspectionForm() {
 							accept="image/*"
 							severity="secondary"
 							class="p-button-outlined"
+              choose-label="Cihazın fotoğrafını çek/yükle"
 							@select="onFileSelect"
 						/>
 						<img

@@ -3,6 +3,25 @@ import { customCellFields, userDetails } from "~/constants";
 export { generateLabelsPng } from "./generateLabelsPng";
 export { handleUploadImage } from "./handleUploadImage";
 
+export function formatTurkishDate(dateInput?: string | null): string {
+  if (!dateInput) {
+    return "-"; 
+  }
+
+  const date = new Date(dateInput);
+
+  if (isNaN(date.getTime())) {
+    console.warn("Invalid date:", dateInput);
+    return "-"; 
+  }
+
+  return date.toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function isCellCustom(cell: string): boolean {
   return customCellFields.includes(cell);
 }

@@ -11,32 +11,13 @@ type Props = {
 
 const props = defineProps<Props>();
 
-function converIsoString(isoString: string): string {
-	const date = new Date(isoString);
-	const day = String(date.getUTCDate()).padStart(2, '0');
-	const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are zero-indexed
-	const year = date.getUTCFullYear();
-	return `${day}.${month}.${year}`;
-}
-
-function formatTurkishDate(dateInput?: string | null): string {
-  if (!dateInput) {
-    return "-"; 
-  }
-
-  const date = new Date(dateInput);
-
-  if (isNaN(date.getTime())) {
-    console.warn("Invalid date:", dateInput);
-    return "-"; 
-  }
-
-  return date.toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+// function converIsoString(isoString: string): string {
+// 	const date = new Date(isoString);
+// 	const day = String(date.getUTCDate()).padStart(2, '0');
+// 	const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+// 	const year = date.getUTCFullYear();
+// 	return `${day}.${month}.${year}`;
+// }
 
 const customCells = {
 	boolean: (value: boolean) => ({

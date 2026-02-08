@@ -63,6 +63,21 @@ const isLoading = computed(() => {
   );
 });
 
+const statusBgColor = computed(() => {
+  switch (data.value?.product.current_status) {
+    case "active":
+      return "bg-green-600";
+    case "damaged":
+      return "bg-red-600";
+    case "lost":
+      return "bg-gray-500";
+    case "spare":
+      return "bg-gray-500";
+    default:
+      return "bg-gray-500";
+  }
+});
+
 const controlFields = [
   "position",
   "body",
@@ -109,7 +124,7 @@ const inspectionAlert = computed(() => {
 
 const checkInspectionForm = () => {
   return controlFields.every(
-    (field) => inspectionForm[field as keyof typeof inspectionForm] === true
+    (field) => inspectionForm[field as keyof typeof inspectionForm] === true,
   );
 };
 
@@ -127,7 +142,7 @@ async function onFileSelect(event: FileUploadSelectEvent) {
   try {
     const compressedFile = await imageCompression(
       imageFile,
-      imageCompressionOptions
+      imageCompressionOptions,
     );
     compressedImage.value = compressedFile as File;
   } catch (error) {
@@ -183,7 +198,7 @@ async function saveInspectionForm() {
 
 async function saveFillRecord() {
   const isAnyItemSelected = Object.values(fillForm).some(
-    (value) => typeof value === "boolean" && value === true
+    (value) => typeof value === "boolean" && value === true,
   );
   if (!isAnyItemSelected) {
     toast.add({
@@ -264,7 +279,7 @@ onMounted(async () => {
     params: { location_id: id },
   });
 
-  if (isInLast30Days(data[0].created_at)) {
+  if (isInLast30Days(new Date(data[0].created_at))) {
     lastInspectionDate.value = new Date(data[0].created_at);
     showInspectionAlert.value = true;
   }
@@ -283,12 +298,15 @@ onMounted(async () => {
         @click="$router.push('/mobile')"
       />
     </header>
-    <div v-if="!isLoading && status === 'error'" class="py-2 flex flex-col gap-y-8">
-      <p class="text-lg">Aradiginiz YSC bulunamadi! Geri donup farkli mevcut bir YSC ile islem yapabilirsiniz</p>
-      <Button
-        label="Geri"
-        @click="$router.push('/mobile')"
-      />
+    <div
+      v-if="!isLoading && status === 'error'"
+      class="py-2 flex flex-col gap-y-8"
+    >
+      <p class="text-lg">
+        Aradiginiz YSC bulunamadi! Geri donup farkli mevcut bir YSC ile islem
+        yapabilirsiniz
+      </p>
+      <Button label="Geri" @click="$router.push('/mobile')" />
     </div>
 
     <div v-else-if="!isLoading" class="flex flex-col h-full">
@@ -302,31 +320,46 @@ onMounted(async () => {
           class="object-cover max-w-full w-1/3 h-[200px] rounded"
         />
         <div class="pt-2 px-2 flex-1 flex flex-col">
-          <h4 class="text-sm font-semibold leading-3">
-            {{ data.product.unit }} KG
+          <h4 class="text-sm leading-3">
+            {{ data.product.unit }}
           </h4>
           <h3 class="text-lg font-semibold truncate">
             {{ data.product.model_type }}
           </h3>
 
           <div class="flex items-center space-x-1">
-            <span class="size-1.5 rounded-full bg-green-600" />
+            <span class="size-1.5 rounded-full" :class="statusBgColor" />
             <span class="text-xs text-slate-500 uppercase">{{
-              productStatusTypeLabels[data.product.current_status as keyof typeof productStatusTypeLabels]
+              productStatusTypeLabels[
+                data.product
+                  .current_status as keyof typeof productStatusTypeLabels
+              ]
             }}</span>
           </div>
-          <div class="flex space-x-1 mt-4">
+          <div class="flex space-x-1 mt-6">
             <i class="ri-map-pin-line -mt-0.5" />
-            <span class="text-sm uppercase"
-              >{{ data.location.room }} , {{ data.location.building_id.name }}
-            </span>
+            <p class="text-sm text-gray-700">
+              Konum:
+              <b>{{ data.location.room }} , {{ data.location.building_id.name }}</b>
+            </p>
           </div>
-          <div class="flex space-x-1 mt-2">
+          <div class="flex space-x-1 mt-1">
             <i class="ri-calendar-line -mt-0.5" />
             <p class="text-sm text-gray-700">
-              Dolum tarihi: <b>{{ data.product.refill_date }}</b
-              >, Hidrastatik test tarihi:
-              <b>{{ data.product.hydrostatic_test_date }}</b>
+              Dolum tarihi:
+              <b>{{ formatTurkishDate(data.product.refill_date) }}</b>
+            </p>
+          </div>
+          <div class="flex space-x-1 mt-1">
+            <i class="ri-refresh-line -mt-0.5"></i>
+            <p class="text-sm text-gray-700">
+              Dolum periyodu: <b>{{ data.product.refill_period }} yıl</b>
+            </p>
+          </div>
+          <div class="flex space-x-1 mt-1">
+            <i class="ri-calendar-todo-line -mt-0.5"></i>
+            <p class="text-sm text-gray-700">
+              SKT: <b>{{ formatTurkishDate(data.product.next_refill_date) }}</b>
             </p>
           </div>
         </div>
@@ -349,7 +382,9 @@ onMounted(async () => {
                   class="flex items-center gap-2"
                 >
                   <Checkbox
-                    v-model="inspectionForm[field.key as keyof typeof inspectionForm]"
+                    v-model="
+                      inspectionForm[field.key as keyof typeof inspectionForm]
+                    "
                     :input-id="field.key"
                     binary
                   />
@@ -369,8 +404,8 @@ onMounted(async () => {
                     auto
                     accept="image/*"
                     class="p-button-outlined p-button-secondary"
-                    choose-label="Resim sec"
-                    :pt="{ input: {capture: 'environment'} }"
+                    choose-label="Cihazın fotoğrafını çek/yükle"
+                    :pt="{ input: { capture: 'environment' } }"
                     @select="onFileSelect"
                   >
                     <template #chooseicon>

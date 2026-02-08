@@ -144,7 +144,7 @@ export const productStatusTypeLabels: {
   [key in Database["public"]["Enums"]["product_status"]]: string;
 } = {
   active: "Aktif",
-  damaged: "Hasarlı",
+  damaged: "Kullanim dışı",
   lost: "Kayıp",
   spare: "Yedek",
 };
