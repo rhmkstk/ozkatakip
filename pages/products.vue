@@ -161,9 +161,10 @@ const handleDeleteProducts = async () => {
   if (selectedProducts.value.length === 0) return;
 
   const productIds = (selectedProducts.value as Array<{ id: number }>).map(
-    (product) => product.id.toString(),
+    (product) => product.id,
   );
   loading.value = true;
+  deleteProductConfirmModal.value = false;
   try {
     await $fetch("/api/products", {
       method: "DELETE",
@@ -322,11 +323,18 @@ const handleDeleteProducts = async () => {
         alınamaz
       </p>
       <template #footer>
-        <Button label="Sil" severity="danger" @click="handleDeleteProducts" />
+        <Button
+          label="Sil"
+          severity="danger"
+          :loading="loading"
+          :disabled="loading"
+          @click="handleDeleteProducts"
+        />
         <Button
           label="Vazgeç"
           severity="secondary"
           outlined
+          :disabled="loading"
           @click="deleteProductConfirmModal = false"
         />
       </template>
