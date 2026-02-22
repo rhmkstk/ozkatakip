@@ -222,21 +222,39 @@ async function saveFillRecord() {
     });
 
     if (response) {
-      const refilPeriod = data.value?.product.refill_period || 2;
-      const fillDate = new Date().toISOString().split("T")[0];
-      const refillDate = new Date();
-      refillDate.setFullYear(refillDate.getFullYear() + Number(refilPeriod));
+      const refillPeriod = data.value?.product.refill_period || 2;
+      const now = new Date();
+      const fillDate = now.toISOString().split("T")[0];
+      const refillDate = new Date(now);
+      refillDate.setFullYear(refillDate.getFullYear() + Number(refillPeriod));
       const formattedRefillDate = refillDate.toISOString().split("T")[0];
+      const nextHydrostaticTestDate = new Date(now);
+      nextHydrostaticTestDate.setFullYear(
+        nextHydrostaticTestDate.getFullYear() + 4,
+      );
+      const formattedHydrostaticTestDate = nextHydrostaticTestDate
+        .toISOString()
+        .split("T")[0];
+
       await $fetch("/api/products", {
         method: "PUT",
         body: {
           ...data.value?.product,
-          refill_date: fillDate,
-          next_refill_date: formattedRefillDate,
           current_status: "active",
+          ...(fillForm.filling
+            ? {
+                refill_date: fillDate,
+                next_refill_date: formattedRefillDate,
+              }
+            : {}),
+          ...(fillForm.hydrostatic_pressure_test
+            ? {
+                hydrostatic_test_date: fillDate,
+                next_hydrostatic_test_date: formattedHydrostaticTestDate,
+              }
+            : {}),
         },
       });
-      const userId = (await supabase.auth.getUser()).data.user?.id;
 
       $fetch("/api/transactions", {
         method: "POST",
@@ -247,7 +265,6 @@ async function saveFillRecord() {
           details: response.id,
         },
       });
-      inspectionFormLoading.value = false;
       drawersShow.success = true;
     }
   } catch (error) {
@@ -258,18 +275,19 @@ async function saveFillRecord() {
       detail: "Dolum kaydı oluşturulurken bir hata oluştu.",
       life: 2000,
     });
+  } finally {
+    inspectionFormLoading.value = false;
   }
 }
 
-function isInLast30Days(dateString: Date): boolean {
-  const date = new Date(dateString);
+function isInSameMonth(dateInput: Date): boolean {
+  const date = new Date(dateInput);
   const now = new Date();
 
-  // Calculate the timestamp for 30 days ago
-  const days30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  // Check if date is after or equal to days30Ago and before or equal to now
-  return date >= days30Ago && date <= now;
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth()
+  );
 }
 
 onMounted(async () => {
@@ -279,7 +297,7 @@ onMounted(async () => {
     params: { location_id: id },
   });
 
-  if (isInLast30Days(new Date(data[0].created_at))) {
+  if (data?.[0] && isInSameMonth(new Date(data[0].created_at))) {
     lastInspectionDate.value = new Date(data[0].created_at);
     showInspectionAlert.value = true;
   }

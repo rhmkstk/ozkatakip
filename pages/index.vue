@@ -3,19 +3,163 @@ import { headerLabels } from "~/constants";
 
 const tabledata = ref([]);
 const expandedRows = ref([]);
-const { error } = await useFetch("/api/inspections", {
-  method: "GET",
-  onResponse({ response }) {
-    if (response._data) {
-      tabledata.value = response._data;
-			console.log("Fetched data:", tabledata.value);
-    } else {
-      console.error("Error fetching data:", error);
-    }
-  },
+const isLoading = ref(false);
+const showFilters = ref(false);
+const filterOptions = ref({
+  buildings: [] as string[],
+  locations: [] as string[],
+  yscNos: [] as string[],
 });
 
-const date = ref(new Date());
+const defaultDate = new Date();
+const filters = reactive({
+  dateMode: "none",
+  date: new Date(defaultDate),
+  building: "",
+  location: "",
+  yscNo: "",
+  result: null as null | boolean,
+});
+
+const dateModeOptions = [
+  { label: "Kapalı", value: "none" },
+  { label: "Günlük", value: "daily" },
+  { label: "Aylık", value: "monthly" },
+];
+
+const resultOptions = [
+  { label: "Uygun", value: true },
+  { label: "Uygunsuz", value: false },
+];
+
+const hasActiveFilters = computed(() => {
+  return (
+    Boolean(filters.building) ||
+    Boolean(filters.location) ||
+    Boolean(filters.yscNo) ||
+    filters.result !== null ||
+    filters.dateMode !== "none"
+  );
+});
+
+const activeFilterCount = computed(() => {
+  let count = 0;
+  if (filters.building) count += 1;
+  if (filters.location) count += 1;
+  if (filters.yscNo) count += 1;
+  if (filters.result !== null) count += 1;
+  if (filters.dateMode !== "none") count += 1;
+  return count;
+});
+
+const getDateRangeQuery = () => {
+  if (filters.dateMode === "none" || !filters.date) {
+    return {};
+  }
+  const selectedDate = new Date(filters.date);
+  if (filters.dateMode === "daily") {
+    const start = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+    );
+    const end = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate() + 1,
+    );
+    return {
+      date_from: start.toISOString(),
+      date_to: end.toISOString(),
+    };
+  }
+
+  const start = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth(),
+    1,
+  );
+  const end = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth() + 1,
+    1,
+  );
+  return {
+    date_from: start.toISOString(),
+    date_to: end.toISOString(),
+  };
+};
+
+const buildQuery = () => {
+  if (!hasActiveFilters.value) {
+    return {};
+  }
+  const query: Record<string, string> = {
+    ...getDateRangeQuery(),
+  };
+
+  if (filters.building) {
+    query.building = filters.building.trim();
+  }
+  if (filters.location) {
+    query.location = filters.location.trim();
+  }
+  if (filters.yscNo) {
+    query.ysc_no = filters.yscNo.trim();
+  }
+  if (filters.result !== null) {
+    query.result = String(filters.result);
+  }
+  return query;
+};
+
+const loadInspections = async () => {
+  isLoading.value = true;
+  try {
+    const data = await $fetch("/api/inspections", {
+      query: buildQuery(),
+    });
+    tabledata.value = Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    tabledata.value = [];
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const applyFilters = async () => {
+  showFilters.value = false;
+  await loadInspections();
+};
+
+const clearFilters = async () => {
+  filters.dateMode = "none";
+  filters.date = new Date(defaultDate);
+  filters.building = "";
+  filters.location = "";
+  filters.yscNo = "";
+  filters.result = null;
+  showFilters.value = false;
+  await loadInspections();
+};
+
+const loadFilterOptions = async () => {
+  try {
+    const data = await $fetch("/api/inspections/filters");
+    filterOptions.value = {
+      buildings: data?.buildings ?? [],
+      locations: data?.locations ?? [],
+      yscNos: data?.yscNos ?? [],
+    };
+  } catch (error) {
+    console.error("Error fetching filter options:", error);
+  }
+};
+
+await loadInspections();
+await loadFilterOptions();
+
 
 const columns = [
   {
@@ -110,14 +254,101 @@ const expandColumns = [
 
 <template>
   <div>
-    <PageHeader title="2024 Nisan ayina ait kayitlar listeleniyor">
-      <DatePicker
-        v-model="date"
-        view="month"
-        date-format="mm/yy"
-        size="small"
-      />
+    <PageHeader title="Bakım kayıtları listeleniyor">
+      <template #right>
+        <Button
+          :outlined="!hasActiveFilters"
+          size="small"
+          @click="showFilters = true"
+        >
+          <i class="ri-filter-3-line text-base" />
+          <span>Filtreler</span>
+          <span
+            v-if="activeFilterCount"
+            class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
+          >
+            {{ activeFilterCount }}
+          </span>
+        </Button>
+        <Button
+          v-if="hasActiveFilters"
+          label="Temizle"
+          icon="pi pi-times"
+          size="small"
+          severity="secondary"
+          outlined
+          @click="clearFilters"
+        />
+      </template>
     </PageHeader>
+
+    <Drawer
+      v-model:visible="showFilters"
+      header="Filtreler"
+      position="left"
+      :style="{ width: '22rem' }"
+    >
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-600">Tarih filtresi</label>
+          <Select v-model="filters.dateMode" :options="dateModeOptions" optionLabel="label" optionValue="value" />
+        </div>
+        <div v-if="filters.dateMode !== 'none'" class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-600">Tarih</label>
+          <DatePicker
+            v-model="filters.date"
+            :view="filters.dateMode === 'monthly' ? 'month' : 'date'"
+            :date-format="filters.dateMode === 'monthly' ? 'mm/yy' : 'dd/mm/yy'"
+            size="small"
+            show-button-bar
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-600">Bulduğu bina/alan</label>
+          <Select
+            v-model="filters.building"
+            :options="filterOptions.buildings"
+            placeholder="Bina/alan seç"
+            show-clear
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-600">Bulduğu yer</label>
+          <Select
+            v-model="filters.location"
+            :options="filterOptions.locations"
+            placeholder="Bulduğu yer seç"
+            filter
+            show-clear
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-600">YSC no</label>
+          <Select
+            v-model="filters.yscNo"
+            :options="filterOptions.yscNos"
+            placeholder="YSC no seç"
+            filter
+            show-clear
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-600">Sonuç</label>
+          <Select
+            v-model="filters.result"
+            :options="resultOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Hepsi"
+            show-clear
+          />
+        </div>
+      </div>
+      <div class="mt-6 flex items-center gap-2">
+        <Button label="Temizle" severity="secondary" outlined @click="clearFilters" />
+        <Button label="Uygula" :loading="isLoading" @click="applyFilters" />
+      </div>
+    </Drawer>
     <EmptyState v-if="!tabledata.length">
       <template #title> Bakım Kayıdı bulunamadı </template>
       <template #subtitle>
@@ -128,6 +359,7 @@ const expandColumns = [
       <DataTable
         v-model:expanded-rows="expandedRows"
         :value="tabledata"
+        :loading="isLoading"
         class="text-sm"
         :row-class="(rowData) => (rowData.result ? '' : '!bg-red-100')"
       >

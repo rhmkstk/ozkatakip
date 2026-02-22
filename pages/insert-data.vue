@@ -189,16 +189,16 @@ const saveNewBuilding = async () => {
 };
 
 watch(
-  () => form.product.refill_date,
-  (newDate) => {
-    if (newDate) {
-      const refillDate = new Date(newDate);
-      const nextRefillDate = new Date(refillDate);
-      nextRefillDate.setFullYear(
-        refillDate.getFullYear() + form.product.refill_period
-      );
-      form.product.next_refill_date = nextRefillDate;
+  () => [form.product.refill_date, form.product.refill_period],
+  ([refillDate, refillPeriod]) => {
+    if (!refillDate) {
+      form.product.next_refill_date = null;
+      return;
     }
+
+    const nextRefillDate = new Date(refillDate);
+    nextRefillDate.setFullYear(nextRefillDate.getFullYear() + refillPeriod);
+    form.product.next_refill_date = nextRefillDate;
   }
 );
 watch(
@@ -314,6 +314,23 @@ watch(
         </div>
         <div class="form-row">
           <div class="form-item">
+            <label for="refill_period">{{ headerLabels.refill_period }}</label>
+            <Select
+              id="refill_period"
+              v-model="form.product.refill_period"
+              :options="refillPeriodOptions"
+              option-label="label"
+              option-value="value"
+              placeholder="Yeniden dolum periyodu secin"
+            />
+            <!-- <InputNumber
+              id="refill_period"
+              v-model="form.product.refill_period"
+              :use-grouping="false"
+              fluid
+            /> -->
+          </div>
+          <div class="form-item">
             <label for="refill_date">{{ headerLabels.refill_date }}</label>
             <DatePicker
               id="refill_date"
@@ -335,23 +352,6 @@ watch(
               date-format="dd/mm/yy"
               readonly
             />
-          </div>
-          <div class="form-item">
-            <label for="refill_period">{{ headerLabels.refill_period }}</label>
-            <Select
-              id="refill_period"
-              v-model="form.product.refill_period"
-              :options="refillPeriodOptions"
-              option-label="label"
-              option-value="value"
-              placeholder="Yeniden dolum periyodu secin"
-            />
-            <!-- <InputNumber
-              id="refill_period"
-              v-model="form.product.refill_period"
-              :use-grouping="false"
-              fluid
-            /> -->
           </div>
         </div>
         <div class="form-row">

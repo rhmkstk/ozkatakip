@@ -8,20 +8,7 @@ const showScanner = ref(false);
 </script>
 
 <template>
-	<div class="flex flex-col space-y-4 h-full pb-4">
-		<Card>
-			<template #content>
-				<ul class="list-disc list-inside space-y-4 max-h-[50dvh] overflow-y-auto">
-					<li>02.05.2025, saat 10:02 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 10:15 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 10:45 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 13:15 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 13:42 tarihinde bakim kaydi olusturdun</li>
-					<li>02.05.2025, saat 14:29 tarihinde bakim kaydi olusturdun</li>
-					<li>03.05.2025, saat 11:12 tarihinde dolum kaydi olusturdun</li>
-				</ul>
-			</template>
-		</Card>
+	<div class="flex flex-col space-y-4 h-dvh pb-4">
 		<div class="mt-auto">
 			<form
 				class="w-full"

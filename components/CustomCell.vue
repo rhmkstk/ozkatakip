@@ -20,7 +20,7 @@ const props = defineProps<Props>();
 // }
 
 const customCells = {
-	boolean: (value: boolean) => ({
+	boolean: (value: boolean | null) => ({
 		name: 'i',
 		props: {
 			class: value
@@ -57,47 +57,42 @@ const componentDefinitions = {
 	'products.refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
+		text: formatTurkishMonthYear(value),
 	}),
 	'products.next_refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
-		// text: new Date(value).toLocaleDateString('tr-TR', {
-		// 	year: 'numeric',
-		// 	month: '2-digit',
-		// 	day: '2-digit',
-		// }),
+		text: formatTurkishMonthYear(value),
 	}),
 	'created_at': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
+		text: formatTurkishDateTime(value),
 	}),
 	'manufacture_year': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
+		text: formatTurkishYear(value),
 	}),
 	'hydrostatic_test_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
+		text: formatTurkishMonthYear(value),
 	}),
 	'next_hydrostatic_test_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
+		text: formatTurkishMonthYear(value),
 	}),
 	'refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
+		text: formatTurkishMonthYear(value),
 	}),
 	'next_refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
-		text: formatTurkishDate(value),
+		text: formatTurkishMonthYear(value),
 	}),
 
 	'result': customCells.boolean,
