@@ -12,6 +12,29 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
+		if (body.location) {
+			const { data: existing, error: existingError } = await event.context.supabase
+				.from('products')
+				.select('id')
+				.eq('location', body.location)
+				.limit(1)
+				.maybeSingle();
+
+			if (existingError) {
+				throw createError({
+					statusCode: 500,
+					message: existingError.message,
+				});
+			}
+
+			if (existing) {
+				throw createError({
+					statusCode: 409,
+					message: 'This location already has a product',
+				});
+			}
+		}
+
 		console.log('Inserting product:', body);
 
 		const { data, error } = await event.context.supabase

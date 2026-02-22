@@ -99,12 +99,40 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 5) Silinen ürünlere bağlı location kayıtlarını sil
+    const locationIds = Array.from(
+      new Set(
+        deletedProducts
+          .map((product) => product.location)
+          .filter((locationId): locationId is number => Number.isFinite(locationId))
+      )
+    );
+
+    let locationsDeleted: number | null = null;
+    if (locationIds.length > 0) {
+      const { error: locationErr, count: locationCount } = await supabase
+        .from("locations")
+        .delete({ count: "exact" })
+        .in("id", locationIds);
+
+      if (locationErr) {
+        throw createError({
+          statusCode: 500,
+          message: `Failed to delete locations: ${locationErr.message}`,
+          data: { supabase: locationErr },
+        });
+      }
+
+      locationsDeleted = locationCount ?? null;
+    }
+
     return {
       message: "Products deleted successfully",
       transactionsDeleted: txnCount ?? null,
       fillRecordsDeleted: fillCount ?? null,
       inspectionsDeleted: inspCount ?? null,
       productsDeleted: deletedProducts.length,
+      locationsDeleted,
       deleted: deletedProducts,
     };
   } catch (error: unknown) {

@@ -45,7 +45,7 @@ export const headerLabels = {
 
 export const fillLabels = {
   filling: "Dolum İşlemi",
-  trigger_valve: "Tetik / Vana",
+  trigger_valve: "Tetik (Çalıştırma Mekanizması)",
   manometer: "Manometre",
   hose_and_nozzle: "Hortum / Lans",
   wheel: "Tekerlek",
@@ -81,6 +81,7 @@ export const customCellFields = [
   "hydrostatic_test_date",
   "next_hydrostatic_test_date",
   "user",
+  "is_expiry",
 ];
 
 export const fireExtinguishers = [

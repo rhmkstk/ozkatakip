@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { header } from '@primeuix/themes/aura/accordion';
 import { headerLabels } from '~/constants';
 import type { Tables } from '~/types/database.types';
-
-type DateRange = Date | null;
 
 type ProductWithLocation = Tables<'products'> & {
 	locations: Tables<'locations'> | null;
@@ -91,54 +88,107 @@ const expandColuns = [
 	},
 ];
 const now = new Date();
-const startDate = ref(new Date(now.getFullYear(), now.getMonth(), 1)); // 1st of next month
-const endDate = ref(new Date(now.getFullYear(), now.getMonth() + 1, 1)); // 1st of the following month
+const startDate = ref(new Date(now.getFullYear(), now.getMonth(), 1));
+const endDate = ref(new Date(now.getFullYear(), now.getMonth() + 1, 1));
 const tabledata = ref<ProductWithLocation[]>([]);
-const locations = ref<string[]>([]);
+const isLoading = ref(false);
+const showFilters = ref(false);
+const filterOptions = ref({
+	locations: [] as string[],
+	modelTypes: [] as string[],
+});
+const filters = reactive({
+	date: new Date(now),
+	location: '',
+	modelType: '',
+});
 const expandedRows = ref([]);
-const loading = ref(false);
-const dateRange = ref<DateRange[]>([
-	startDate.value,
-	endDate.value,
-]);
 
-const onDateRangeChange = (newRange: [Date | null, Date | null]) => {
-	if (newRange[0] !== null && newRange[1] !== null) {
-		loading.value = true;
-		startDate.value = newRange[0];
-		endDate.value = newRange[1];
-		tabledata.value = [];
-		useFetch('/api/products/getByNextRefillDate', {
-			method: 'GET',
-			params: {
-				start_date: startDate.value.toISOString(),
-				end_date: endDate.value.toISOString(),
-			},
-			onResponse({ response }) {
-				if (response._data) {
-					tabledata.value = response._data;
-					const uniqueLocations = new Set(
-						response._data.map(
-							(item: ProductWithLocation) => item?.locations?.building_id?.name,
-						),
-					);
-					locations.value = Array.from(uniqueLocations) as string[];
-					locations.value.sort();
-				}
-				loading.value = false;
-			},
-			onResponseError({ response }) {
-				console.error('Fetch failed:', response);
-				loading.value = false;
-			},
+const hasActiveFilters = computed(() => {
+	return Boolean(filters.location) || Boolean(filters.modelType);
+});
+
+const activeFilterCount = computed(() => {
+	let count = 0;
+	if (filters.location) count += 1;
+	if (filters.modelType) count += 1;
+	return count;
+});
+
+const getDateRangeQuery = () => {
+	const selectedDate = new Date(filters.date);
+	const start = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+	const end = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+	startDate.value = start;
+	endDate.value = end;
+	return {
+		start_date: start.toISOString(),
+		end_date: end.toISOString(),
+	};
+};
+
+const buildQuery = () => {
+	const query: Record<string, string> = {
+		...getDateRangeQuery(),
+	};
+
+	if (filters.location) {
+		query.location = filters.location.trim();
+	}
+	if (filters.modelType) {
+		query.model_type = filters.modelType.trim();
+	}
+	return query;
+};
+
+const loadPlanningRecords = async () => {
+	isLoading.value = true;
+	try {
+		const data = await $fetch('/api/products/getByNextRefillDate', {
+			query: buildQuery(),
 		});
+		tabledata.value = Array.isArray(data) ? data : [];
+	}
+	catch (error) {
+		console.error('Error fetching data:', error);
+		tabledata.value = [];
+	}
+	finally {
+		isLoading.value = false;
 	}
 };
 
-onMounted(() => {
-	// Initialize with the current month
-	onDateRangeChange([startDate.value, endDate.value]);
+const applyFilters = async () => {
+	showFilters.value = false;
+	await loadPlanningRecords();
+};
+
+const clearFilters = async () => {
+	filters.date = new Date(now);
+	filters.location = '';
+	filters.modelType = '';
+	showFilters.value = false;
+	await loadPlanningRecords();
+};
+
+const loadFilterOptions = async () => {
+	try {
+		const data = await $fetch('/api/products/filters');
+		filterOptions.value = {
+			locations: data?.locations ?? [],
+			modelTypes: data?.modelTypes ?? [],
+		};
+	}
+	catch (error) {
+		console.error('Error fetching filter options:', error);
+	}
+};
+
+onMounted(async () => {
+	await loadPlanningRecords();
+	await loadFilterOptions();
 });
+
 const getFilteredDates = computed(() => {
 	const start = startDate.value;
 	const end = endDate.value;
@@ -146,36 +196,96 @@ const getFilteredDates = computed(() => {
 	if (!start || !end) return 'Tarih aralığı seçilmedi';
 
 	const formattedStart = start.toLocaleDateString('tr-TR', {
-		day: 'numeric',
 		month: 'long',
 		year: 'numeric',
 	});
 
-	const formattedEnd = end.toLocaleDateString('tr-TR', {
-		day: 'numeric',
-		month: 'long',
-		year: 'numeric',
-	});
-
-	return `Yeniden dolum tarihi ${formattedStart} ve ${formattedEnd} arasında olan ürünler listeleniyor`;
+	return `Yeniden dolum tarihi ${formattedStart} ayı içinde olan ürünler listeleniyor`;
 });
 </script>
 
 <template>
 	<div class="">
-		<BaseLoader v-if="loading" />
+		<BaseLoader v-if="isLoading" />
 		<PageHeader :title="getFilteredDates">
-			<Calendar
-				v-model="dateRange"
-				:date-format="'dd/mm/yy'"
-				placeholder="Select Date Range"
-				show-icon
-				class=" w-64"
-				selection-mode="range"
-				size="small"
-				@update:model-value="onDateRangeChange"
-			/>
+			<template #right>
+				<Button
+					:outlined="!hasActiveFilters"
+					size="small"
+					@click="showFilters = true"
+				>
+					<i class="ri-filter-3-line text-base" />
+					<span>Filtreler</span>
+					<span
+						v-if="activeFilterCount"
+						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
+					>
+						{{ activeFilterCount }}
+					</span>
+				</Button>
+				<Button
+					v-if="hasActiveFilters"
+					label="Temizle"
+					icon="pi pi-times"
+					size="small"
+					severity="secondary"
+					outlined
+					@click="clearFilters"
+				/>
+			</template>
 		</PageHeader>
+
+		<Drawer
+			v-model:visible="showFilters"
+			header="Filtreler"
+			position="left"
+			:style="{ width: '22rem' }"
+		>
+			<div class="flex flex-col gap-4">
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Ay</label>
+					<DatePicker
+						v-model="filters.date"
+						view="month"
+						date-format="mm/yy"
+						size="small"
+						show-button-bar
+					/>
+				</div>
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Model tipi</label>
+					<Select
+						v-model="filters.modelType"
+						:options="filterOptions.modelTypes"
+						placeholder="Model tipi seç"
+						show-clear
+					/>
+				</div>
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Lokasyon</label>
+					<Select
+						v-model="filters.location"
+						:options="filterOptions.locations"
+						placeholder="Lokasyon seç"
+						filter
+						show-clear
+					/>
+				</div>
+			</div>
+			<div class="mt-6 flex items-center gap-2">
+				<Button
+					label="Temizle"
+					severity="secondary"
+					outlined
+					@click="clearFilters"
+				/>
+				<Button
+					label="Uygula"
+					:loading="isLoading"
+					@click="applyFilters"
+				/>
+			</div>
+		</Drawer>
 
 		<EmptyState v-if="!tabledata.length">
 			<template #title>

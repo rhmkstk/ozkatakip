@@ -38,25 +38,39 @@ const showScanner = ref(false);
 const newProductId = ref("");
 const photo_url = ref<string | null>(null);
 const drawerShow = ref<boolean>(false);
+const selectedNewProductRefillPeriod = ref<number | null>(null);
+const refillPeriodOptions = [
+  { label: "1 yıl", value: 1 },
+  { label: "2 yıl", value: 2 },
+  { label: "3 yıl", value: 3 },
+  { label: "4 yıl", value: 4 },
+];
 
 const src = ref(null);
 
+const formatRefillPeriod = (value: number | null | undefined) => {
+  if (!value) return "Belirtilmemiş";
+  return `${value} yıl`;
+};
+
 async function onFileSelect(event: FileUploadSelectEvent) {
-	const imageFile = event.files[0];
-	const reader= new FileReader();
-	reader.onload = (e) => {
-		if (e.target && e.target.result) {
-			photo_url.value = e.target.result as string;
-		}
-	};
+  const imageFile = event.files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    if (e.target && e.target.result) {
+      photo_url.value = e.target.result as string;
+    }
+  };
   reader.readAsDataURL(imageFile);
-	try {
-		const compressedFile = await imageCompression(imageFile, imageCompressionOptions);
-		compressedImage.value = compressedFile as File;
-	}
-	catch (error) {
-		console.warn(error);
-	}
+  try {
+    const compressedFile = await imageCompression(
+      imageFile,
+      imageCompressionOptions,
+    );
+    compressedImage.value = compressedFile as File;
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 const currentProductSummaryCardData = computed(() => {
@@ -77,6 +91,10 @@ const currentProductSummaryCardData = computed(() => {
       {
         key: "Oda",
         value: currentProductData.location.room,
+      },
+      {
+        key: "Dolum periyodu",
+        value: formatRefillPeriod(currentProductData.product.refill_period),
       },
     ];
   }
@@ -102,11 +120,24 @@ const newProductSummaryCardData = computed(() => {
         key: "Oda",
         value: newProductData.location.room,
       },
+      {
+        key: "Dolum periyodu",
+        value: formatRefillPeriod(newProductData.product.refill_period),
+      },
     ];
   }
   return [];
 });
-async function getNewProductData(newLocationId: string, callback: () => void) {
+const isRefillPeriodDirty = computed(() => {
+  if (!newProductData.product) return false;
+  return newProductData.product.refill_period !== selectedNewProductRefillPeriod.value;
+});
+
+async function getNewProductData(
+  newLocationId: string,
+  callback?: () => void,
+  showErrorAlert = true,
+) {
   try {
     loading.value = true;
     const location = await $fetch("/api/locations/getByLocationId", {
@@ -123,10 +154,68 @@ async function getNewProductData(newLocationId: string, callback: () => void) {
     }
     newProductData.location = location[0];
     newProductData.product = product[0];
-    callback();
+    selectedNewProductRefillPeriod.value = product[0].refill_period ?? null;
+    callback?.();
+    return true;
   } catch (error) {
     console.error("Error fetching product data:", error);
-    alert("YSC bulunamadı. Lütfen YSC noyu kontrol edin.");
+    if (showErrorAlert) {
+      alert("YSC bulunamadı. Lütfen YSC noyu kontrol edin.");
+    }
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function updateNewProductRefillPeriod() {
+  if (
+    !newProductData.product?.id ||
+    !newProductData.location?.location_id ||
+    selectedNewProductRefillPeriod.value === null
+  ) {
+    toast.add({
+      severity: "warn",
+      summary: "Eksik bilgi",
+      detail: "Lütfen yeni ürün için dolum periyodu seçin.",
+      life: 2000,
+    });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    await $fetch("/api/products", {
+      method: "PUT",
+      body: {
+        id: newProductData.product.id,
+        refill_period: selectedNewProductRefillPeriod.value,
+      },
+    });
+
+    const refreshSuccess = await getNewProductData(
+      newProductData.location.location_id,
+      undefined,
+      false,
+    );
+    if (!refreshSuccess) {
+      throw new Error("Refresh after refill update failed");
+    }
+
+    toast.add({
+      severity: "success",
+      summary: "Başarılı",
+      detail: "Yeni ürünün dolum periyodu güncellendi.",
+      life: 2000,
+    });
+  } catch (error) {
+    console.error("Error updating refill period:", error);
+    toast.add({
+      severity: "error",
+      summary: "Hata",
+      detail: "Dolum periyodu güncellenirken bir hata oluştu.",
+      life: 2000,
+    });
   } finally {
     loading.value = false;
   }
@@ -148,15 +237,15 @@ async function applyChanges(callback: () => void) {
 
     if (res.success) {
       const userId = (await supabase.auth.getUser()).data.user?.id;
-      $fetch('/api/transactions', {
-			method: 'POST',
-			body: {
-				type: 'change',
-				user: userId,
-				product_id: currentProductData.product.id,
-				details: newProductData?.product?.id,
-			},
-		});
+      $fetch("/api/transactions", {
+        method: "POST",
+        body: {
+          type: "change",
+          user: userId,
+          product_id: currentProductData.product.id,
+          details: newProductData?.product?.id,
+        },
+      });
       callback();
       toast.add({
         severity: "success",
@@ -208,15 +297,15 @@ async function createInspectionForm() {
       },
     });
 
-     $fetch('/api/transactions', {
-			method: 'POST',
-			body: {
-				type: 'inspection',
-				user: userId,
-				product_id: newProductData.product?.id,
-				details: transactionRes.id,
-			},
-		});
+    $fetch("/api/transactions", {
+      method: "POST",
+      body: {
+        type: "inspection",
+        user: userId,
+        product_id: newProductData.product?.id,
+        details: transactionRes.id,
+      },
+    });
     drawerShow.value = true;
   } catch (error) {
     toast.add({
@@ -276,54 +365,57 @@ async function createInspectionForm() {
               Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
             </h4>
 
-						<div>
-							<form
-								class="mt-auto w-full"
-								@submit.prevent
-							>
-								<div class="form-row">
-									<div class="form-item">
-										<label for="building_area">YSC no</label>
-										<div class="flex space-x-2">
-											<InputText
-												id="building_area"
-												v-model="newProductId"
-												placeholder="ATM-2"
-												class="flex-1"
-											/>
-											<Button
-                      :disabled="!newProductId"
-												label="Ara"
-												@click="getNewProductData(newProductId, () => activateCallback('2'))"
-											/>
-										</div>
-									</div>
-								</div>
-							</form>
-							<Divider align="center">
-								<span class="text-sm">Veya</span>
-							</Divider>
-							<Button
-								class="w-full"
-								icon="ri-camera-fill"
-								outlined
-								label="QR Kod Tara"
-								@click="showScanner = true"
-							/>
-							<QRScanner
-								v-if="showScanner"
-								@close="showScanner = false"
-								@scan-complete="(scannedNumber: string) => {
-                  newProductId = scannedNumber;
-                  showScanner = false;
-                  getNewProductData(scannedNumber, () => {
-                    activateCallback('2');
-                  });
-                }"
-							/>
-						</div>
-					</div>
-					<!-- <div class="p-4">
+            <div>
+              <form class="mt-auto w-full" @submit.prevent>
+                <div class="form-row">
+                  <div class="form-item">
+                    <label for="building_area">YSC no</label>
+                    <div class="flex space-x-2">
+                      <InputText
+                        id="building_area"
+                        v-model="newProductId"
+                        placeholder="ATM-2"
+                        class="flex-1"
+                      />
+                      <Button
+                        :disabled="!newProductId"
+                        label="Ara"
+                        @click="
+                          getNewProductData(newProductId, () =>
+                            activateCallback('2'),
+                          )
+                        "
+                      />
+                    </div>
+                  </div>
+                </div>
+              </form>
+              <Divider align="center">
+                <span class="text-sm">Veya</span>
+              </Divider>
+              <Button
+                class="w-full"
+                icon="ri-camera-fill"
+                outlined
+                label="QR Kod Tara"
+                @click="showScanner = true"
+              />
+              <QRScanner
+                v-if="showScanner"
+                @close="showScanner = false"
+                @scan-complete="
+                  (scannedNumber: string) => {
+                    newProductId = scannedNumber;
+                    showScanner = false;
+                    getNewProductData(scannedNumber, () => {
+                      activateCallback('2');
+                    });
+                  }
+                "
+              />
+            </div>
+          </div>
+          <!-- <div class="p-4">
 						<div class="flex flex-col items-center mb-6">
 							<i class="ri-checkbox-circle-line text-6xl text-green-600" />
 							<h3 class="text-lg font-semibold mb-2">
@@ -389,6 +481,36 @@ async function createInspectionForm() {
                 </ul>
               </div>
             </div>
+            <div class="mb-8 rounded-xl border border-slate-200 p-4">
+              <h5 class="mb-3 text-base font-semibold text-slate-700">
+                Yeni ürün dolum periyodunu güncelle
+              </h5>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div class="w-full sm:max-w-xs">
+                  <label
+                    for="new-product-refill-period"
+                    class="mb-1 block text-sm text-slate-600"
+                  >
+                    Dolum periyodu
+                  </label>
+                  <Select
+                    id="new-product-refill-period"
+                    v-model="selectedNewProductRefillPeriod"
+                    :options="refillPeriodOptions"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="Periyot seçin"
+                    class="w-full"
+                  />
+                </div>
+                <Button
+                  label="Periyodu güncelle"
+                  icon="ri-refresh-line"
+                  :disabled="!isRefillPeriodDirty"
+                  @click="updateNewProductRefillPeriod"
+                />
+              </div>
+            </div>
           </div>
 
           <div class="pt-4 flex justify-between border-t border-slate-200">
@@ -412,24 +534,28 @@ async function createInspectionForm() {
             kaydini tamamla.
           </h4>
 
-					<div class="card flex flex-col items-center gap-6">
-						<FileUpload
-							mode="basic"
-							custom-upload
-							auto
-							accept="image/*"
-							severity="secondary"
-							class="p-button-outlined"
+          <div class="card flex flex-col items-center gap-6">
+            <FileUpload
+              mode="basic"
+              custom-upload
+              auto
+              accept="image/*"
+              class="p-button-outlined p-button-secondary"
               choose-label="Cihazın fotoğrafını çek/yükle"
-							@select="onFileSelect"
-						/>
-						<img
-							v-if="photo_url"
-							:src="photo_url"
-							alt="Image"
-							class="shadow-md rounded-xl w-64 sm:w-12"
-						>
-					</div>
+              :pt="{ input: { capture: 'environment' } }"
+              @select="onFileSelect"
+            >
+              <template #chooseicon>
+                <i class="ri-camera-line" />
+              </template>
+            </FileUpload>
+            <img
+              v-if="photo_url"
+              :src="photo_url"
+              alt="Image"
+              class="shadow-md rounded-xl w-64 sm:w-12"
+            />
+          </div>
 
           <div class="pt-4 border-t border-slate-200 mt-12 flex justify-end">
             <Button
