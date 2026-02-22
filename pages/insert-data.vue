@@ -131,10 +131,20 @@ const saveProduct = async () => {
     }
   } catch (error) {
     console.error("Error saving product:", error);
+    const fetchError = error as {
+      statusCode?: number;
+      data?: { statusCode?: number; message?: string };
+      message?: string;
+    };
+    const statusCode = fetchError?.statusCode ?? fetchError?.data?.statusCode;
+    const message = fetchError?.data?.message ?? fetchError?.message;
     toast.add({
       severity: "error",
       summary: "Hata",
-      detail: "YSC kaydedilirken bir hata oluştu.",
+      detail:
+        statusCode === 409
+          ? "Bu konum için zaten bir YSC kayıtlı."
+          : message || "YSC kaydedilirken bir hata oluştu.",
       life: 2000,
     });
   } finally {

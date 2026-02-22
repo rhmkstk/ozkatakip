@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
 		const { data, error } = await event.context.supabase
 			.from('locations')
-			.insert(body)
+			.upsert(body, { onConflict: 'location_id' })
 			.select()
 			.single();
 
