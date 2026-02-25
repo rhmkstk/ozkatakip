@@ -54,6 +54,7 @@ export const fillLabels = {
 };
 export const customCellFields = [
   "products.refill_date",
+  "products.hydrostatic_test_date",
   "products.next_refill_date",
   "result",
   "working_mechanism",

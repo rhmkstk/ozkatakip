@@ -330,22 +330,20 @@ onMounted(async () => {
     <div v-else-if="!isLoading" class="flex flex-col h-full">
       <div
         v-if="data?.product"
-        class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex"
+        class="bg-slate-50 p-2 rounded-lg mb-4"
       >
-        <img
-          src="https://www.capitalsolutions.pk/wp-content/uploads/2021/06/DCP6Kg-ABC-2.jpg"
-          alt="fire-estinguisher"
-          class="object-cover max-w-full w-1/3 h-[200px] rounded"
-        />
-        <div class="pt-2 px-2 flex-1 flex flex-col">
-          <h4 class="text-sm leading-3">
-            {{ data.product.unit }}
-          </h4>
-          <h3 class="text-lg font-semibold truncate">
-            {{ data.product.model_type }}
-          </h3>
-
-          <div class="flex items-center space-x-1">
+        <div
+          class="px-1 pb-2 mb-3 border-b border-slate-200 flex items-start justify-between gap-2"
+        >
+          <div class="min-w-0">
+            <h3 class="text-base font-semibold truncate">
+              {{ data.product.model_type }}
+            </h3>
+            <h4 class="text-sm text-slate-600">
+              {{ data.product.unit ? `${data.product.unit}` : "Birim belirtilmemiş" }}
+            </h4>
+          </div>
+          <div class="flex items-center space-x-1 shrink-0">
             <span class="size-1.5 rounded-full" :class="statusBgColor" />
             <span class="text-xs text-slate-500 uppercase">{{
               productStatusTypeLabels[
@@ -354,31 +352,62 @@ onMounted(async () => {
               ]
             }}</span>
           </div>
-          <div class="flex space-x-1 mt-6">
-            <i class="ri-map-pin-line -mt-0.5" />
-            <p class="text-sm text-gray-700">
-              Konum:
-              <b>{{ data.location.room }} , {{ data.location.building_id.name }}</b>
-            </p>
+        </div>
+
+        <div class="flex items-stretch gap-3 min-h-[220px]">
+          <div class="w-[34%] max-w-[140px] rounded overflow-hidden">
+            <img
+              src="https://www.capitalsolutions.pk/wp-content/uploads/2021/06/DCP6Kg-ABC-2.jpg"
+              alt="fire-estinguisher"
+              class="object-cover w-full h-full"
+            />
           </div>
-          <div class="flex space-x-1 mt-1">
-            <i class="ri-calendar-line -mt-0.5" />
-            <p class="text-sm text-gray-700">
-              Dolum tarihi:
-              <b>{{ formatTurkishDate(data.product.refill_date) }}</b>
-            </p>
-          </div>
-          <div class="flex space-x-1 mt-1">
-            <i class="ri-refresh-line -mt-0.5"></i>
-            <p class="text-sm text-gray-700">
-              Dolum periyodu: <b>{{ data.product.refill_period }} yıl</b>
-            </p>
-          </div>
-          <div class="flex space-x-1 mt-1">
-            <i class="ri-calendar-todo-line -mt-0.5"></i>
-            <p class="text-sm text-gray-700">
-              SKT: <b>{{ formatTurkishDate(data.product.next_refill_date) }}</b>
-            </p>
+
+          <div class="flex-1 flex flex-col justify-between py-1">
+            <div class="flex space-x-1">
+              <i class="ri-map-pin-line -mt-0.5" />
+              <p class="text-sm text-gray-700">
+                Konum:
+                <b>{{ data.location.room }} , {{ data.location.building_id.name }}</b>
+              </p>
+            </div>
+            <div class="flex space-x-1 mt-1">
+              <i class="ri-calendar-line -mt-0.5" />
+              <p class="text-sm text-gray-700">
+                Dolum tarihi:
+                <b>{{ formatTurkishDate(data.product.refill_date) }}</b>
+              </p>
+            </div>
+            <div class="flex space-x-1 mt-1">
+              <i class="ri-calendar-check-line -mt-0.5" />
+              <p class="text-sm text-gray-700">
+                Test tarihi:
+                <b>{{
+                  data.product.hydrostatic_test_date
+                    ? formatTurkishDate(data.product.hydrostatic_test_date)
+                    : "Belirtilmemiş"
+                }}</b>
+              </p>
+            </div>
+            <div class="flex space-x-1 mt-1">
+              <i class="ri-hashtag -mt-0.5" />
+              <p class="text-sm text-gray-700">
+                Seri No:
+                <b>{{ data.product.serial_number ?? "Belirtilmemiş" }}</b>
+              </p>
+            </div>
+            <div class="flex space-x-1 mt-1">
+              <i class="ri-refresh-line -mt-0.5"></i>
+              <p class="text-sm text-gray-700">
+                Dolum periyodu: <b>{{ data.product.refill_period }} yıl</b>
+              </p>
+            </div>
+            <div class="flex space-x-1 mt-1">
+              <i class="ri-calendar-todo-line -mt-0.5"></i>
+              <p class="text-sm text-gray-700">
+                SKT: <b>{{ formatTurkishDate(data.product.next_refill_date) }}</b>
+              </p>
+            </div>
           </div>
         </div>
       </div>

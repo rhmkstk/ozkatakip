@@ -7,11 +7,17 @@ export default defineEventHandler(async (event) => {
 	try {
 		const query = getQuery(event);
 		const building = getFirstQueryValue(query.building as string | string[] | undefined)?.trim();
-		const location = getFirstQueryValue(query.location as string | string[] | undefined)?.trim();
-		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined)?.trim();
+		const unit = getFirstQueryValue(query.unit as string | string[] | undefined)?.trim();
 		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined)?.trim();
-		const serialNumber = getFirstQueryValue(query.serial_number as string | string[] | undefined)?.trim();
 		const brand = getFirstQueryValue(query.brand as string | string[] | undefined)?.trim();
+		const manufactureYear = getFirstQueryValue(query.manufacture_year as string | string[] | undefined)?.trim();
+		const refillPeriod = getFirstQueryValue(query.refill_period as string | string[] | undefined)?.trim();
+		const refillDateFrom = getFirstQueryValue(query.refill_date_from as string | string[] | undefined);
+		const refillDateTo = getFirstQueryValue(query.refill_date_to as string | string[] | undefined);
+		const nextRefillDateFrom = getFirstQueryValue(query.next_refill_date_from as string | string[] | undefined);
+		const nextRefillDateTo = getFirstQueryValue(query.next_refill_date_to as string | string[] | undefined);
+		const hydroDateFrom = getFirstQueryValue(query.hydro_date_from as string | string[] | undefined);
+		const hydroDateTo = getFirstQueryValue(query.hydro_date_to as string | string[] | undefined);
 		const status = getFirstQueryValue(query.status as string | string[] | undefined)?.trim();
 
 		const { data, error } = await event.context.supabase
@@ -47,19 +53,28 @@ export default defineEventHandler(async (event) => {
 
 		const filteredData = data.filter((item) => {
 			const itemBuilding = item?.locations?.building_id?.name;
-			const itemLocation = item?.locations?.room;
-			const itemYscNo = item?.locations?.location_id;
+			const itemUnit = item?.unit;
 			const itemModelType = item?.model_type;
 			const itemBrand = item?.brand;
-			const itemSerialNumber = item?.serial_number;
+			const itemManufactureYear = item?.manufacture_year;
+			const itemRefillPeriod = item?.refill_period;
+			const itemRefillDate = item?.refill_date;
+			const itemNextRefillDate = item?.next_refill_date;
+			const itemHydroDate = item?.hydrostatic_test_date;
 
 			return (
 				includesFilter(itemBuilding, building)
-				&& includesFilter(itemLocation, location)
-				&& includesFilter(itemYscNo, yscNo)
+				&& includesFilter(itemUnit, unit)
 				&& includesFilter(itemModelType, modelType)
 				&& includesFilter(itemBrand, brand)
-				&& includesFilter(itemSerialNumber, serialNumber)
+				&& equalsFilter(itemManufactureYear, manufactureYear)
+				&& equalsFilter(itemRefillPeriod, refillPeriod)
+				&& (!refillDateFrom || (itemRefillDate && itemRefillDate >= refillDateFrom))
+				&& (!refillDateTo || (itemRefillDate && itemRefillDate < refillDateTo))
+				&& (!nextRefillDateFrom || (itemNextRefillDate && itemNextRefillDate >= nextRefillDateFrom))
+				&& (!nextRefillDateTo || (itemNextRefillDate && itemNextRefillDate < nextRefillDateTo))
+				&& (!hydroDateFrom || (itemHydroDate && itemHydroDate >= hydroDateFrom))
+				&& (!hydroDateTo || (itemHydroDate && itemHydroDate < hydroDateTo))
 				&& equalsFilter(item?.current_status, status)
 			);
 		});

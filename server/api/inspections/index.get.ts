@@ -11,9 +11,9 @@ export default defineEventHandler(async (event) => {
 		const dateFrom = getFirstQueryValue(query.date_from as string | string[] | undefined);
 		const dateTo = getFirstQueryValue(query.date_to as string | string[] | undefined);
 		const building = getFirstQueryValue(query.building as string | string[] | undefined);
-		const location = getFirstQueryValue(query.location as string | string[] | undefined);
+		const unit = getFirstQueryValue(query.unit as string | string[] | undefined);
+		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined);
 		const result = getFirstQueryValue(query.result as string | string[] | undefined);
-		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined);
 		const createBaseRequest = () => {
 			let request = event.context.supabase
 				.from('inspections')
@@ -21,19 +21,19 @@ export default defineEventHandler(async (event) => {
 				.order('created_at', { ascending: false });
 
 			if (dateFrom) {
-				request = request.gte('created_at', dateFrom);
+				request = request.gte('date', dateFrom);
 			}
 			if (dateTo) {
-				request = request.lt('created_at', dateTo);
+				request = request.lt('date', dateTo);
 			}
 			if (building) {
 				request = request.ilike('products.locations.building_id.name', `%${building}%`);
 			}
-			if (location) {
-				request = request.ilike('products.locations.room', `%${location}%`);
+			if (unit) {
+				request = request.ilike('products.unit', `%${unit}%`);
 			}
-			if (yscNo) {
-				request = request.ilike('products.locations.location_id', `%${yscNo}%`);
+			if (modelType) {
+				request = request.ilike('products.model_type', `%${modelType}%`);
 			}
 			if (result === 'true' || result === 'false') {
 				request = request.eq('result', result === 'true');

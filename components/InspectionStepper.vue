@@ -293,6 +293,7 @@ async function createInspectionForm() {
         note: null,
         photo_url: photo_url.value,
         user_id: userId,
+        is_expiry: true,
         fire_extinguisher_id: newProductData.product?.id,
       },
     });

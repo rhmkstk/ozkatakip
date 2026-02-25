@@ -7,8 +7,8 @@ const isLoading = ref(false);
 const showFilters = ref(false);
 const filterOptions = ref({
   buildings: [] as string[],
-  locations: [] as string[],
-  yscNos: [] as string[],
+  units: [] as string[],
+  modelTypes: [] as string[],
 });
 
 const defaultDate = new Date();
@@ -16,8 +16,8 @@ const filters = reactive({
   dateMode: "none",
   date: new Date(defaultDate),
   building: "",
-  location: "",
-  yscNo: "",
+  weight: "",
+  modelType: "",
   result: null as null | boolean,
 });
 
@@ -35,8 +35,8 @@ const resultOptions = [
 const hasActiveFilters = computed(() => {
   return (
     Boolean(filters.building) ||
-    Boolean(filters.location) ||
-    Boolean(filters.yscNo) ||
+    Boolean(filters.weight) ||
+    Boolean(filters.modelType) ||
     filters.result !== null ||
     filters.dateMode !== "none"
   );
@@ -45,8 +45,8 @@ const hasActiveFilters = computed(() => {
 const activeFilterCount = computed(() => {
   let count = 0;
   if (filters.building) count += 1;
-  if (filters.location) count += 1;
-  if (filters.yscNo) count += 1;
+  if (filters.weight) count += 1;
+  if (filters.modelType) count += 1;
   if (filters.result !== null) count += 1;
   if (filters.dateMode !== "none") count += 1;
   return count;
@@ -56,6 +56,12 @@ const getDateRangeQuery = () => {
   if (filters.dateMode === "none" || !filters.date) {
     return {};
   }
+  const toDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
   const selectedDate = new Date(filters.date);
   if (filters.dateMode === "daily") {
     const start = new Date(
@@ -69,8 +75,8 @@ const getDateRangeQuery = () => {
       selectedDate.getDate() + 1,
     );
     return {
-      date_from: start.toISOString(),
-      date_to: end.toISOString(),
+      date_from: toDateString(start),
+      date_to: toDateString(end),
     };
   }
 
@@ -85,8 +91,8 @@ const getDateRangeQuery = () => {
     1,
   );
   return {
-    date_from: start.toISOString(),
-    date_to: end.toISOString(),
+    date_from: toDateString(start),
+    date_to: toDateString(end),
   };
 };
 
@@ -101,11 +107,11 @@ const buildQuery = () => {
   if (filters.building) {
     query.building = filters.building.trim();
   }
-  if (filters.location) {
-    query.location = filters.location.trim();
+  if (filters.weight) {
+    query.unit = filters.weight.trim();
   }
-  if (filters.yscNo) {
-    query.ysc_no = filters.yscNo.trim();
+  if (filters.modelType) {
+    query.model_type = filters.modelType.trim();
   }
   if (filters.result !== null) {
     query.result = String(filters.result);
@@ -137,8 +143,8 @@ const clearFilters = async () => {
   filters.dateMode = "none";
   filters.date = new Date(defaultDate);
   filters.building = "";
-  filters.location = "";
-  filters.yscNo = "";
+  filters.weight = "";
+  filters.modelType = "";
   filters.result = null;
   showFilters.value = false;
   await loadInspections();
@@ -149,8 +155,8 @@ const loadFilterOptions = async () => {
     const data = await $fetch("/api/inspections/filters");
     filterOptions.value = {
       buildings: data?.buildings ?? [],
-      locations: data?.locations ?? [],
-      yscNos: data?.yscNos ?? [],
+      units: data?.units ?? [],
+      modelTypes: data?.modelTypes ?? [],
     };
   } catch (error) {
     console.error("Error fetching filter options:", error);
@@ -290,7 +296,7 @@ const expandColumns = [
     >
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium text-gray-600">Tarih filtresi</label>
+          <label class="text-sm font-medium text-gray-600">Kontrol tarihi</label>
           <Select v-model="filters.dateMode" :options="dateModeOptions" optionLabel="label" optionValue="value" />
         </div>
         <div v-if="filters.dateMode !== 'none'" class="flex flex-col gap-2">
@@ -313,21 +319,21 @@ const expandColumns = [
           />
         </div>
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium text-gray-600">Bulduğu yer</label>
+          <label class="text-sm font-medium text-gray-600">Agirlik</label>
           <Select
-            v-model="filters.location"
-            :options="filterOptions.locations"
-            placeholder="Bulduğu yer seç"
+            v-model="filters.weight"
+            :options="filterOptions.units"
+            placeholder="Agirlik seç"
             filter
             show-clear
           />
         </div>
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-medium text-gray-600">YSC no</label>
+          <label class="text-sm font-medium text-gray-600">Modeli/tipi</label>
           <Select
-            v-model="filters.yscNo"
-            :options="filterOptions.yscNos"
-            placeholder="YSC no seç"
+            v-model="filters.modelType"
+            :options="filterOptions.modelTypes"
+            placeholder="Modeli/tipi seç"
             filter
             show-clear
           />
