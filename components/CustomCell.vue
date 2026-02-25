@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { productStatusTypeLabels, transactionTypeLabels } from '~/constants';
 import ZoomImage from './ZoomImage.vue';
+import { productStatusTypeLabels, transactionTypeLabels } from '~/constants';
 
 type Props = {
 	field: string;
@@ -60,6 +60,11 @@ const componentDefinitions = {
 		text: formatTurkishMonthYear(value),
 	}),
 	'products.next_refill_date': (value: string) => ({
+		name: 'span',
+		props: {},
+		text: formatTurkishMonthYear(value),
+	}),
+	'products.hydrostatic_test_date': (value: string) => ({
 		name: 'span',
 		props: {},
 		text: formatTurkishMonthYear(value),

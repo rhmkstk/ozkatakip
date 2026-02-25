@@ -21,54 +21,77 @@ const deleteProductConfirmModal = ref(false);
 const showFilters = ref(false);
 const filterOptions = ref({
 	buildings: [] as string[],
-	locations: [] as string[],
-	yscNos: [] as string[],
+	units: [] as string[],
 	modelTypes: [] as string[],
-	serialNumbers: [] as string[],
 	brands: [] as string[],
+	manufactureYears: [] as string[],
+	refillPeriods: [] as string[],
 	statuses: [] as string[],
 });
 const filterForm = reactive({
 	building: '',
-	location: '',
-	yscNo: '',
+	weight: '',
 	modelType: '',
-	serialNumber: '',
 	brand: '',
+	manufactureYear: '',
+	refillPeriod: '',
+	refillDateMode: 'none',
+	refillDate: new Date(),
+	nextRefillDateMode: 'none',
+	nextRefillDate: new Date(),
+	hydroDateMode: 'none',
+	hydroDate: new Date(),
 	status: '',
 });
 const appliedFilters = reactive({
 	building: '',
-	location: '',
-	yscNo: '',
+	weight: '',
 	modelType: '',
-	serialNumber: '',
 	brand: '',
+	manufactureYear: '',
+	refillPeriod: '',
+	refillDateMode: 'none',
+	refillDate: new Date(),
+	nextRefillDateMode: 'none',
+	nextRefillDate: new Date(),
+	hydroDateMode: 'none',
+	hydroDate: new Date(),
 	status: '',
 });
 const editProductModal = ref(false);
 const hasActiveFilters = computed(() => {
 	return (
 		Boolean(appliedFilters.building)
-		|| Boolean(appliedFilters.location)
-		|| Boolean(appliedFilters.yscNo)
+		|| Boolean(appliedFilters.weight)
 		|| Boolean(appliedFilters.modelType)
-		|| Boolean(appliedFilters.serialNumber)
 		|| Boolean(appliedFilters.brand)
+		|| Boolean(appliedFilters.manufactureYear)
+		|| Boolean(appliedFilters.refillPeriod)
+		|| appliedFilters.refillDateMode !== 'none'
+		|| appliedFilters.nextRefillDateMode !== 'none'
+		|| appliedFilters.hydroDateMode !== 'none'
 		|| Boolean(appliedFilters.status)
 	);
 });
 const activeFilterCount = computed(() => {
 	let count = 0;
 	if (appliedFilters.building) count += 1;
-	if (appliedFilters.location) count += 1;
-	if (appliedFilters.yscNo) count += 1;
+	if (appliedFilters.weight) count += 1;
 	if (appliedFilters.modelType) count += 1;
-	if (appliedFilters.serialNumber) count += 1;
 	if (appliedFilters.brand) count += 1;
+	if (appliedFilters.manufactureYear) count += 1;
+	if (appliedFilters.refillPeriod) count += 1;
+	if (appliedFilters.refillDateMode !== 'none') count += 1;
+	if (appliedFilters.nextRefillDateMode !== 'none') count += 1;
+	if (appliedFilters.hydroDateMode !== 'none') count += 1;
 	if (appliedFilters.status) count += 1;
 	return count;
 });
+const dateModeOptions = [
+	{ label: 'Kapalı', value: 'none' },
+	{ label: 'Günlük', value: 'daily' },
+	{ label: 'Aylık', value: 'monthly' },
+];
 const statusOptions = computed(() => {
 	return filterOptions.value.statuses.map((statusValue) => {
 		const label = productStatusTypeLabels[
@@ -94,16 +117,61 @@ const uniqueValues = (
 
 const buildQuery = () => {
 	const query: Record<string, string> = {};
+	const toDateRange = (mode: string, dateValue: Date, fromKey: string, toKey: string) => {
+		if (mode === 'none' || !dateValue) {
+			return {};
+		}
+		const toDateString = (date: Date) => {
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
+		};
+		const selectedDate = new Date(dateValue);
+		if (mode === 'daily') {
+			const start = new Date(
+				selectedDate.getFullYear(),
+				selectedDate.getMonth(),
+				selectedDate.getDate(),
+			);
+			const end = new Date(
+				selectedDate.getFullYear(),
+				selectedDate.getMonth(),
+				selectedDate.getDate() + 1,
+			);
+			return {
+				[fromKey]: toDateString(start),
+				[toKey]: toDateString(end),
+			};
+		}
+		const start = new Date(
+			selectedDate.getFullYear(),
+			selectedDate.getMonth(),
+			1,
+		);
+		const end = new Date(
+			selectedDate.getFullYear(),
+			selectedDate.getMonth() + 1,
+			1,
+		);
+		return {
+			[fromKey]: toDateString(start),
+			[toKey]: toDateString(end),
+		};
+	};
+
+	Object.assign(query, toDateRange(appliedFilters.refillDateMode, appliedFilters.refillDate, 'refill_date_from', 'refill_date_to'));
+	Object.assign(query, toDateRange(appliedFilters.nextRefillDateMode, appliedFilters.nextRefillDate, 'next_refill_date_from', 'next_refill_date_to'));
+	Object.assign(query, toDateRange(appliedFilters.hydroDateMode, appliedFilters.hydroDate, 'hydro_date_from', 'hydro_date_to'));
+
 	if (appliedFilters.building) query.building = appliedFilters.building.trim();
-	if (appliedFilters.location) query.location = appliedFilters.location.trim();
-	if (appliedFilters.yscNo) query.ysc_no = appliedFilters.yscNo.trim();
+	if (appliedFilters.weight) query.unit = appliedFilters.weight.trim();
 	if (appliedFilters.modelType) {
 		query.model_type = appliedFilters.modelType.trim();
 	}
-	if (appliedFilters.serialNumber) {
-		query.serial_number = appliedFilters.serialNumber.trim();
-	}
 	if (appliedFilters.brand) query.brand = appliedFilters.brand.trim();
+	if (appliedFilters.manufactureYear) query.manufacture_year = appliedFilters.manufactureYear.trim();
+	if (appliedFilters.refillPeriod) query.refill_period = appliedFilters.refillPeriod.trim();
 	if (appliedFilters.status) query.status = appliedFilters.status.trim();
 	return query;
 };
@@ -134,13 +202,11 @@ const loadFilterOptions = async () => {
 			buildings: uniqueValues(
 				products.map(item => item?.locations?.building_id?.name),
 			),
-			locations: uniqueValues(products.map(item => item?.locations?.room)),
-			yscNos: uniqueValues(
-				products.map(item => item?.locations?.location_id),
-			),
+			units: uniqueValues(products.map(item => item?.unit)),
 			modelTypes: uniqueValues(products.map(item => item?.model_type)),
-			serialNumbers: uniqueValues(products.map(item => item?.serial_number)),
 			brands: uniqueValues(products.map(item => item?.brand)),
+			manufactureYears: uniqueValues(products.map(item => item?.manufacture_year)),
+			refillPeriods: uniqueValues(products.map(item => item?.refill_period)),
 			statuses: uniqueValues(products.map(item => item?.current_status)),
 		};
 	}
@@ -200,10 +266,10 @@ const columns = [
 		accessorKey: 'next_refill_date',
 		header: headerLabels.next_refill_date,
 	},
-	// {
-	//   accessorKey: "hydrostatic_test_date",
-	//   header: headerLabels.hydrostatic_test_date,
-	// },
+	{
+		accessorKey: 'hydrostatic_test_date',
+		header: headerLabels.hydrostatic_test_date,
+	},
 	// {
 	//   accessorKey: "next_hydrostatic_test_date",
 	//   header: headerLabels.next_hydrostatic_test_date,
@@ -298,11 +364,17 @@ const handleDeleteProducts = async () => {
 
 const applyFilters = async () => {
 	appliedFilters.building = filterForm.building;
-	appliedFilters.location = filterForm.location;
-	appliedFilters.yscNo = filterForm.yscNo;
+	appliedFilters.weight = filterForm.weight;
 	appliedFilters.modelType = filterForm.modelType;
-	appliedFilters.serialNumber = filterForm.serialNumber;
 	appliedFilters.brand = filterForm.brand;
+	appliedFilters.manufactureYear = filterForm.manufactureYear;
+	appliedFilters.refillPeriod = filterForm.refillPeriod;
+	appliedFilters.refillDateMode = filterForm.refillDateMode;
+	appliedFilters.refillDate = new Date(filterForm.refillDate);
+	appliedFilters.nextRefillDateMode = filterForm.nextRefillDateMode;
+	appliedFilters.nextRefillDate = new Date(filterForm.nextRefillDate);
+	appliedFilters.hydroDateMode = filterForm.hydroDateMode;
+	appliedFilters.hydroDate = new Date(filterForm.hydroDate);
 	appliedFilters.status = filterForm.status;
 	showFilters.value = false;
 	await loadProducts();
@@ -310,18 +382,30 @@ const applyFilters = async () => {
 
 const clearFilters = async () => {
 	filterForm.building = '';
-	filterForm.location = '';
-	filterForm.yscNo = '';
+	filterForm.weight = '';
 	filterForm.modelType = '';
-	filterForm.serialNumber = '';
 	filterForm.brand = '';
+	filterForm.manufactureYear = '';
+	filterForm.refillPeriod = '';
+	filterForm.refillDateMode = 'none';
+	filterForm.refillDate = new Date();
+	filterForm.nextRefillDateMode = 'none';
+	filterForm.nextRefillDate = new Date();
+	filterForm.hydroDateMode = 'none';
+	filterForm.hydroDate = new Date();
 	filterForm.status = '';
 	appliedFilters.building = '';
-	appliedFilters.location = '';
-	appliedFilters.yscNo = '';
+	appliedFilters.weight = '';
 	appliedFilters.modelType = '';
-	appliedFilters.serialNumber = '';
 	appliedFilters.brand = '';
+	appliedFilters.manufactureYear = '';
+	appliedFilters.refillPeriod = '';
+	appliedFilters.refillDateMode = 'none';
+	appliedFilters.refillDate = new Date();
+	appliedFilters.nextRefillDateMode = 'none';
+	appliedFilters.nextRefillDate = new Date();
+	appliedFilters.hydroDateMode = 'none';
+	appliedFilters.hydroDate = new Date();
 	appliedFilters.status = '';
 	showFilters.value = false;
 	await loadProducts();
@@ -397,7 +481,7 @@ const clearFilters = async () => {
 		>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Bulunduğu alan</label>
+					<label class="text-sm font-medium text-gray-600">Bulduğu bina/alan</label>
 					<Select
 						v-model="filterForm.building"
 						:options="filterOptions.buildings"
@@ -406,41 +490,21 @@ const clearFilters = async () => {
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Bulunduğu yer</label>
+					<label class="text-sm font-medium text-gray-600">Ağırlık</label>
 					<Select
-						v-model="filterForm.location"
-						:options="filterOptions.locations"
-						placeholder="Bulunduğu yer seç"
+						v-model="filterForm.weight"
+						:options="filterOptions.units"
+						placeholder="Ağırlık seç"
 						filter
 						show-clear
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">YSC no</label>
-					<Select
-						v-model="filterForm.yscNo"
-						:options="filterOptions.yscNos"
-						placeholder="YSC no seç"
-						filter
-						show-clear
-					/>
-				</div>
-				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Modeli tipi</label>
+					<label class="text-sm font-medium text-gray-600">Modeli / tipi</label>
 					<Select
 						v-model="filterForm.modelType"
 						:options="filterOptions.modelTypes"
-						placeholder="Model tipi seç"
-						filter
-						show-clear
-					/>
-				</div>
-				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Seri no</label>
-					<Select
-						v-model="filterForm.serialNumber"
-						:options="filterOptions.serialNumbers"
-						placeholder="Seri no seç"
+						placeholder="Modeli / tipi seç"
 						filter
 						show-clear
 					/>
@@ -453,6 +517,92 @@ const clearFilters = async () => {
 						placeholder="Marka seç"
 						filter
 						show-clear
+					/>
+				</div>
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Üretim tarihi</label>
+					<Select
+						v-model="filterForm.manufactureYear"
+						:options="filterOptions.manufactureYears"
+						placeholder="Üretim tarihi seç"
+						filter
+						show-clear
+					/>
+				</div>
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Yeniden dolum periyodu</label>
+					<Select
+						v-model="filterForm.refillPeriod"
+						:options="filterOptions.refillPeriods"
+						placeholder="Yeniden dolum periyodu seç"
+						filter
+						show-clear
+					/>
+				</div>
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Dolum tarihi</label>
+					<Select
+						v-model="filterForm.refillDateMode"
+						:options="dateModeOptions"
+						option-label="label"
+						option-value="value"
+					/>
+				</div>
+				<div
+					v-if="filterForm.refillDateMode !== 'none'"
+					class="flex flex-col gap-2"
+				>
+					<label class="text-sm font-medium text-gray-600">Tarih</label>
+					<DatePicker
+						v-model="filterForm.refillDate"
+						:view="filterForm.refillDateMode === 'monthly' ? 'month' : 'date'"
+						:date-format="filterForm.refillDateMode === 'monthly' ? 'mm/yy' : 'dd/mm/yy'"
+						size="small"
+						show-button-bar
+					/>
+				</div>
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Yeniden dolum tarihi</label>
+					<Select
+						v-model="filterForm.nextRefillDateMode"
+						:options="dateModeOptions"
+						option-label="label"
+						option-value="value"
+					/>
+				</div>
+				<div
+					v-if="filterForm.nextRefillDateMode !== 'none'"
+					class="flex flex-col gap-2"
+				>
+					<label class="text-sm font-medium text-gray-600">Tarih</label>
+					<DatePicker
+						v-model="filterForm.nextRefillDate"
+						:view="filterForm.nextRefillDateMode === 'monthly' ? 'month' : 'date'"
+						:date-format="filterForm.nextRefillDateMode === 'monthly' ? 'mm/yy' : 'dd/mm/yy'"
+						size="small"
+						show-button-bar
+					/>
+				</div>
+				<div class="flex flex-col gap-2">
+					<label class="text-sm font-medium text-gray-600">Hidrostatik test tarihi</label>
+					<Select
+						v-model="filterForm.hydroDateMode"
+						:options="dateModeOptions"
+						option-label="label"
+						option-value="value"
+					/>
+				</div>
+				<div
+					v-if="filterForm.hydroDateMode !== 'none'"
+					class="flex flex-col gap-2"
+				>
+					<label class="text-sm font-medium text-gray-600">Tarih</label>
+					<DatePicker
+						v-model="filterForm.hydroDate"
+						:view="filterForm.hydroDateMode === 'monthly' ? 'month' : 'date'"
+						:date-format="filterForm.hydroDateMode === 'monthly' ? 'mm/yy' : 'dd/mm/yy'"
+						size="small"
+						show-button-bar
 					/>
 				</div>
 				<div class="flex flex-col gap-2">

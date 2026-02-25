@@ -1,18 +1,18 @@
 export default defineEventHandler(async (event) => {
 	try {
-		const [buildingResponse, locationResponse] = await Promise.all([
+		const [buildingResponse, productResponse] = await Promise.all([
 			event.context.supabase
 				.from('location_buildings')
 				.select('name'),
 			event.context.supabase
-				.from('locations')
-				.select('room, location_id'),
+				.from('products')
+				.select('unit, model_type'),
 		]);
 
-		if (buildingResponse.error || locationResponse.error) {
+		if (buildingResponse.error || productResponse.error) {
 			throw createError({
 				statusCode: 500,
-				message: buildingResponse.error?.message || locationResponse.error?.message || 'Filter data error',
+				message: buildingResponse.error?.message || productResponse.error?.message || 'Filter data error',
 			});
 		}
 
@@ -23,21 +23,21 @@ export default defineEventHandler(async (event) => {
 			}
 		}
 
-		const locationSet = new Set<string>();
-		const yscSet = new Set<string>();
-		for (const item of locationResponse.data ?? []) {
-			if (item?.room) {
-				locationSet.add(item.room);
+		const unitSet = new Set<string>();
+		const modelTypeSet = new Set<string>();
+		for (const item of productResponse.data ?? []) {
+			if (item?.unit) {
+				unitSet.add(item.unit);
 			}
-			if (item?.location_id) {
-				yscSet.add(item.location_id);
+			if (item?.model_type) {
+				modelTypeSet.add(item.model_type);
 			}
 		}
 
 		return {
 			buildings: Array.from(buildingSet).sort(),
-			locations: Array.from(locationSet).sort(),
-			yscNos: Array.from(yscSet).sort(),
+			units: Array.from(unitSet).sort(),
+			modelTypes: Array.from(modelTypeSet).sort(),
 		};
 	}
 	catch (error: unknown) {
