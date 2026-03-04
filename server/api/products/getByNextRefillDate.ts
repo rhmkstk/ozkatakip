@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
 		const rangeEndDate = getFirstQueryValue(query.end_date as string | string[] | undefined);
 		const location = getFirstQueryValue(query.location as string | string[] | undefined);
 		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined);
+		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined);
 
 		if (!rangeStartDate || !rangeEndDate) {
 			throw createError({
@@ -30,6 +31,9 @@ export default defineEventHandler(async (event) => {
 		}
 		if (modelType) {
 			request = request.ilike('model_type', `%${modelType}%`);
+		}
+		if (yscNo) {
+			request = request.ilike('locations.location_id', `%${yscNo}%`);
 		}
 
 		const { data, error } = await request;
