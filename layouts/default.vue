@@ -1,10 +1,8 @@
 <script setup lang="ts">
-
-import { userDetails } from '~/constants';
-
-// No additional setup needed
 const supabase = useSupabaseClient();
-const currentUserDetails=ref<typeof userDetails[0] | null>(null);
+const { currentUser, loadCurrentUser } = useCurrentAppUser();
+const { loadUserDirectory } = useUserDirectory();
+
 const logout = async () => {
   const { error } = await supabase.auth.signOut();
   if (error) {
@@ -12,23 +10,30 @@ const logout = async () => {
   } else {
     await navigateTo("/login");
   }
+  currentUser.value = null;
 };
+
 onMounted(async () => {
-	const { data } = await supabase.auth.getUser();
-	const id = data?.user?.id;
-	currentUserDetails.value = userDetails.find(user => user.id === id) || null
+	await Promise.all([
+		loadCurrentUser(true),
+		loadUserDirectory(true),
+	]);
 });
 
-const menuItems = [
+const allMenuItems = [
   { name: "Bakım kayıtları", path: "/", icon: "ri-booklet-line" },
   { name: "Dolum kayıtları", path: "/fill-records", icon: "ri-book-open-line" },
   { name: "İşlem geçmişi", path: "/history", icon: "ri-history-fill" },
   { name: "Planlama", path: "/planning", icon: "ri-calendar-todo-line" },
   { name: "YSC genel liste", path: "/products", icon: "ri-fire-line" },
-  // { name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line' },
+  { name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line', adminOnly: true },
   { name: "YSC Veri girişi", path: "/insert-data", icon: "ri-booklet-line" },
   { name: "Mobil", path: "/mobile", icon: "ri-cellphone-line" },
 ];
+
+const menuItems = computed(() => {
+	return allMenuItems.filter(item => !item.adminOnly || currentUser.value?.role === 'admin');
+});
 
 const supportItems = [
   // { name: 'Yardım', path: '/help' },
@@ -50,18 +55,18 @@ const sidebarExpanded = ref(true);
 	<div class="flex w-full max-w-full h-screen bg-slate-100">
 		<div
 			v-show="sidebarExpanded"
-			class="sidebar py-14 px-12 text-gray-950 flex flex-col"
+			class="sidebar pb-12 pt-8 px-8 text-gray-950 flex flex-col"
 		>
-			<div v-if="currentUserDetails" class="border-b pb-6 border-slate-300 flex justify-between">
-				<div v-if="currentUserDetails" class="flex items-center space-x-3">
+			<div v-if="currentUser" class="border-b pb-6 border-slate-300 flex justify-between">
+				<div v-if="currentUser" class="flex items-center space-x-3">
 					<img
             :src="`assets/user_avatar.jpg`"
             alt="profile image"
             class="size-11 rounded-full object-cover" />
 					<div>
-						<span class="text-[10px] text-gray-500">{{ currentUserDetails.role ==="admin" ? 'YÖNETİCİ': 'KULLANICI' }}</span>
+						<span class="text-[10px] text-gray-500">{{ currentUser.role ==="admin" ? 'YÖNETİCİ': 'ÇALIŞAN' }}</span>
 						<p class="font-bold  text-sm">
-							{{ currentUserDetails.name }} {{ currentUserDetails.surname }}
+							{{ currentUser.first_name }} {{ currentUser.last_name }}
 						</p>
 					</div>
 				</div>

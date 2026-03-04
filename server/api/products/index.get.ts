@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
 		const hydroDateFrom = getFirstQueryValue(query.hydro_date_from as string | string[] | undefined);
 		const hydroDateTo = getFirstQueryValue(query.hydro_date_to as string | string[] | undefined);
 		const status = getFirstQueryValue(query.status as string | string[] | undefined)?.trim();
+		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined)?.trim();
 
 		const { data, error } = await event.context.supabase
 			.from('products')
@@ -61,12 +62,14 @@ export default defineEventHandler(async (event) => {
 			const itemRefillDate = item?.refill_date;
 			const itemNextRefillDate = item?.next_refill_date;
 			const itemHydroDate = item?.hydrostatic_test_date;
+			const itemYscNo = item?.locations?.location_id;
 
 			return (
 				includesFilter(itemBuilding, building)
 				&& includesFilter(itemUnit, unit)
 				&& includesFilter(itemModelType, modelType)
 				&& includesFilter(itemBrand, brand)
+				&& includesFilter(itemYscNo, yscNo)
 				&& equalsFilter(itemManufactureYear, manufactureYear)
 				&& equalsFilter(itemRefillPeriod, refillPeriod)
 				&& (!refillDateFrom || (itemRefillDate && itemRefillDate >= refillDateFrom))

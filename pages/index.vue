@@ -18,8 +18,11 @@ const filters = reactive({
   building: "",
   weight: "",
   modelType: "",
+  yscNo: "",
   result: null as null | boolean,
 });
+const yscNoSearch = ref("");
+let yscSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const dateModeOptions = [
   { label: "Kapalı", value: "none" },
@@ -37,6 +40,7 @@ const hasActiveFilters = computed(() => {
     Boolean(filters.building) ||
     Boolean(filters.weight) ||
     Boolean(filters.modelType) ||
+    Boolean(filters.yscNo) ||
     filters.result !== null ||
     filters.dateMode !== "none"
   );
@@ -47,6 +51,7 @@ const activeFilterCount = computed(() => {
   if (filters.building) count += 1;
   if (filters.weight) count += 1;
   if (filters.modelType) count += 1;
+  if (filters.yscNo) count += 1;
   if (filters.result !== null) count += 1;
   if (filters.dateMode !== "none") count += 1;
   return count;
@@ -113,6 +118,9 @@ const buildQuery = () => {
   if (filters.modelType) {
     query.model_type = filters.modelType.trim();
   }
+  if (filters.yscNo) {
+    query.ysc_no = filters.yscNo.trim();
+  }
   if (filters.result !== null) {
     query.result = String(filters.result);
   }
@@ -140,15 +148,54 @@ const applyFilters = async () => {
 };
 
 const clearFilters = async () => {
+  if (yscSearchDebounceTimer) {
+    clearTimeout(yscSearchDebounceTimer);
+    yscSearchDebounceTimer = null;
+  }
   filters.dateMode = "none";
   filters.date = new Date(defaultDate);
   filters.building = "";
   filters.weight = "";
   filters.modelType = "";
+  filters.yscNo = "";
+  yscNoSearch.value = "";
   filters.result = null;
   showFilters.value = false;
   await loadInspections();
 };
+
+const applyYscSearch = async (value: string) => {
+  const normalized = value.trim();
+  if (filters.yscNo === normalized) {
+    return;
+  }
+  filters.yscNo = normalized;
+  await loadInspections();
+};
+
+const clearYscSearch = async () => {
+  if (yscSearchDebounceTimer) {
+    clearTimeout(yscSearchDebounceTimer);
+    yscSearchDebounceTimer = null;
+  }
+  yscNoSearch.value = "";
+  await applyYscSearch("");
+};
+
+watch(yscNoSearch, (value) => {
+  if (yscSearchDebounceTimer) {
+    clearTimeout(yscSearchDebounceTimer);
+  }
+  yscSearchDebounceTimer = setTimeout(() => {
+    void applyYscSearch(value);
+  }, 400);
+});
+
+onBeforeUnmount(() => {
+  if (yscSearchDebounceTimer) {
+    clearTimeout(yscSearchDebounceTimer);
+  }
+});
 
 const loadFilterOptions = async () => {
   try {
@@ -263,6 +310,15 @@ const expandColumns = [
     <PageHeader title="Bakım kayıtları listeleniyor">
       <template #right>
         <Button
+          v-if="hasActiveFilters"
+          label="Temizle"
+          icon="ri-close-line"
+          size="small"
+          severity="secondary"
+          outlined
+          @click="clearFilters"
+        />
+        <Button
           :outlined="!hasActiveFilters"
           size="small"
           @click="showFilters = true"
@@ -276,15 +332,23 @@ const expandColumns = [
             {{ activeFilterCount }}
           </span>
         </Button>
-        <Button
-          v-if="hasActiveFilters"
-          label="Temizle"
-          icon="pi pi-times"
-          size="small"
-          severity="secondary"
-          outlined
-          @click="clearFilters"
-        />
+        <div class="relative">
+          <InputText
+            v-model="yscNoSearch"
+            size="small"
+            placeholder="YSC no ara"
+            class="w-52 pr-10"
+          />
+          <button
+            v-if="yscNoSearch"
+            type="button"
+            aria-label="YSC aramasını temizle"
+            class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            @click="clearYscSearch"
+          >
+            <i class="ri-close-line text-sm leading-none" />
+          </button>
+        </div>
       </template>
     </PageHeader>
 

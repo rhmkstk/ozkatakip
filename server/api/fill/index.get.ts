@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
 		const building = getFirstQueryValue(query.building as string | string[] | undefined);
 		const unit = getFirstQueryValue(query.unit as string | string[] | undefined);
 		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined);
+		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined);
 
 		let request = event.context.supabase
 			.from('fill_records')
@@ -38,6 +39,9 @@ export default defineEventHandler(async (event) => {
 		}
 		if (modelType) {
 			request = request.ilike('products.model_type', `%${modelType}%`);
+		}
+		if (yscNo) {
+			request = request.ilike('products.locations.location_id', `%${yscNo}%`);
 		}
 
 		const { data, error } = await request;

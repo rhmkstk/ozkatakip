@@ -32,6 +32,7 @@ const filterForm = reactive({
 	building: '',
 	weight: '',
 	modelType: '',
+	yscNo: '',
 	brand: '',
 	manufactureYear: '',
 	refillPeriod: '',
@@ -47,6 +48,7 @@ const appliedFilters = reactive({
 	building: '',
 	weight: '',
 	modelType: '',
+	yscNo: '',
 	brand: '',
 	manufactureYear: '',
 	refillPeriod: '',
@@ -59,11 +61,14 @@ const appliedFilters = reactive({
 	status: '',
 });
 const editProductModal = ref(false);
+const yscNoSearch = ref('');
+let yscSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const hasActiveFilters = computed(() => {
 	return (
 		Boolean(appliedFilters.building)
 		|| Boolean(appliedFilters.weight)
 		|| Boolean(appliedFilters.modelType)
+		|| Boolean(appliedFilters.yscNo)
 		|| Boolean(appliedFilters.brand)
 		|| Boolean(appliedFilters.manufactureYear)
 		|| Boolean(appliedFilters.refillPeriod)
@@ -78,6 +83,7 @@ const activeFilterCount = computed(() => {
 	if (appliedFilters.building) count += 1;
 	if (appliedFilters.weight) count += 1;
 	if (appliedFilters.modelType) count += 1;
+	if (appliedFilters.yscNo) count += 1;
 	if (appliedFilters.brand) count += 1;
 	if (appliedFilters.manufactureYear) count += 1;
 	if (appliedFilters.refillPeriod) count += 1;
@@ -169,6 +175,7 @@ const buildQuery = () => {
 	if (appliedFilters.modelType) {
 		query.model_type = appliedFilters.modelType.trim();
 	}
+	if (appliedFilters.yscNo) query.ysc_no = appliedFilters.yscNo.trim();
 	if (appliedFilters.brand) query.brand = appliedFilters.brand.trim();
 	if (appliedFilters.manufactureYear) query.manufacture_year = appliedFilters.manufactureYear.trim();
 	if (appliedFilters.refillPeriod) query.refill_period = appliedFilters.refillPeriod.trim();
@@ -316,12 +323,20 @@ const openEditModal = () => {
 };
 
 const downloadPdf = async () => {
+	if (selectedProducts.value.length === 0) return;
+
 	const urls = await generateLabelsPng(selectedProducts.value);
 
 	urls.forEach((url, index) => {
+		const product = selectedProducts.value[index] as {
+			locations?: { location_id?: string | null } | null;
+		};
+		const yscNo = product?.locations?.location_id?.trim() || `${index + 1}`;
+		const safeYscNo = yscNo.replace(/[^a-zA-Z0-9-_]/g, '_');
+
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = `etiket-${index + 1}.png`;
+		a.download = `etiket_${safeYscNo}.png`;
 		a.click();
 		URL.revokeObjectURL(url);
 	});
@@ -366,6 +381,7 @@ const applyFilters = async () => {
 	appliedFilters.building = filterForm.building;
 	appliedFilters.weight = filterForm.weight;
 	appliedFilters.modelType = filterForm.modelType;
+	appliedFilters.yscNo = filterForm.yscNo;
 	appliedFilters.brand = filterForm.brand;
 	appliedFilters.manufactureYear = filterForm.manufactureYear;
 	appliedFilters.refillPeriod = filterForm.refillPeriod;
@@ -381,9 +397,15 @@ const applyFilters = async () => {
 };
 
 const clearFilters = async () => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+		yscSearchDebounceTimer = null;
+	}
 	filterForm.building = '';
 	filterForm.weight = '';
 	filterForm.modelType = '';
+	filterForm.yscNo = '';
+	yscNoSearch.value = '';
 	filterForm.brand = '';
 	filterForm.manufactureYear = '';
 	filterForm.refillPeriod = '';
@@ -397,6 +419,7 @@ const clearFilters = async () => {
 	appliedFilters.building = '';
 	appliedFilters.weight = '';
 	appliedFilters.modelType = '';
+	appliedFilters.yscNo = '';
 	appliedFilters.brand = '';
 	appliedFilters.manufactureYear = '';
 	appliedFilters.refillPeriod = '';
@@ -410,6 +433,40 @@ const clearFilters = async () => {
 	showFilters.value = false;
 	await loadProducts();
 };
+
+const applyYscSearch = async (value: string) => {
+	const normalized = value.trim();
+	if (appliedFilters.yscNo === normalized) {
+		return;
+	}
+	filterForm.yscNo = normalized;
+	appliedFilters.yscNo = normalized;
+	await loadProducts();
+};
+
+const clearYscSearch = async () => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+		yscSearchDebounceTimer = null;
+	}
+	yscNoSearch.value = '';
+	await applyYscSearch('');
+};
+
+watch(yscNoSearch, (value) => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+	}
+	yscSearchDebounceTimer = setTimeout(() => {
+		void applyYscSearch(value);
+	}, 400);
+});
+
+onBeforeUnmount(() => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+	}
+});
 </script>
 
 <template>
@@ -418,6 +475,15 @@ const clearFilters = async () => {
 		<div>
 			<PageHeader title="Tüm lokasyonlardaki tüpler listeleniyor">
 				<template #right>
+					<Button
+						v-if="hasActiveFilters"
+						label="Temizle"
+						icon="ri-close-line"
+						size="small"
+						severity="secondary"
+						outlined
+						@click="clearFilters"
+					/>
 					<Button
 						:outlined="!hasActiveFilters"
 						size="small"
@@ -432,15 +498,23 @@ const clearFilters = async () => {
 							{{ activeFilterCount }}
 						</span>
 					</Button>
-					<Button
-						v-if="hasActiveFilters"
-						label="Temizle"
-						icon="pi pi-times"
-						size="small"
-						severity="secondary"
-						outlined
-						@click="clearFilters"
-					/>
+					<div class="relative">
+						<InputText
+							v-model="yscNoSearch"
+							size="small"
+							placeholder="YSC no ara"
+							class="w-52 pr-10"
+						/>
+						<button
+							v-if="yscNoSearch"
+							type="button"
+							aria-label="YSC aramasını temizle"
+							class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+							@click="clearYscSearch"
+						>
+							<i class="ri-close-line text-sm leading-none" />
+						</button>
+					</div>
 					<Button
 						v-if="selectedProducts.length"
 						outlined

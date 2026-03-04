@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_users: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          email: string
+          first_name: string
+          id: string
+          is_active: boolean
+          last_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          email: string
+          first_name: string
+          id: string
+          is_active?: boolean
+          last_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          is_active?: boolean
+          last_name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           created_at: string
@@ -336,6 +375,7 @@ export type Database = {
       app_role: "admin" | "moderator"
       product_status: "active" | "damaged" | "lost" | "spare"
       transaction_types: "inspection" | "fill" | "change" | "other"
+      user_role: "admin" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -467,6 +507,7 @@ export const Constants = {
       app_role: ["admin", "moderator"],
       product_status: ["active", "damaged", "lost", "spare"],
       transaction_types: ["inspection", "fill", "change", "other"],
+      user_role: ["admin", "employee"],
     },
   },
 } as const

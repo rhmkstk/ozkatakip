@@ -14,6 +14,10 @@ export default defineNuxtConfig({
 	ssr: false,
 	devtools: { enabled: true },
 	app: {
+		pageTransition: {
+			name: 'page',
+			mode: 'out-in',
+		},
 		head: {
 			link: [
 				{

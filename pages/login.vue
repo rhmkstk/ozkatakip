@@ -9,7 +9,7 @@ definePageMeta({
 const supabase = useSupabaseClient();
 const loading = ref(false);
 const userCredentials = ref({
-	email: '',
+	username: '',
 	password: '',
 });
 const errorMessage = ref('');
@@ -24,21 +24,37 @@ const translateErrorMessage = (code: AuthError['code']) => {
 };
 
 const login = async () => {
-	const email = userCredentials.value.email.trim();
+	const username = userCredentials.value.username.trim().toLowerCase();
 	const password = userCredentials.value.password.trim();
+	if (!username || !password) {
+		return;
+	}
 
 	loading.value = true;
 	errorMessage.value = '';
-	const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+	const resolvedUser = await $fetch<{ email: string }>('/api/auth/resolve-username', {
+		query: { username },
+	}).catch(() => null);
+
+	const email = resolvedUser?.email || (username.includes('@') ? username : '');
+
+	if (!email) {
+		errorMessage.value = 'Kullanıcı adı veya şifre yanlış';
+		loading.value = false;
+		return;
+	}
+	const { error } = await supabase.auth.signInWithPassword({ email, password });
 	if (error) {
 		errorMessage.value = translateErrorMessage(error.code);
 		console.error('Giriş başarısız:', error.message);
 	}
 	else {
-		const userRole = getUserDetail(data.user.id)?.role || 'unknown';
-		if(userRole === 'admin') {
-			navigateTo('/');	
-		}else {
+		const profile = await $fetch<{ role: 'admin' | 'employee' }>('/api/users/me').catch(() => null);
+		const userRole = profile?.role || 'employee';
+		if (userRole === 'admin') {
+			navigateTo('/');
+		}
+		else {
 			navigateTo('/mobile');
 		}
 	}
@@ -57,17 +73,17 @@ const login = async () => {
 					<div class="space-y-4">
 						<div class="w-full">
 							<label
-								for="email"
+								for="username"
 								class="block mb-1"
-							>E-posta</label>
+							>Kullanıcı adı</label>
 							<InputText
-								id="email"
-								v-model="userCredentials.email"
-								type="email"
-								placeholder="Email"
+								id="username"
+								v-model="userCredentials.username"
+								type="text"
+								placeholder="Kullanıcı adı"
 								class="w-full"
 								:disabled="loading"
-								autocomplete="email"
+								autocomplete="username"
 							/>
 						</div>
 
@@ -93,7 +109,7 @@ const login = async () => {
 							class="w-full"
 							:loading="loading"
 							type="submit"
-							:disabled="loading || !userCredentials.email || !userCredentials.password"
+							:disabled="loading || !userCredentials.username || !userCredentials.password"
 						/>
 
 						<Message

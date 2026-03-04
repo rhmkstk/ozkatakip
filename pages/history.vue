@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { headerLabels, transactionTypeLabels } from '~/constants';
-import { getUserName, isCellCustom } from '~/utils';
+import { isCellCustom } from '~/utils';
 
 const tabledata = ref([]);
 const isLoading = ref(false);
 const showFilters = ref(false);
+const { getUserNameById, loadUserDirectory } = useUserDirectory();
 const filterOptions = ref({
 	types: [] as string[],
 	users: [] as string[],
@@ -34,7 +35,7 @@ const typeOptions = computed(() => {
 const userOptions = computed(() => {
 	return filterOptions.value.users.map(user => ({
 		value: user,
-		label: getUserName(user),
+		label: getUserNameById(user),
 	}));
 });
 
@@ -150,6 +151,7 @@ const clearFilters = async () => {
 
 await loadTransactions();
 await loadFilterOptions();
+await loadUserDirectory();
 
 const columns = [
 	{

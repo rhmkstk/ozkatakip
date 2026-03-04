@@ -101,17 +101,21 @@ const filters = reactive({
 	date: new Date(now),
 	location: '',
 	modelType: '',
+	yscNo: '',
 });
 const expandedRows = ref([]);
+const yscNoSearch = ref('');
+let yscSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const hasActiveFilters = computed(() => {
-	return Boolean(filters.location) || Boolean(filters.modelType);
+	return Boolean(filters.location) || Boolean(filters.modelType) || Boolean(filters.yscNo);
 });
 
 const activeFilterCount = computed(() => {
 	let count = 0;
 	if (filters.location) count += 1;
 	if (filters.modelType) count += 1;
+	if (filters.yscNo) count += 1;
 	return count;
 });
 
@@ -137,6 +141,9 @@ const buildQuery = () => {
 	}
 	if (filters.modelType) {
 		query.model_type = filters.modelType.trim();
+	}
+	if (filters.yscNo) {
+		query.ysc_no = filters.yscNo.trim();
 	}
 	return query;
 };
@@ -164,12 +171,51 @@ const applyFilters = async () => {
 };
 
 const clearFilters = async () => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+		yscSearchDebounceTimer = null;
+	}
 	filters.date = new Date(now);
 	filters.location = '';
 	filters.modelType = '';
+	filters.yscNo = '';
+	yscNoSearch.value = '';
 	showFilters.value = false;
 	await loadPlanningRecords();
 };
+
+const applyYscSearch = async (value: string) => {
+	const normalized = value.trim();
+	if (filters.yscNo === normalized) {
+		return;
+	}
+	filters.yscNo = normalized;
+	await loadPlanningRecords();
+};
+
+const clearYscSearch = async () => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+		yscSearchDebounceTimer = null;
+	}
+	yscNoSearch.value = '';
+	await applyYscSearch('');
+};
+
+watch(yscNoSearch, (value) => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+	}
+	yscSearchDebounceTimer = setTimeout(() => {
+		void applyYscSearch(value);
+	}, 400);
+});
+
+onBeforeUnmount(() => {
+	if (yscSearchDebounceTimer) {
+		clearTimeout(yscSearchDebounceTimer);
+	}
+});
 
 const loadFilterOptions = async () => {
 	try {
@@ -210,6 +256,15 @@ const getFilteredDates = computed(() => {
 		<PageHeader :title="getFilteredDates">
 			<template #right>
 				<Button
+					v-if="hasActiveFilters"
+					label="Temizle"
+					icon="ri-close-line"
+					size="small"
+					severity="secondary"
+					outlined
+					@click="clearFilters"
+				/>
+				<Button
 					:outlined="!hasActiveFilters"
 					size="small"
 					@click="showFilters = true"
@@ -223,15 +278,23 @@ const getFilteredDates = computed(() => {
 						{{ activeFilterCount }}
 					</span>
 				</Button>
-				<Button
-					v-if="hasActiveFilters"
-					label="Temizle"
-					icon="pi pi-times"
-					size="small"
-					severity="secondary"
-					outlined
-					@click="clearFilters"
-				/>
+				<div class="relative">
+					<InputText
+						v-model="yscNoSearch"
+						size="small"
+						placeholder="YSC no ara"
+						class="w-52 pr-10"
+					/>
+					<button
+						v-if="yscNoSearch"
+						type="button"
+						aria-label="YSC aramasını temizle"
+						class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+						@click="clearYscSearch"
+					>
+						<i class="ri-close-line text-sm leading-none" />
+					</button>
+				</div>
 			</template>
 		</PageHeader>
 
@@ -315,13 +378,13 @@ const getFilteredDates = computed(() => {
 					expander
 					style="width: 3rem"
 				/>
-				<Column
-					v-for="item in columns"
-					:key="item.accessorKey"
-					:field="item.accessorKey"
-					:header="item.header.toUpperCase()"
-					sortable
-				/>
+					<Column
+						v-for="item in columns"
+						:key="item.accessorKey"
+						:field="item.accessorKey"
+						:header="item.header.toUpperCase()"
+						sortable
+					/>
 				<template #expansion="slotProps">
 					<div class="p-4">
 						<DataTable

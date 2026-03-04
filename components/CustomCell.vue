@@ -10,6 +10,11 @@ type Props = {
 // need better type definitions
 
 const props = defineProps<Props>();
+const { getUserNameById, loadUserDirectory } = useUserDirectory();
+
+onMounted(() => {
+	loadUserDirectory();
+});
 
 // function converIsoString(isoString: string): string {
 // 	const date = new Date(isoString);
@@ -20,6 +25,11 @@ const props = defineProps<Props>();
 // }
 
 const customCells = {
+	modelType: (value: string) => ({
+		name: 'span',
+		props: {},
+		text: getShortModelType(value),
+	}),
 	boolean: (value: boolean | null) => ({
 		name: 'i',
 		props: {
@@ -50,10 +60,12 @@ const customCells = {
 	userName: (value: string) => ({
 		name: 'span',
 		props: {},
-		text: getUserName(value),
+		text: getUserNameById(value),
 	}),
 };
 const componentDefinitions = {
+	'model_type': customCells.modelType,
+	'products.model_type': customCells.modelType,
 	'products.refill_date': (value: string) => ({
 		name: 'span',
 		props: {},
@@ -129,6 +141,18 @@ const currentComponentData = computed(() => {
 	}
 	return null;
 });
+
+function getShortModelType(modelType: string | null | undefined): string {
+	if (!modelType) return '';
+
+	const mappings = {
+		'Karbondioksit gazli': 'CO2',
+		'Kuru Kimyevi Tozlu': 'KKT',
+		'Bioversal köpüklü': 'BIO',
+	} as const;
+
+	return mappings[modelType as keyof typeof mappings] || modelType;
+}
 </script>
 
 <template>

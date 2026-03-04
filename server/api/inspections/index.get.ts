@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
 		const building = getFirstQueryValue(query.building as string | string[] | undefined);
 		const unit = getFirstQueryValue(query.unit as string | string[] | undefined);
 		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined);
+		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined);
 		const result = getFirstQueryValue(query.result as string | string[] | undefined);
 		const createBaseRequest = () => {
 			let request = event.context.supabase
@@ -34,6 +35,9 @@ export default defineEventHandler(async (event) => {
 			}
 			if (modelType) {
 				request = request.ilike('products.model_type', `%${modelType}%`);
+			}
+			if (yscNo) {
+				request = request.ilike('products.locations.location_id', `%${yscNo}%`);
 			}
 			if (result === 'true' || result === 'false') {
 				request = request.eq('result', result === 'true');
