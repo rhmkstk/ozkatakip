@@ -170,14 +170,21 @@ export async function generateLabelsPng(products: Product[]) {
 				ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 			};
 
-			drawContain(providerLogo, logosX, logosY, singleLogoWidth, logosHeight);
 			drawContain(
 				tupragLogo,
+				logosX,
+				logosY,
+				singleLogoWidth,
+				logosHeight,
+			);
+			drawContain(
+				providerLogo,
 				logosX + singleLogoWidth + gapPx,
 				logosY,
 				singleLogoWidth,
 				logosHeight,
 			);
+
 		}
 
 		const blob = await new Promise<Blob>(resolve =>
