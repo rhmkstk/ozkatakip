@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import imageCompression from "browser-image-compression";
 import type { FileUploadSelectEvent } from "primevue";
+import { handleUploadImage } from "~/utils/handleUploadImage";
 import {
   imageCompressionOptions,
   inspectionFormFields,

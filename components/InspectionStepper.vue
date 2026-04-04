@@ -2,7 +2,7 @@
 import type { FileUploadSelectEvent } from "primevue";
 import imageCompression from "browser-image-compression";
 import { imageCompressionOptions } from "~/constants";
-import { handleUploadImage } from "~/utils";
+import { handleUploadImage } from "~/utils/handleUploadImage";
 import type { Tables } from "~/types/database.types";
 
 type LocationRow = Tables<"locations">;
