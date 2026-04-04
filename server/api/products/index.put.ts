@@ -1,8 +1,10 @@
 // product.put.ts
+import { requireTenantContext } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
 		const body = await readBody(event);
+		const tenant = await requireTenantContext(event);
 
 		if (!body?.id) {
 			throw createError({
@@ -16,6 +18,7 @@ export default defineEventHandler(async (event) => {
 		const { data, error } = await event.context.supabase
 			.from('products')
 			.update(updateData)
+			.eq('tenant_id', tenant.id)
 			.eq('id', id)
 			.select(); // return the updated row(s)
 

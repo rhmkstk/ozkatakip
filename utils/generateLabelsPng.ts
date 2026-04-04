@@ -53,7 +53,7 @@ function loadImage(src: string) {
 	});
 }
 
-export async function generateLabelsPng(products: Product[]) {
+export async function generateLabelsPng(products: Product[], tenantSlug: string) {
 	const MM_TO_PX = 300 / 25.4; // 300 DPI
 	// Yazici kafa genisligi sinirina uyum icin etiket uzun kenari feed yonunde kullaniliyor.
 	const LABEL_WIDTH_MM = 48.26;
@@ -100,7 +100,7 @@ export async function generateLabelsPng(products: Product[]) {
 				- logosRowHeightPx;
 		const qrSizePx = Math.max(1, Math.min(qrMaxWidth, qrMaxHeight));
 
-		const qrData = generateQrCodeUrl(p.locations?.location_id ?? '-');
+		const qrData = generateQrCodeUrl(tenantSlug, p.locations?.location_id ?? '-');
 		const qr = await QRCode.toDataURL(qrData, {
 			type: 'image/png',
 			margin: 1,

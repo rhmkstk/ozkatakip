@@ -1,11 +1,13 @@
 // import { TablesInsert } from '~/types/database.types'
 import { getQuery } from 'h3';
+import { requireTenantContext } from '~/server/utils/tenant';
 
 const getFirstQueryValue = (value: string | string[] | undefined) =>
 	Array.isArray(value) ? value[0] : value;
 
 export default defineEventHandler(async (event) => {
 	try {
+		const tenant = await requireTenantContext(event);
 		const query = getQuery(event);
 		const dateFrom = getFirstQueryValue(query.date_from as string | string[] | undefined);
 		const dateTo = getFirstQueryValue(query.date_to as string | string[] | undefined);
@@ -15,6 +17,7 @@ export default defineEventHandler(async (event) => {
 		let request = event.context.supabase
 			.from('transactions')
 			.select('*')
+			.eq('tenant_id', tenant.id)
 			.order('created_at', { ascending: false });
 
 		if (dateFrom) {

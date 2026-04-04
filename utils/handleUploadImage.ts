@@ -3,6 +3,7 @@ import { useSupabaseClient } from "#imports";
 export async function handleUploadImage(
   compressedImage: File
 ): Promise<string> {
+  const { activeTenantSlug } = useTenant();
   const { data } = await useSupabaseClient().auth.getSession();
   const token = data.session?.access_token;
 
@@ -16,6 +17,7 @@ export async function handleUploadImage(
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      ...(activeTenantSlug.value ? { "x-tenant-slug": activeTenantSlug.value } : {}),
     },
     body: formData,
   });

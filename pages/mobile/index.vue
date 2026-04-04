@@ -5,6 +5,7 @@ definePageMeta({
 
 const locationId = ref<string | null>('');
 const showScanner = ref(false);
+const { toTenantPath } = useTenant();
 </script>
 
 <template>
@@ -28,7 +29,7 @@ const showScanner = ref(false);
 							<Button
 								size="large"
 								label="Ara"
-								@click="$router.push(`/mobile/transactions/${locationId}`)"
+								@click="$router.push(toTenantPath(`/mobile/transactions/${locationId}`))"
 							/>
 						</div>
 					</div>
@@ -49,7 +50,7 @@ const showScanner = ref(false);
 			<QRScanner
 				v-if="showScanner"
 				@close="showScanner = false"
-				@scan-complete="(locationId) => $router.push(`/mobile/transactions/${locationId}`)"
+				@scan-complete="(locationId) => $router.push(toTenantPath(`/mobile/transactions/${locationId}`))"
 			/>
 		</div>
 	</div>

@@ -1,10 +1,8 @@
-import { serverSupabaseServiceRole } from '#supabase/server';
-import { useRuntimeConfig } from '#imports';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '~/types/database.types';
+import { requireAdminUser } from '~/server/utils/user-management';
 
 export default defineEventHandler(async (event) => {
   try {
+    const { tenant } = await requireAdminUser(event);
     const body = await readBody(event);
     const ids = body?.ids as Array<number | string> | undefined;
 
@@ -20,32 +18,13 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "No valid product IDs provided" });
     }
 
-    const supabase =
-      process.env.SUPABASE_SERVICE_KEY
-        ? await serverSupabaseServiceRole<Database>(event)
-        : (() => {
-            const config = useRuntimeConfig(event);
-            const supabaseUrl = config.supabase?.url || config.public?.supabaseUrl;
-            const supabaseAnonKey = process.env.SUPABASE_KEY || config.supabase?.key || config.public?.supabaseKey;
-
-            if (!supabaseUrl || !supabaseAnonKey) {
-              throw createError({
-                statusCode: 500,
-                message: 'Supabase configuration is missing',
-              });
-            }
-
-            return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-              auth: {
-                persistSession: false,
-              },
-            });
-          })();
+    const supabase = event.context.supabase;
 
     // 1) Önce bağlı transactions kayıtlarını sil
     const { error: txnErr, count: txnCount } = await supabase
       .from("transactions")
       .delete({ count: "exact" })
+      .eq("tenant_id", tenant.id)
       .in("product_id", numericIds);
 
     if (txnErr) {
@@ -60,6 +39,7 @@ export default defineEventHandler(async (event) => {
     const { error: fillErr, count: fillCount } = await supabase
       .from("fill_records")
       .delete({ count: "exact" })
+      .eq("tenant_id", tenant.id)
       .in("product_id", numericIds);
 
     if (fillErr) {
@@ -74,6 +54,7 @@ export default defineEventHandler(async (event) => {
     const { error: inspErr, count: inspCount } = await supabase
       .from("inspections")
       .delete({ count: "exact" })
+      .eq("tenant_id", tenant.id)
       .in("fire_extinguisher_id", numericIds);
 
     if (inspErr) {
@@ -88,6 +69,7 @@ export default defineEventHandler(async (event) => {
     const { data: deletedProducts, error: prodErr } = await supabase
       .from("products")
       .delete()
+      .eq("tenant_id", tenant.id)
       .in("id", numericIds)
       .select(); // silinen satırları geri döndür
 
@@ -103,8 +85,8 @@ export default defineEventHandler(async (event) => {
     const locationIds = Array.from(
       new Set(
         deletedProducts
-          .map((product) => product.location)
-          .filter((locationId): locationId is number => Number.isFinite(locationId))
+          .map((product: { location: number | null }) => product.location)
+          .filter((locationId: number | null): locationId is number => Number.isFinite(locationId))
       )
     );
 
@@ -113,6 +95,7 @@ export default defineEventHandler(async (event) => {
       const { error: locationErr, count: locationCount } = await supabase
         .from("locations")
         .delete({ count: "exact" })
+        .eq("tenant_id", tenant.id)
         .in("id", locationIds);
 
       if (locationErr) {

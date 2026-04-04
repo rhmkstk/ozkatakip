@@ -1,10 +1,12 @@
 import { getQuery } from 'h3';
+import { requireTenantContext } from '~/server/utils/tenant';
 
 const getFirstQueryValue = (value: string | string[] | undefined) =>
 	Array.isArray(value) ? value[0] : value;
 
 export default defineEventHandler(async (event) => {
 	try {
+		const tenant = await requireTenantContext(event);
 		const query = getQuery(event);
 		const building = getFirstQueryValue(query.building as string | string[] | undefined)?.trim();
 		const unit = getFirstQueryValue(query.unit as string | string[] | undefined)?.trim();
@@ -24,6 +26,7 @@ export default defineEventHandler(async (event) => {
 		const { data, error } = await event.context.supabase
 			.from('products')
 			.select('*, locations!inner(*, building_id(*))')
+			.eq('tenant_id', tenant.id)
 			.order('created_at', { ascending: false });
 
 		if (error) {
@@ -52,7 +55,7 @@ export default defineEventHandler(async (event) => {
 			return normalize(value) === normalize(filterValue);
 		};
 
-		const filteredData = data.filter((item) => {
+		const filteredData = data.filter((item: any) => {
 			const itemBuilding = item?.locations?.building_id?.name;
 			const itemUnit = item?.unit;
 			const itemModelType = item?.model_type;

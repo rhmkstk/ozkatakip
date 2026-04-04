@@ -1,10 +1,12 @@
 import { getQuery } from 'h3';
+import { requireTenantContext } from '~/server/utils/tenant';
 
 const getFirstQueryValue = (value: string | string[] | undefined) =>
 	Array.isArray(value) ? value[0] : value;
 
 export default defineEventHandler(async (event) => {
 	try {
+		const tenant = await requireTenantContext(event);
 		const query = getQuery(event);
 		const fillDateFrom = getFirstQueryValue(query.fill_date_from as string | string[] | undefined);
 		const fillDateTo = getFirstQueryValue(query.fill_date_to as string | string[] | undefined);
@@ -17,7 +19,8 @@ export default defineEventHandler(async (event) => {
 
 		let request = event.context.supabase
 			.from('fill_records')
-			.select('*, products!inner(brand, model_type, unit, refill_date, hydrostatic_test_date, next_refill_date, locations!inner(*, building_id!inner(*)))');
+			.select('*, products!inner(brand, model_type, unit, refill_date, hydrostatic_test_date, next_refill_date, locations!inner(*, building_id!inner(*)))')
+			.eq('tenant_id', tenant.id);
 
 		if (fillDateFrom) {
 			request = request.gte('products.refill_date', fillDateFrom);
@@ -58,8 +61,9 @@ export default defineEventHandler(async (event) => {
 	catch (error: unknown) {
 		console.error('ERROR:', error);
 		if (error instanceof Error) {
+			const errorWithStatus = error as Error & { statusCode?: number };
 			throw createError({
-				statusCode: error.statusCode || 500,
+				statusCode: errorWithStatus.statusCode || 500,
 				message: error.message,
 			});
 		}

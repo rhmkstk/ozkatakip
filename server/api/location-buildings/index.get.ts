@@ -1,10 +1,12 @@
-// import { TablesInsert } from '~/types/database.types'
+import { requireTenantContext } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
+		const tenant = await requireTenantContext(event);
 		const { data, error } = await event.context.supabase
 			.from('location_buildings')
-			.select('*');
+			.select('*')
+			.eq('tenant_id', tenant.id);
 
 		if (error) {
 			throw createError({

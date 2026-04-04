@@ -14,7 +14,7 @@ type UpdateUserBody = {
 };
 
 export default defineEventHandler(async (event) => {
-	await requireAdminUser(event);
+	const { tenant } = await requireAdminUser(event);
 	const adminClient = await getAdminClient(event);
 	const body = await readBody<UpdateUserBody>(event);
 	const id = getRouterParam(event, 'id');
@@ -103,6 +103,24 @@ export default defineEventHandler(async (event) => {
 		throw createError({
 			statusCode: 500,
 			statusMessage: `Kullanici guncellenemedi: ${error.message}`,
+		});
+	}
+
+	const { error: membershipError } = await adminClient
+		.from('user_tenants')
+		.upsert({
+			user_id: id,
+			tenant_id: tenant.id,
+			role,
+			is_active: true,
+		}, {
+			onConflict: 'user_id,tenant_id',
+		});
+
+	if (membershipError) {
+		throw createError({
+			statusCode: 500,
+			statusMessage: `Tenant uyeligi guncellenemedi: ${membershipError.message}`,
 		});
 	}
 

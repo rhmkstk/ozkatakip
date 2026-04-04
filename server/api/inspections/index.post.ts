@@ -1,8 +1,14 @@
 import type { TablesInsert } from '~/types/database.types';
+import { requireTenantContext, requireTenantProduct } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
 		const body = await readBody<TablesInsert<'inspections'>>(event);
+		const tenant = await requireTenantContext(event);
+
+		if (body.fire_extinguisher_id) {
+			await requireTenantProduct(event, body.fire_extinguisher_id);
+		}
 
 		// Validate required fields
 		// if (!body.building_area || !body.location || !body.location_id) {
@@ -14,7 +20,10 @@ export default defineEventHandler(async (event) => {
 
 		const { data, error } = await event.context.supabase
 			.from('inspections')
-			.insert(body)
+			.insert({
+				...body,
+				tenant_id: tenant.id,
+			})
 			.select()
 			.single();
 

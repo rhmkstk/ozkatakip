@@ -1,11 +1,13 @@
-import { serverSupabaseServiceRole } from '#supabase/server';
-import { useRuntimeConfig } from '#imports';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '~/types/database.types';
+import { getAdminClient } from '~/server/utils/user-management';
+import { requireTenantContext } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
 		const locationID = getQuery(event).location_id;
+		const tenant = await requireTenantContext(event);
+		const supabase = process.env.SUPABASE_SERVICE_KEY
+			? await getAdminClient(event)
+			: event.context.supabase;
 
 		if (!locationID) {
 			throw createError({
@@ -13,28 +15,6 @@ export default defineEventHandler(async (event) => {
 				message: 'Missing location_id parameter',
 			});
 		}
-
-			const supabase =
-				process.env.SUPABASE_SERVICE_KEY
-					? await serverSupabaseServiceRole<Database>(event)
-					: (() => {
-							const config = useRuntimeConfig(event);
-							const supabaseUrl = config.supabase?.url || config.public?.supabaseUrl;
-							const supabaseAnonKey = process.env.SUPABASE_KEY || config.supabase?.key || config.public?.supabaseKey;
-
-							if (!supabaseUrl || !supabaseAnonKey) {
-								throw createError({
-									statusCode: 500,
-									message: 'Supabase configuration is missing',
-								});
-							}
-
-							return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-								auth: {
-									persistSession: false,
-								},
-							});
-						})();
 
 			const { data, error } = await supabase
 				.from('inspections')
@@ -56,6 +36,7 @@ export default defineEventHandler(async (event) => {
           )
         )
       `)
+				.eq('tenant_id', tenant.id)
 				.eq('products.locations.location_id', String(locationID))
 			.not('created_at', 'is', null)
 			.order('created_at', { ascending: false })
