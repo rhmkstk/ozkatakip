@@ -1,12 +1,13 @@
 import tailwindcss from '@tailwindcss/vite';
 import Aura from '@primeuix/themes/aura';
 import { tr as primeLocaleTr } from 'primelocale/js/tr.js';
+import { cp } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
 	modules: [
 		'@nuxtjs/supabase',
-		'@nuxtjs/google-fonts',
 		'@samk-dev/nuxt-vcalendar',
 		'@primevue/nuxt-module',
 		'@nuxt/eslint',
@@ -20,6 +21,19 @@ export default defineNuxtConfig({
 		},
 		head: {
 			link: [
+				{
+					rel: 'preconnect',
+					href: 'https://fonts.googleapis.com',
+				},
+				{
+					rel: 'preconnect',
+					href: 'https://fonts.gstatic.com',
+					crossorigin: '',
+				},
+				{
+					rel: 'stylesheet',
+					href: 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap',
+				},
 				{
 					rel: 'stylesheet',
 					href: 'https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css',
@@ -47,11 +61,6 @@ export default defineNuxtConfig({
 			},
 		},
 	},
-	googleFonts: {
-		families: {
-			Inter: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
-		},
-	},
 	primevue: {
 		options: {
 			ripple: true,
@@ -75,5 +84,24 @@ export default defineNuxtConfig({
 		//   login: '/',
 		//   callback: '/confirm',
 		// },
+	},
+	hooks: {
+		async 'nitro:build:public-assets'(nitro) {
+			const rootDir = nitro.options.rootDir;
+
+			await cp(resolve(rootDir, 'public'), nitro.options.output.publicDir, {
+				force: true,
+				recursive: true,
+			});
+
+			await cp(
+				resolve(rootDir, '.nuxt/dist/client'),
+				nitro.options.output.publicDir,
+				{
+					force: true,
+					recursive: true,
+				},
+			);
+		},
 	},
 });

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // import QRCode from 'qrcode';
+import { generateLabelsPng } from '~/utils/generateLabelsPng';
 import { headerLabels, productStatusTypeLabels } from '~/constants';
 import type { Tables } from '~/types/database.types';
 
