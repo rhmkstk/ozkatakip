@@ -9,6 +9,7 @@ type Props = {
 
 const props = defineProps<Props>();
 const router = useRouter();
+const { toTenantPath } = useTenant();
 
 const isVisible = ref(false);
 const countDown = ref(5);
@@ -43,7 +44,7 @@ function startCountdown() {
 		else {
 			clearCountdown();
 			isVisible.value = false;
-			router.push('/mobile');
+			router.push(toTenantPath('/mobile'));
 		}
 	}, 1000);
 }
@@ -85,7 +86,7 @@ onUnmounted(() => {
 				severity="primary"
 				size="large"
 				class="mx-auto"
-				@click="isVisible = false; router.push('/mobile')"
+				@click="isVisible = false; router.push(toTenantPath('/mobile'))"
 			/>
 		</template>
 	</Dialog>

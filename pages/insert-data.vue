@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { headerLabels, fireExtinguishers } from '@/constants';
+import { headerLabels, fireExtinguishers, productStatusOptions } from '@/constants';
 import type { Tables, TablesInsert } from '~/types/database.types';
 
 const HYDROSTATIC_TEST_PERIOD = 4; // years
@@ -17,12 +17,6 @@ type PendingDeleteItem = {
 };
 
 const toast = useToast();
-const productStatusOptions = [
-	{ label: 'Aktif', value: 'active' },
-	{ label: 'Arızalı', value: 'damaged' },
-	{ label: 'Kayıp', value: 'lost' },
-	{ label: 'Yedek', value: 'spare' },
-];
 const refillPeriodOptions = [
 	{ label: '1 yıl', value: 1 },
 	{ label: '2 yıl', value: 2 },

@@ -14,6 +14,7 @@ const { currentProductData } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const toast = useToast();
+const { toTenantPath } = useTenant();
 const loading = ref(false);
 const state = ref(0);
 const newProductId = ref('');
@@ -106,7 +107,7 @@ async function applyChanges() {
 			body: {
 				...currentProductData.product,
 				location: newProductData.product.location,
-				current_status: 'arızalı',
+				current_status: 'damaged',
 			},
 		});
 
@@ -124,7 +125,7 @@ async function applyChanges() {
 			body: {
 				...newProductData.product,
 				location: currentProductData.product.location,
-				current_status: 'aktif',
+				current_status: 'active',
 			},
 		});
 
@@ -187,7 +188,7 @@ async function applyChanges() {
 				icon="ri-camera-fill"
 				label="QR Kod Tara"
 				size="large"
-				@click="$router.push('/mobile/transactions/1')"
+				@click="$router.push(toTenantPath('/mobile/transactions/1'))"
 			/>
 		</div>
 		<div

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { fireExtinguishers, headerLabels } from '~/constants';
+import { fireExtinguishers, headerLabels, productStatusOptions } from '~/constants';
 import type { Tables } from '~/types/database.types';
 
 type ProductWithLocation = Tables<'products'> & {
@@ -18,12 +18,6 @@ const emit = defineEmits<{
 const toast = useToast();
 const editProductSaving = ref(false);
 const editInitialSnapshot = ref('');
-const productStatusOptions = [
-	{ label: 'Aktif', value: 'active' },
-	{ label: 'Arızalı', value: 'damaged' },
-	{ label: 'Kayıp', value: 'lost' },
-	{ label: 'Yedek', value: 'spare' },
-];
 const refillPeriodOptions = [
 	{ label: '1 yıl', value: 1 },
 	{ label: '2 yıl', value: 2 },

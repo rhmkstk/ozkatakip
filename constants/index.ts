@@ -147,11 +147,19 @@ export const transactionTypeLabels: {
 export const productStatusTypeLabels: {
   [key in Database["public"]["Enums"]["product_status"]]: string;
 } = {
-  active: "Aktif",
+  active: "Uygun",
   damaged: "Kullanim dışı",
-  lost: "Kayıp",
+  lost: "Bulunamadı",
   spare: "Yedek",
+  scrap: "Hurda",
 };
+
+export const productStatusOptions = Object.entries(productStatusTypeLabels).map(
+  ([value, label]) => ({
+    label,
+    value: value as Database["public"]["Enums"]["product_status"],
+  }),
+);
 export const inspectionFormFields = [
 	{ key: 'position', label: headerLabels.position },
 	{ key: 'body', label: headerLabels.body },

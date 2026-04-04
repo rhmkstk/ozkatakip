@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { AuthError } from '@supabase/supabase-js';
+import type { CurrentAppUser } from '~/composables/use-current-app-user';
+import type { TenantSummary } from '~/types/tenant';
 
 definePageMeta({
 	layout: false,
@@ -14,6 +16,19 @@ const userCredentials = ref({
 	password: '',
 });
 const errorMessage = ref('');
+const pendingProfile = ref<CurrentAppUser | null>(null);
+const selectedTenantSlug = ref('');
+const user = useSupabaseUser();
+
+const tenantOptions = computed(() => pendingProfile.value?.memberships.map(item => ({
+	label: item.tenant.name,
+	value: item.tenant.slug,
+})) ?? []);
+
+const requiresTenantSelection = computed(() => (
+	(pendingProfile.value?.memberships.length ?? 0) > 1
+	&& !pendingProfile.value?.activeTenant
+));
 
 const translateErrorMessage = (code: AuthError['code']) => {
 	switch (code) {
@@ -24,7 +39,75 @@ const translateErrorMessage = (code: AuthError['code']) => {
 	}
 };
 
+const redirectToTenant = (role: CurrentAppUser['role'], tenant: TenantSummary) => {
+	setActiveTenant(tenant);
+	if (role === 'admin') {
+		return navigateTo(`/${tenant.slug}`);
+	}
+
+	return navigateTo(`/${tenant.slug}/mobile`);
+};
+
+const fetchProfile = () => $fetch<CurrentAppUser>('/api/users/me').catch(() => null);
+
+const finalizeLogin = async (profile: CurrentAppUser | null) => {
+	if (!profile) {
+		errorMessage.value = 'Kullanıcı profili alınamadı';
+		return;
+	}
+
+	if (profile.activeTenant) {
+		pendingProfile.value = null;
+		selectedTenantSlug.value = profile.activeTenant.slug;
+		await redirectToTenant(profile.role, profile.activeTenant);
+		return;
+	}
+
+	if (profile.memberships.length === 1) {
+		pendingProfile.value = null;
+		selectedTenantSlug.value = profile.memberships[0].tenant.slug;
+		await redirectToTenant(profile.role, profile.memberships[0].tenant);
+		return;
+	}
+
+	if (profile.memberships.length > 1) {
+		pendingProfile.value = profile;
+		selectedTenantSlug.value = '';
+		errorMessage.value = '';
+		return;
+	}
+
+	errorMessage.value = 'Kullanıcının aktif tenant erişimi bulunamadı';
+};
+
+const continueWithSelectedTenant = async () => {
+	const profile = pendingProfile.value;
+	if (!profile) {
+		return;
+	}
+
+	const tenant = profile.memberships.find(item => item.tenant.slug === selectedTenantSlug.value)?.tenant;
+	if (!tenant) {
+		errorMessage.value = 'Lütfen bir tenant seçin';
+		return;
+	}
+
+	errorMessage.value = '';
+	loading.value = true;
+	try {
+		await redirectToTenant(profile.role, tenant);
+	}
+	finally {
+		loading.value = false;
+	}
+};
+
 const login = async () => {
+	if (requiresTenantSelection.value) {
+		await continueWithSelectedTenant();
+		return;
+	}
+
 	const username = userCredentials.value.username.trim().toLowerCase();
 	const password = userCredentials.value.password.trim();
 	if (!username || !password) {
@@ -44,35 +127,27 @@ const login = async () => {
 		loading.value = false;
 		return;
 	}
+
 	const { error } = await supabase.auth.signInWithPassword({ email, password });
 	if (error) {
 		errorMessage.value = translateErrorMessage(error.code);
 		console.error('Giriş başarısız:', error.message);
 	}
 	else {
-		const profile = await $fetch<{
-			role: 'admin' | 'employee';
-			activeTenant: { slug: string; name: string } | null;
-		}>('/api/users/me').catch(() => null);
-		const userRole = profile?.role || 'employee';
-		if (profile?.activeTenant) {
-			setActiveTenant(profile.activeTenant);
-		}
-		const tenantSlug = profile?.activeTenant?.slug;
-		if (!tenantSlug) {
-			errorMessage.value = 'Kullanıcının aktif tenant erişimi bulunamadı';
-			loading.value = false;
-			return;
-		}
-		if (userRole === 'admin') {
-			navigateTo(`/${tenantSlug}`);
-		}
-		else {
-			navigateTo(`/${tenantSlug}/mobile`);
-		}
+		await finalizeLogin(await fetchProfile());
 	}
 	loading.value = false;
 };
+
+onMounted(async () => {
+	if (!user.value) {
+		return;
+	}
+
+	loading.value = true;
+	await finalizeLogin(await fetchProfile());
+	loading.value = false;
+});
 </script>
 
 <template>
@@ -84,7 +159,10 @@ const login = async () => {
 			<template #content>
 				<form @submit.prevent="login">
 					<div class="space-y-4">
-						<div class="w-full">
+						<div
+							v-if="!requiresTenantSelection"
+							class="w-full"
+						>
 							<label
 								for="username"
 								class="block mb-1"
@@ -100,7 +178,10 @@ const login = async () => {
 							/>
 						</div>
 
-						<div class="w-full">
+						<div
+							v-if="!requiresTenantSelection"
+							class="w-full"
+						>
 							<label
 								for="password"
 								class="block mb-1"
@@ -117,12 +198,32 @@ const login = async () => {
 							/>
 						</div>
 
+						<div
+							v-if="requiresTenantSelection"
+							class="w-full"
+						>
+							<label
+								for="tenant"
+								class="block mb-1"
+							>Tenant</label>
+							<Select
+								id="tenant"
+								v-model="selectedTenantSlug"
+								:options="tenantOptions"
+								option-label="label"
+								option-value="value"
+								placeholder="Tenant seçin"
+								class="w-full"
+								:disabled="loading"
+							/>
+						</div>
+
 						<Button
-							label="Giriş Yap"
+							:label="requiresTenantSelection ? 'Tenant ile devam et' : 'Giriş Yap'"
 							class="w-full"
 							:loading="loading"
 							type="submit"
-							:disabled="loading || !userCredentials.username || !userCredentials.password"
+							:disabled="loading || (!requiresTenantSelection && (!userCredentials.username || !userCredentials.password)) || (requiresTenantSelection && !selectedTenantSlug)"
 						/>
 
 						<Message
