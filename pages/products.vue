@@ -323,7 +323,7 @@ const openEditModal = () => {
 	editProductModal.value = true;
 };
 
-const { activeTenantSlug } = useTenant();
+const { activeTenantSlug, toTenantPath } = useTenant();
 
 const downloadPdf = async () => {
 	if (selectedProducts.value.length === 0) return;
@@ -720,7 +720,7 @@ onBeforeUnmount(() => {
 					variant="text"
 					class="w-full mt-2"
 					label="YSC Ekle"
-					@click="$router.push('/insert-data')"
+					@click="$router.push(toTenantPath('/insert-data'))"
 				/>
 			</template>
 		</EmptyState>

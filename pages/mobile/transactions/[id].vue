@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import imageCompression from "browser-image-compression";
 import type { FileUploadSelectEvent } from "primevue";
+import type { Database } from "~/types/database.types";
 import { handleUploadImage } from "~/utils/handleUploadImage";
 import {
   imageCompressionOptions,
@@ -16,6 +17,7 @@ definePageMeta({
 const route = useRoute();
 const supabase = useSupabaseClient();
 const toast = useToast();
+const { toTenantPath } = useTenant();
 const activeTab = ref("0");
 const lastInspectionDate = ref<Date | null>(null);
 const showInspectionAlert = ref(false);
@@ -64,19 +66,20 @@ const isLoading = computed(() => {
   );
 });
 
+const statusBgColors: Record<
+  Database["public"]["Enums"]["product_status"],
+  string
+> = {
+  active: "bg-green-600",
+  damaged: "bg-red-600",
+  lost: "bg-gray-500",
+  spare: "bg-yellow-500",
+  scrap: "bg-gray-900",
+};
+
 const statusBgColor = computed(() => {
-  switch (data.value?.product.current_status) {
-    case "active":
-      return "bg-green-600";
-    case "damaged":
-      return "bg-red-600";
-    case "lost":
-      return "bg-gray-500";
-    case "spare":
-      return "bg-gray-500";
-    default:
-      return "bg-gray-500";
-  }
+  const currentStatus = data.value?.product.current_status;
+  return currentStatus ? statusBgColors[currentStatus] : "bg-gray-500";
 });
 
 const controlFields = [
@@ -314,7 +317,7 @@ onMounted(async () => {
         severity="secondary"
         label="Geri"
         aria-label="go back"
-        @click="$router.push('/mobile')"
+        @click="$router.push(toTenantPath('/mobile'))"
       />
     </header>
     <div
@@ -325,7 +328,7 @@ onMounted(async () => {
         Aradiginiz YSC bulunamadi! Geri donup farkli mevcut bir YSC ile islem
         yapabilirsiniz
       </p>
-      <Button label="Geri" @click="$router.push('/mobile')" />
+      <Button label="Geri" @click="$router.push(toTenantPath('/mobile'))" />
     </div>
 
     <div v-else-if="!isLoading" class="flex flex-col h-full">

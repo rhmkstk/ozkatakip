@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3';
-import { getHeader, getQuery } from 'h3';
+import { getCookie, getHeader, getQuery } from 'h3';
 import { serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server';
 import type { Database } from '~/types/database.types';
 
@@ -16,6 +16,14 @@ export type TenantMembership = {
 	role: Database['public']['Enums']['user_role'];
 	is_active: boolean;
 	tenant: TenantContext;
+};
+
+type TenantMembershipRow = {
+	user_id: string;
+	tenant_id: string;
+	role: Database['public']['Enums']['user_role'];
+	is_active: boolean;
+	tenants: TenantContext;
 };
 
 const CANDIDATE_HEADER_NAMES = ['x-tenant-slug', 'x-forwarded-prefix'];
@@ -37,6 +45,11 @@ function getTenantSlugCandidate(event: H3Event) {
 	const queryTenant = query.tenant_slug;
 	if (typeof queryTenant === 'string' && queryTenant.trim()) {
 		return queryTenant.trim();
+	}
+
+	const cookieTenant = normalizeCandidate(getCookie(event, 'active-tenant-slug'));
+	if (cookieTenant) {
+		return cookieTenant;
 	}
 
 	const referer = getHeader(event, 'referer');
@@ -77,7 +90,7 @@ export async function listUserTenantMemberships(event: H3Event, userId: string) 
 		});
 	}
 
-	return (data ?? []).map((membership: any) => ({
+	return ((data ?? []) as TenantMembershipRow[]).map(membership => ({
 		user_id: membership.user_id,
 		tenant_id: membership.tenant_id,
 		role: membership.role,

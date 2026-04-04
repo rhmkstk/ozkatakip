@@ -23,13 +23,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 	await loadCurrentUser();
 
 	const tenantSlug = currentUser.value?.activeTenant?.slug;
-	if (!tenantSlug) {
-		return;
-	}
-
 	const [firstSegment] = to.path.split('/').filter(Boolean);
 	if (!LEGACY_TOP_LEVEL_PATHS.has(firstSegment ?? '')) {
 		return;
+	}
+
+	if (!tenantSlug) {
+		return navigateTo('/login');
 	}
 
 	return navigateTo(`/${tenantSlug}${to.fullPath === '/' ? '' : to.fullPath}`);

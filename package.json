@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "types:sync": "supabase gen types typescript --project-id viguwxkkvjtdhexxmkcv > types/database.types.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

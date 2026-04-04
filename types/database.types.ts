@@ -23,7 +23,7 @@ export type Database = {
           id: string
           is_active: boolean
           last_name: string
-          role: Database["public"]["Enums"]["user_role"]
+          role: string
           updated_at: string
           username: string
         }
@@ -35,7 +35,7 @@ export type Database = {
           id: string
           is_active?: boolean
           last_name: string
-          role: Database["public"]["Enums"]["user_role"]
+          role: string
           updated_at?: string
           username: string
         }
@@ -47,7 +47,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: string
           updated_at?: string
           username?: string
         }
@@ -73,6 +73,305 @@ export type Database = {
           owner?: string | null
         }
         Relationships: []
+      }
+      fill_records: {
+        Row: {
+          created_at: string
+          filling: boolean
+          hose_and_nozzle: boolean
+          hydrostatic_pressure_test: boolean
+          id: number
+          manometer: boolean
+          paint: boolean
+          product_id: number
+          tenant_id: string
+          trigger_valve: boolean
+          user_id: string
+          wheel: boolean
+        }
+        Insert: {
+          created_at?: string
+          filling: boolean
+          hose_and_nozzle: boolean
+          hydrostatic_pressure_test: boolean
+          id?: number
+          manometer: boolean
+          paint: boolean
+          product_id: number
+          tenant_id: string
+          trigger_valve: boolean
+          user_id?: string
+          wheel: boolean
+        }
+        Update: {
+          created_at?: string
+          filling?: boolean
+          hose_and_nozzle?: boolean
+          hydrostatic_pressure_test?: boolean
+          id?: number
+          manometer?: boolean
+          paint?: boolean
+          product_id?: number
+          tenant_id?: string
+          trigger_valve?: boolean
+          user_id?: string
+          wheel?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fill_records_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fill_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspections: {
+        Row: {
+          body: boolean | null
+          control_card: boolean | null
+          created_at: string
+          date: string | null
+          fire_extinguisher_id: number | null
+          hose_and_nozzle: boolean | null
+          id: number
+          instruction_and_label: boolean | null
+          is_expiry: boolean | null
+          mass: boolean | null
+          note: string | null
+          photo_url: string | null
+          pin_and_seal: boolean | null
+          position: boolean
+          pressure: boolean | null
+          result: boolean | null
+          tenant_id: string
+          user_id: string | null
+          working_mechanism: boolean | null
+        }
+        Insert: {
+          body?: boolean | null
+          control_card?: boolean | null
+          created_at?: string
+          date?: string | null
+          fire_extinguisher_id?: number | null
+          hose_and_nozzle?: boolean | null
+          id?: number
+          instruction_and_label?: boolean | null
+          is_expiry?: boolean | null
+          mass?: boolean | null
+          note?: string | null
+          photo_url?: string | null
+          pin_and_seal?: boolean | null
+          position: boolean
+          pressure?: boolean | null
+          result?: boolean | null
+          tenant_id: string
+          user_id?: string | null
+          working_mechanism?: boolean | null
+        }
+        Update: {
+          body?: boolean | null
+          control_card?: boolean | null
+          created_at?: string
+          date?: string | null
+          fire_extinguisher_id?: number | null
+          hose_and_nozzle?: boolean | null
+          id?: number
+          instruction_and_label?: boolean | null
+          is_expiry?: boolean | null
+          mass?: boolean | null
+          note?: string | null
+          photo_url?: string | null
+          pin_and_seal?: boolean | null
+          position?: boolean
+          pressure?: boolean | null
+          result?: boolean | null
+          tenant_id?: string
+          user_id?: string | null
+          working_mechanism?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_fire_extinguisher_id_fkey"
+            columns: ["fire_extinguisher_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_buildings: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_buildings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          building_id: number
+          created_at: string
+          id: number
+          location_id: string
+          room: string
+          tenant_id: string
+        }
+        Insert: {
+          building_id: number
+          created_at?: string
+          id?: number
+          location_id: string
+          room: string
+          tenant_id: string
+        }
+        Update: {
+          building_id?: number
+          created_at?: string
+          id?: number
+          location_id?: string
+          room?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "location_buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          brand: string | null
+          created_at: string
+          current_status: Database["public"]["Enums"]["product_status"] | null
+          hydrostatic_test_date: string | null
+          id: number
+          location: number | null
+          manometer_scale_bar: number | null
+          manufacture_year: string
+          model_type: string | null
+          next_hydrostatic_test_date: string | null
+          next_refill_date: string | null
+          pressure_source: string | null
+          refill_date: string | null
+          refill_period: number | null
+          safety_valve_setting_pressure_bar: string | null
+          serial_number: number
+          tenant_id: string
+          test_pressure_bar: number | null
+          unit: string | null
+          working_pressure_bar: string | null
+          working_temperature_celsius: string | null
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          current_status?: Database["public"]["Enums"]["product_status"] | null
+          hydrostatic_test_date?: string | null
+          id?: number
+          location?: number | null
+          manometer_scale_bar?: number | null
+          manufacture_year: string
+          model_type?: string | null
+          next_hydrostatic_test_date?: string | null
+          next_refill_date?: string | null
+          pressure_source?: string | null
+          refill_date?: string | null
+          refill_period?: number | null
+          safety_valve_setting_pressure_bar?: string | null
+          serial_number: number
+          tenant_id: string
+          test_pressure_bar?: number | null
+          unit?: string | null
+          working_pressure_bar?: string | null
+          working_temperature_celsius?: string | null
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          current_status?: Database["public"]["Enums"]["product_status"] | null
+          hydrostatic_test_date?: string | null
+          id?: number
+          location?: number | null
+          manometer_scale_bar?: number | null
+          manufacture_year?: string
+          model_type?: string | null
+          next_hydrostatic_test_date?: string | null
+          next_refill_date?: string | null
+          pressure_source?: string | null
+          refill_date?: string | null
+          refill_period?: number | null
+          safety_valve_setting_pressure_bar?: string | null
+          serial_number?: number
+          tenant_id?: string
+          test_pressure_bar?: number | null
+          unit?: string | null
+          working_pressure_bar?: string | null
+          working_temperature_celsius?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_location_fkey"
+            columns: ["location"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenants: {
         Row: {
@@ -100,6 +399,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      transactions: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: number
+          product_id: number
+          tenant_id: string
+          type: Database["public"]["Enums"]["transaction_types"]
+          user: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: number
+          product_id: number
+          tenant_id: string
+          type: Database["public"]["Enums"]["transaction_types"]
+          user?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: number
+          product_id?: number
+          tenant_id?: string
+          type?: Database["public"]["Enums"]["transaction_types"]
+          user?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_tenants: {
         Row: {
@@ -146,315 +490,6 @@ export type Database = {
           },
         ]
       }
-      fill_records: {
-        Row: {
-          created_at: string
-          filling: boolean
-          hose_and_nozzle: boolean
-          hydrostatic_pressure_test: boolean
-          id: number
-          manometer: boolean
-          paint: boolean
-          product_id: number
-          tenant_id: string
-          trigger_valve: boolean
-          user_id: string
-          wheel: boolean
-        }
-        Insert: {
-          created_at?: string
-          filling: boolean
-          hose_and_nozzle: boolean
-          hydrostatic_pressure_test: boolean
-          id?: number
-          manometer: boolean
-          paint: boolean
-          product_id: number
-          tenant_id?: string
-          trigger_valve: boolean
-          user_id?: string
-          wheel: boolean
-        }
-        Update: {
-          created_at?: string
-          filling?: boolean
-          hose_and_nozzle?: boolean
-          hydrostatic_pressure_test?: boolean
-          id?: number
-          manometer?: boolean
-          paint?: boolean
-          product_id?: number
-          tenant_id?: string
-          trigger_valve?: boolean
-          user_id?: string
-          wheel?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fill_records_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      inspections: {
-        Row: {
-          body: boolean | null
-          control_card: boolean | null
-          created_at: string
-          date: string | null
-          fire_extinguisher_id: number | null
-          hose_and_nozzle: boolean | null
-          id: number
-          instruction_and_label: boolean | null
-          is_expiry: boolean | null
-          mass: boolean | null
-          note: string | null
-          photo_url: string | null
-          pin_and_seal: boolean | null
-          position: boolean
-          pressure: boolean | null
-          result: boolean | null
-          tenant_id: string
-          user_id: string | null
-          working_mechanism: boolean | null
-        }
-        Insert: {
-          body?: boolean | null
-          control_card?: boolean | null
-          created_at?: string
-          date?: string | null
-          fire_extinguisher_id?: number | null
-          hose_and_nozzle?: boolean | null
-          id?: number
-          instruction_and_label?: boolean | null
-          is_expiry?: boolean | null
-          mass?: boolean | null
-          note?: string | null
-          photo_url?: string | null
-          pin_and_seal?: boolean | null
-          position: boolean
-          pressure?: boolean | null
-          result?: boolean | null
-          tenant_id?: string
-          user_id?: string | null
-          working_mechanism?: boolean | null
-        }
-        Update: {
-          body?: boolean | null
-          control_card?: boolean | null
-          created_at?: string
-          date?: string | null
-          fire_extinguisher_id?: number | null
-          hose_and_nozzle?: boolean | null
-          id?: number
-          instruction_and_label?: boolean | null
-          is_expiry?: boolean | null
-          mass?: boolean | null
-          note?: string | null
-          photo_url?: string | null
-          pin_and_seal?: boolean | null
-          position?: boolean
-          pressure?: boolean | null
-          result?: boolean | null
-          tenant_id?: string
-          user_id?: string | null
-          working_mechanism?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "inspections_fire_extinguisher_id_fkey"
-            columns: ["fire_extinguisher_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      location_buildings: {
-        Row: {
-          created_at: string
-          id: number
-          name: string
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          name: string
-          tenant_id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          name?: string
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "location_buildings_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      locations: {
-        Row: {
-          building_id: number
-          created_at: string
-          id: number
-          location_id: string
-          room: string
-          tenant_id: string
-        }
-        Insert: {
-          building_id: number
-          created_at?: string
-          id?: number
-          location_id: string
-          room: string
-          tenant_id?: string
-        }
-        Update: {
-          building_id?: number
-          created_at?: string
-          id?: number
-          location_id?: string
-          room?: string
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "locations_building_id_fkey"
-            columns: ["building_id"]
-            isOneToOne: false
-            referencedRelation: "location_buildings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      products: {
-        Row: {
-          brand: string | null
-          created_at: string
-          current_status: Database["public"]["Enums"]["product_status"] | null
-          hydrostatic_test_date: string | null
-          id: number
-          location: number | null
-          manometer_scale_bar: number | null
-          manufacture_year: string
-          model_type: string | null
-          next_hydrostatic_test_date: string | null
-          next_refill_date: string | null
-          pressure_source: string | null
-          refill_date: string | null
-          refill_period: number | null
-          safety_valve_setting_pressure_bar: string | null
-          serial_number: number
-          test_pressure_bar: number | null
-          tenant_id: string
-          unit: string | null
-          working_pressure_bar: string | null
-          working_temperature_celsius: string | null
-        }
-        Insert: {
-          brand?: string | null
-          created_at?: string
-          current_status?: Database["public"]["Enums"]["product_status"] | null
-          hydrostatic_test_date?: string | null
-          id?: number
-          location?: number | null
-          manometer_scale_bar?: number | null
-          manufacture_year: string
-          model_type?: string | null
-          next_hydrostatic_test_date?: string | null
-          next_refill_date?: string | null
-          pressure_source?: string | null
-          refill_date?: string | null
-          refill_period?: number | null
-          safety_valve_setting_pressure_bar?: string | null
-          serial_number: number
-          test_pressure_bar?: number | null
-          tenant_id?: string
-          unit?: string | null
-          working_pressure_bar?: string | null
-          working_temperature_celsius?: string | null
-        }
-        Update: {
-          brand?: string | null
-          created_at?: string
-          current_status?: Database["public"]["Enums"]["product_status"] | null
-          hydrostatic_test_date?: string | null
-          id?: number
-          location?: number | null
-          manometer_scale_bar?: number | null
-          manufacture_year?: string
-          model_type?: string | null
-          next_hydrostatic_test_date?: string | null
-          next_refill_date?: string | null
-          pressure_source?: string | null
-          refill_date?: string | null
-          refill_period?: number | null
-          safety_valve_setting_pressure_bar?: string | null
-          serial_number?: number
-          test_pressure_bar?: number | null
-          tenant_id?: string
-          unit?: string | null
-          working_pressure_bar?: string | null
-          working_temperature_celsius?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "products_location_fkey"
-            columns: ["location"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      transactions: {
-        Row: {
-          created_at: string
-          details: string | null
-          id: number
-          product_id: number
-          tenant_id: string
-          type: Database["public"]["Enums"]["transaction_types"]
-          user: string
-        }
-        Insert: {
-          created_at?: string
-          details?: string | null
-          id?: number
-          product_id: number
-          tenant_id?: string
-          type: Database["public"]["Enums"]["transaction_types"]
-          user?: string
-        }
-        Update: {
-          created_at?: string
-          details?: string | null
-          id?: number
-          product_id?: number
-          tenant_id?: string
-          type?: Database["public"]["Enums"]["transaction_types"]
-          user?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -471,7 +506,7 @@ export type Database = {
     Enums: {
       app_permission: "channels.delete" | "messages.delete"
       app_role: "admin" | "moderator"
-      product_status: "active" | "damaged" | "lost" | "spare"
+      product_status: "active" | "damaged" | "lost" | "spare" | "scrap"
       transaction_types: "inspection" | "fill" | "change" | "other"
       user_role: "admin" | "employee"
     }
@@ -603,7 +638,7 @@ export const Constants = {
     Enums: {
       app_permission: ["channels.delete", "messages.delete"],
       app_role: ["admin", "moderator"],
-      product_status: ["active", "damaged", "lost", "spare"],
+      product_status: ["active", "damaged", "lost", "spare", "scrap"],
       transaction_types: ["inspection", "fill", "change", "other"],
       user_role: ["admin", "employee"],
     },
