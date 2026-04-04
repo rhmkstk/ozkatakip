@@ -34,7 +34,9 @@ const loading = ref(false);
 const buildingManager = ref({
 	modal: false,
 	saving: false,
+	updating: false,
 	name: '',
+	editingId: null as number | null,
 	deleting: false,
 });
 const deleteConfirm = ref({
@@ -76,6 +78,21 @@ const refreshBuildingOptions = async () => {
 const openBuildingManager = async () => {
 	buildingManager.value.modal = true;
 	await refreshBuildingOptions();
+};
+
+const resetBuildingManagerForm = () => {
+	buildingManager.value.name = '';
+	buildingManager.value.editingId = null;
+};
+
+const closeBuildingManager = () => {
+	buildingManager.value.modal = false;
+	resetBuildingManagerForm();
+};
+
+const startBuildingEdit = (building: BuildingRow) => {
+	buildingManager.value.editingId = building.id;
+	buildingManager.value.name = building.name;
 };
 
 const closeDeleteConfirm = () => {
@@ -142,12 +159,22 @@ const resetForm = () => {
 
 const saveProduct = async () => {
 	try {
+		if (!selectedBuilding.value?.id) {
+			toast.add({
+				severity: 'warn',
+				summary: 'Uyarı',
+				detail: 'Lütfen önce bir bina seçin.',
+				life: 2000,
+			});
+			return;
+		}
+
 		loading.value = true;
 		const locationResponse = await $fetch('/api/locations', {
 			method: 'POST',
 			body: {
 				location_id: form.location.location_id,
-				building_id: selectedBuilding.value?.id,
+				building_id: selectedBuilding.value.id,
 				room: form.location.room,
 			},
 		});
@@ -163,7 +190,11 @@ const saveProduct = async () => {
 					...form.product,
 					...item?.tecnicDetails,
 					location: locationResponse.id,
-					manufacture_year: new Date(`${year}-01-01`),
+					manufacture_year: formatDateOnlyForApi(new Date(year, 0, 1)),
+					refill_date: formatDateOnlyForApi(form.product.refill_date),
+					next_refill_date: formatDateOnlyForApi(form.product.next_refill_date),
+					hydrostatic_test_date: formatDateOnlyForApi(form.product.hydrostatic_test_date),
+					next_hydrostatic_test_date: formatDateOnlyForApi(form.product.next_hydrostatic_test_date),
 				},
 			});
 
@@ -191,7 +222,7 @@ const saveProduct = async () => {
 				statusCode === 409
 					? 'Bu konum için zaten bir YSC kayıtlı.'
 					: message || 'YSC kaydedilirken bir hata oluştu.',
-			life: 2000,
+			life: 20000,
 		});
 	}
 	finally {
@@ -241,8 +272,71 @@ const saveNewBuilding = async () => {
 		});
 	}
 	finally {
-		buildingManager.value.name = '';
+		resetBuildingManagerForm();
 		buildingManager.value.saving = false;
+		await refreshBuildingOptions();
+	}
+};
+
+const updateBuilding = async () => {
+	const buildingName = buildingManager.value.name.trim();
+	const editingId = buildingManager.value.editingId;
+
+	if (!editingId) {
+		toast.add({
+			severity: 'warn',
+			summary: 'Uyarı',
+			detail: 'Lütfen düzenlemek için bir bina seçin.',
+			life: 2000,
+		});
+		return;
+	}
+
+	if (!buildingName) {
+		toast.add({
+			severity: 'warn',
+			summary: 'Uyarı',
+			detail: 'Bina adı boş olamaz.',
+			life: 2000,
+		});
+		return;
+	}
+
+	try {
+		buildingManager.value.updating = true;
+		const response = await $fetch('/api/location-buildings', {
+			method: 'PUT',
+			body: {
+				id: editingId,
+				name: buildingName,
+			},
+		});
+
+		if (response) {
+			toast.add({
+				severity: 'success',
+				summary: 'Başarılı',
+				detail: 'Bina adı güncellendi.',
+				life: 2000,
+			});
+		}
+	}
+	catch (error) {
+		console.error('Error updating building:', error);
+		const fetchError = error as {
+			data?: { message?: string };
+			message?: string;
+		};
+		toast.add({
+			severity: 'error',
+			summary: 'Hata',
+			detail: fetchError?.data?.message ?? fetchError?.message ?? 'Bina güncellenirken bir hata oluştu.',
+			life: 2500,
+		});
+	}
+	finally {
+		resetBuildingManagerForm();
+		buildingManager.value.updating = false;
 		await refreshBuildingOptions();
 	}
 };
@@ -443,14 +537,17 @@ watch(
 watch(
 	() => form.product.hydrostatic_test_date,
 	(newDate) => {
-		if (newDate) {
-			const refillDate = new Date(newDate);
-			const nextRefillDate = new Date(refillDate);
-			nextRefillDate.setFullYear(
-				refillDate.getFullYear() + HYDROSTATIC_TEST_PERIOD,
-			);
-			form.product.next_hydrostatic_test_date = nextRefillDate;
+		if (!newDate) {
+			form.product.next_hydrostatic_test_date = null;
+			return;
 		}
+
+		const refillDate = new Date(newDate);
+		const nextRefillDate = new Date(refillDate);
+		nextRefillDate.setFullYear(
+			refillDate.getFullYear() + HYDROSTATIC_TEST_PERIOD,
+		);
+		form.product.next_hydrostatic_test_date = nextRefillDate;
 	},
 );
 </script>
@@ -617,6 +714,7 @@ watch(
 							id="hydrostatic_test_date"
 							v-model="form.product.hydrostatic_test_date"
 							date-format="dd/mm/yy"
+							show-button-bar
 						/>
 					</div>
 					<div class="form-item">
@@ -647,8 +745,14 @@ watch(
 			:style="{ width: '32rem' }"
 		>
 			<span class="text-surface-500 dark:text-surface-400 block mb-6">
-				Bu ekrandan yeni bina ekleyebilir, varolan binaları silebilirsin.
+				Bu ekrandan yeni bina ekleyebilir, varolan binaları yeniden adlandırabilir ve silebilirsin.
 			</span>
+			<div
+				v-if="buildingManager.editingId"
+				class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+			>
+				Düzenleme modu açık. Kaydı güncelledikten sonra istersen yeni bina eklemeye dönebilirsin.
+			</div>
 			<div class="form-item mb-4">
 				<label for="building-name">Bina adi</label>
 				<InputText
@@ -658,11 +762,28 @@ watch(
 			</div>
 			<div class="flex justify-end gap-2 mb-8">
 				<Button
+					v-if="buildingManager.editingId"
+					type="button"
+					label="Guncelle"
+					:loading="buildingManager.updating"
+					:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+					@click="updateBuilding"
+				/>
+				<Button
 					type="button"
 					label="Yeni bina kaydet"
 					:loading="buildingManager.saving"
-					:disabled="buildingManager.saving || buildingManager.deleting"
+					:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
 					@click="saveNewBuilding"
+				/>
+				<Button
+					v-if="buildingManager.editingId"
+					type="button"
+					label="Vazgec"
+					severity="secondary"
+					text
+					:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+					@click="resetBuildingManagerForm"
 				/>
 			</div>
 			<div class="border-t border-gray-200 pt-6">
@@ -679,6 +800,24 @@ watch(
 					v-else
 					class="space-y-4"
 				>
+					<div class="space-y-2">
+						<div
+							v-for="building in buildings"
+							:key="building.id"
+							class="flex items-center justify-between gap-3 rounded border border-gray-200 px-3 py-2"
+						>
+							<span class="truncate text-sm font-medium">{{ building.name }}</span>
+							<Button
+								type="button"
+								label="Duzenle"
+								severity="secondary"
+								text
+								size="small"
+								:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+								@click="startBuildingEdit(building)"
+							/>
+						</div>
+					</div>
 					<MultiSelect
 						v-model="selectedBuildingIds"
 						:options="buildings"
@@ -688,7 +827,7 @@ watch(
 						filter
 						placeholder="Silmek için bina seçin"
 						class="w-full"
-						:disabled="buildingManager.saving || buildingManager.deleting"
+						:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
 					/>
 					<div class="flex justify-end mb-12">
 						<Button
@@ -696,7 +835,7 @@ watch(
 							label="Secili binalari sil"
 							severity="danger"
 							:loading="buildingManager.deleting"
-							:disabled="buildingManager.saving || buildingManager.deleting || !selectedBuildingIds.length"
+							:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting || !selectedBuildingIds.length"
 							@click="deleteSelectedBuildings"
 						/>
 					</div>
@@ -707,7 +846,7 @@ watch(
 					type="button"
 					label="Kapat"
 					severity="secondary"
-					@click="buildingManager.modal = false"
+					@click="closeBuildingManager"
 				/>
 			</div>
 		</Dialog>

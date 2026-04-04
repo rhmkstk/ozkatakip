@@ -47,6 +47,48 @@ const editForm = reactive({
 const { loadUserDirectory } = useUserDirectory();
 const { loadCurrentUser } = useCurrentAppUser();
 const confirm = useConfirm();
+const toast = useToast();
+
+const TURKISH_CHAR_MAP: Record<string, string> = {
+	c: 'c',
+	g: 'g',
+	i: 'i',
+	o: 'o',
+	s: 's',
+	u: 'u',
+	C: 'c',
+	G: 'g',
+	I: 'i',
+	O: 'o',
+	S: 's',
+	U: 'u',
+	ç: 'c',
+	ğ: 'g',
+	ı: 'i',
+	ö: 'o',
+	ş: 's',
+	ü: 'u',
+	Ç: 'c',
+	Ğ: 'g',
+	İ: 'i',
+	Ö: 'o',
+	Ş: 's',
+	Ü: 'u',
+};
+
+const slugifyUsernamePart = (value: string) => value
+	.trim()
+	.replace(/[çğıöşüÇĞIİÖŞÜ]/g, character => TURKISH_CHAR_MAP[character] ?? character)
+	.normalize('NFKD')
+	.replace(/[\u0300-\u036f]/g, '')
+	.toLowerCase()
+	.replace(/[^a-z0-9]+/g, '-')
+	.replace(/^-+|-+$/g, '');
+
+const buildUsername = (firstName: string, lastName: string) => [firstName, lastName]
+	.map(slugifyUsernamePart)
+	.filter(Boolean)
+	.join('');
 
 const resolveErrorMessage = (error: unknown, fallback: string) => {
 	if (typeof error !== 'object' || !error) {
@@ -189,6 +231,44 @@ const deleteUser = (user: ManagedUser) => {
 const statusLabel = (isActive: boolean) => (isActive ? 'Aktif' : 'Pasif');
 const roleLabel = (role: Role) => (role === 'admin' ? 'Admin' : 'Employee');
 
+const copyUsername = async (username: string) => {
+	if (!username) {
+		return;
+	}
+
+	try {
+		await navigator.clipboard.writeText(username);
+		toast.add({
+			severity: 'success',
+			summary: 'Kopyalandı',
+			detail: 'Kullanıcı adı panoya kopyalandı',
+			life: 2000,
+		});
+	}
+	catch {
+		toast.add({
+			severity: 'error',
+			summary: 'Kopyalanamadı',
+			detail: 'Panoya kopyalama başarısız oldu',
+			life: 2500,
+		});
+	}
+};
+
+watch(
+	() => [createForm.firstName, createForm.lastName],
+	([firstName, lastName]) => {
+		createForm.username = buildUsername(firstName, lastName);
+	},
+);
+
+watch(
+	() => [editForm.firstName, editForm.lastName],
+	([firstName, lastName]) => {
+		editForm.username = buildUsername(firstName, lastName);
+	},
+);
+
 await loadUsers();
 </script>
 
@@ -213,11 +293,32 @@ await loadUsers();
 						</div>
 						<div class="flex flex-col gap-1">
 							<label>Kullanıcı adı</label>
-							<InputText v-model.trim="createForm.username" :disabled="saving" />
+							<div class="relative">
+								<InputText
+									v-model="createForm.username"
+									class="w-full pr-10"
+									disabled
+								/>
+								<button
+									type="button"
+									class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+									:disabled="!createForm.username"
+									@click="copyUsername(createForm.username)"
+								>
+									<i class="ri-file-copy-line text-lg" />
+								</button>
+							</div>
 						</div>
 						<div class="flex flex-col gap-1">
 							<label>Şifre</label>
-							<Password v-model="createForm.password" :feedback="false" toggle-mask :disabled="saving" />
+							<Password
+								v-model="createForm.password"
+								:feedback="false"
+								toggle-mask
+								input-class="w-full"
+								class="w-full"
+								:disabled="saving"
+							/>
 						</div>
 						<div class="flex flex-col gap-1">
 							<label>Rol</label>
@@ -289,11 +390,31 @@ await loadUsers();
 				</div>
 				<div class="flex flex-col gap-1">
 					<label>Kullanıcı adı</label>
-					<InputText v-model.trim="editForm.username" />
+					<div class="relative">
+						<InputText
+							v-model="editForm.username"
+							class="w-full pr-10"
+							disabled
+						/>
+						<button
+							type="button"
+							class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+							:disabled="!editForm.username"
+							@click="copyUsername(editForm.username)"
+						>
+							<i class="ri-file-copy-line text-lg" />
+						</button>
+					</div>
 				</div>
 				<div class="flex flex-col gap-1">
 					<label>Yeni şifre (opsiyonel)</label>
-					<Password v-model="editForm.password" :feedback="false" toggle-mask />
+					<Password
+						v-model="editForm.password"
+						:feedback="false"
+						toggle-mask
+						input-class="w-full"
+						class="w-full"
+					/>
 				</div>
 				<div class="flex flex-col gap-1">
 					<label>Rol</label>
