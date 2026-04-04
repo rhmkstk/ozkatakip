@@ -1,7 +1,10 @@
+import { requireTenantContext } from '~/server/utils/tenant';
+
 export default defineEventHandler(async (event) => {
 	try {
 		// const body = await readBody(event);
 		const formData = await readMultipartFormData(event);
+		const tenant = await requireTenantContext(event);
 
 		console.log('formData:', formData);
 		if (!formData || !formData.length) {
@@ -14,7 +17,8 @@ export default defineEventHandler(async (event) => {
 			throw new Error('File not found in form data');
 		}
 
-		const filePath = `private/${Date.now()}`;
+		const now = new Date();
+		const filePath = `${tenant.slug}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${Date.now()}`;
 		const { error: uploadError } = await event.context.supabase.storage.from('inspection-photos')
 			.upload(filePath, filePart.data, {
 				contentType: filePart.type || 'image/jpeg',

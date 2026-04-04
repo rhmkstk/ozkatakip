@@ -1,7 +1,10 @@
 // server/api/storage/inspection-photos/[...path].get.ts
+import { resolveTenantContext } from '~/server/utils/tenant';
+
 export default defineEventHandler(async (event) => {
   const pathParam = getRouterParam(event, 'path');
   const filePath = Array.isArray(pathParam) ? pathParam.join('/') : pathParam;
+  const tenant = await resolveTenantContext(event);
 
   console.log('Requested file path:', filePath);
 
@@ -27,6 +30,10 @@ export default defineEventHandler(async (event) => {
 
   // 4) Dosyayı indir ve döndür
   
+  if (tenant && filePath && !filePath.startsWith(`${tenant.slug}/`) && !filePath.startsWith('private/')) {
+    throw createError({ statusCode: 403, statusMessage: 'Bu dosya aktif tenant disinda' });
+  }
+
   const { data, error } = await event.context.supabase.storage.from('inspection-photos').download(filePath);
   if (error) throw createError({ statusCode: 404 });
 

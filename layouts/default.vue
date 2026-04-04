@@ -2,6 +2,7 @@
 const supabase = useSupabaseClient();
 const { currentUser, loadCurrentUser } = useCurrentAppUser();
 const { loadUserDirectory } = useUserDirectory();
+const { toTenantPath } = useTenant();
 
 const logout = async () => {
   const { error } = await supabase.auth.signOut();
@@ -32,7 +33,12 @@ const allMenuItems = [
 ];
 
 const menuItems = computed(() => {
-	return allMenuItems.filter(item => !item.adminOnly || currentUser.value?.role === 'admin');
+	return allMenuItems
+		.filter(item => !item.adminOnly || currentUser.value?.role === 'admin')
+		.map(item => ({
+			...item,
+			path: toTenantPath(item.path),
+		}));
 });
 
 const supportItems = [
@@ -67,6 +73,9 @@ const sidebarExpanded = ref(true);
 						<span class="text-[10px] text-gray-500">{{ currentUser.role ==="admin" ? 'YÖNETİCİ': 'ÇALIŞAN' }}</span>
 						<p class="font-bold  text-sm">
 							{{ currentUser.first_name }} {{ currentUser.last_name }}
+						</p>
+						<p v-if="currentUser.activeTenant" class="text-[10px] text-gray-500">
+							{{ currentUser.activeTenant.name }}
 						</p>
 					</div>
 				</div>

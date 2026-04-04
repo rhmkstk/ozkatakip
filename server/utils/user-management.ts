@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3';
 import { serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server';
 import type { Database } from '~/types/database.types';
+import { requireTenantMembership } from '~/server/utils/tenant';
 
 export type AppUserRole = 'admin' | 'employee';
 
@@ -43,10 +44,10 @@ export async function requireAuthenticatedUserId(event: H3Event) {
 
 export async function requireAdminUser(event: H3Event) {
 	const currentUserId = await requireAuthenticatedUserId(event);
-
+	const { membership, tenant } = await requireTenantMembership(event, 'admin');
 	const { data, error } = await event.context.supabase
 		.from('app_users')
-		.select('role, is_active')
+		.select('is_active')
 		.eq('id', currentUserId)
 		.maybeSingle();
 
@@ -57,7 +58,7 @@ export async function requireAdminUser(event: H3Event) {
 		});
 	}
 
-	if (!data || !data.is_active || data.role !== 'admin') {
+	if (!data || !data.is_active || membership.role !== 'admin') {
 		throw createError({
 			statusCode: 403,
 			statusMessage: 'Bu islem icin admin yetkisi gerekli',
@@ -66,6 +67,7 @@ export async function requireAdminUser(event: H3Event) {
 
 	return {
 		currentUserId,
+		tenant,
 	};
 }
 

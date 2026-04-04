@@ -1,7 +1,7 @@
 import { getAdminClient, requireAdminUser } from '~/server/utils/user-management';
 
 export default defineEventHandler(async (event) => {
-	const { currentUserId } = await requireAdminUser(event);
+	const { currentUserId, tenant } = await requireAdminUser(event);
 	const adminClient = await getAdminClient(event);
 	const id = getRouterParam(event, 'id');
 
@@ -19,35 +19,31 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	const { error: authError } = await adminClient.auth.admin.updateUserById(id, {
-		user_metadata: {
-			is_active: false,
-		},
-	});
-
-	if (authError) {
-		throw createError({
-			statusCode: 500,
-			statusMessage: `Auth kullanicisi pasife alinamadi: ${authError.message}`,
-		});
-	}
-
 	const { data, error } = await adminClient
-		.from('app_users')
+		.from('user_tenants')
 		.update({
 			is_active: false,
-			deleted_at: new Date().toISOString(),
 		})
-		.eq('id', id)
-		.select('id, first_name, last_name, username, role, is_active, created_at, updated_at')
+		.eq('tenant_id', tenant.id)
+		.eq('user_id', id)
+		.select('role, is_active, app_users!inner(id, first_name, last_name, username, created_at, updated_at)')
 		.single();
 
 	if (error) {
 		throw createError({
 			statusCode: 500,
-			statusMessage: `Kullanici pasife alinamadi: ${error.message}`,
+			statusMessage: `Tenant kullanicisi pasife alinamadi: ${error.message}`,
 		});
 	}
 
-	return data;
+	return {
+		id: data.app_users.id,
+		first_name: data.app_users.first_name,
+		last_name: data.app_users.last_name,
+		username: data.app_users.username,
+		role: data.role,
+		is_active: data.is_active,
+		created_at: data.app_users.created_at,
+		updated_at: data.app_users.updated_at,
+	};
 });

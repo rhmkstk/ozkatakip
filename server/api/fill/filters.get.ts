@@ -1,12 +1,17 @@
+import { requireTenantContext } from '~/server/utils/tenant';
+
 export default defineEventHandler(async (event) => {
 	try {
+		const tenant = await requireTenantContext(event);
 		const [buildingResponse, productResponse] = await Promise.all([
 			event.context.supabase
 				.from('location_buildings')
-				.select('name'),
+				.select('name')
+				.eq('tenant_id', tenant.id),
 			event.context.supabase
 				.from('products')
-				.select('unit, model_type'),
+				.select('unit, model_type')
+				.eq('tenant_id', tenant.id),
 		]);
 
 		if (buildingResponse.error || productResponse.error) {
@@ -45,8 +50,9 @@ export default defineEventHandler(async (event) => {
 	catch (error: unknown) {
 		console.log('ERROR:', error);
 		if (error instanceof Error) {
+			const errorWithStatus = error as Error & { statusCode?: number };
 			throw createError({
-				statusCode: error.statusCode || 500,
+				statusCode: errorWithStatus.statusCode || 500,
 				message: error.message,
 			});
 		}

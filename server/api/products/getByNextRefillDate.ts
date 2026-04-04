@@ -1,10 +1,12 @@
 import { getQuery } from 'h3';
+import { requireTenantContext } from '~/server/utils/tenant';
 
 const getFirstQueryValue = (value: string | string[] | undefined) =>
 	Array.isArray(value) ? value[0] : value;
 
 export default defineEventHandler(async (event) => {
 	try {
+		const tenant = await requireTenantContext(event);
 		const query = getQuery(event);
 		const rangeStartDate = getFirstQueryValue(query.start_date as string | string[] | undefined);
 		const rangeEndDate = getFirstQueryValue(query.end_date as string | string[] | undefined);
@@ -22,6 +24,7 @@ export default defineEventHandler(async (event) => {
 		let request = event.context.supabase
 			.from('products')
 			.select('*, locations!inner(*, building_id(*))')
+			.eq('tenant_id', tenant.id)
 			.gte('next_refill_date', rangeStartDate)
 			.lte('next_refill_date', rangeEndDate)
 			.order('next_refill_date', { ascending: true });

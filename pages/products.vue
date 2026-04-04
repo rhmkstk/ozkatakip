@@ -322,10 +322,13 @@ const openEditModal = () => {
 	editProductModal.value = true;
 };
 
+const { activeTenantSlug } = useTenant();
+
 const downloadPdf = async () => {
 	if (selectedProducts.value.length === 0) return;
+	if (!activeTenantSlug.value) return;
 
-	const urls = await generateLabelsPng(selectedProducts.value);
+	const urls = await generateLabelsPng(selectedProducts.value, activeTenantSlug.value);
 
 	urls.forEach((url, index) => {
 		const product = selectedProducts.value[index] as {

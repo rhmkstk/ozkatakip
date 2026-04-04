@@ -1,8 +1,10 @@
 import type { TablesInsert } from '~/types/database.types';
+import { requireTenantContext } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
 		const body = await readBody<TablesInsert<'products'>>(event);
+		const tenant = await requireTenantContext(event);
 
 		// Validate required fields
 		if (!body.manufacture_year || !body.serial_number) {
@@ -13,9 +15,31 @@ export default defineEventHandler(async (event) => {
 		}
 
 		if (body.location) {
+			const { data: location, error: locationError } = await event.context.supabase
+				.from('locations')
+				.select('id')
+				.eq('tenant_id', tenant.id)
+				.eq('id', body.location)
+				.maybeSingle();
+
+			if (locationError) {
+				throw createError({
+					statusCode: 500,
+					message: locationError.message,
+				});
+			}
+
+			if (!location) {
+				throw createError({
+					statusCode: 404,
+					message: 'Location not found in active tenant',
+				});
+			}
+
 			const { data: existing, error: existingError } = await event.context.supabase
 				.from('products')
 				.select('id')
+				.eq('tenant_id', tenant.id)
 				.eq('location', body.location)
 				.limit(1)
 				.maybeSingle();
@@ -39,7 +63,10 @@ export default defineEventHandler(async (event) => {
 
 		const { data, error } = await event.context.supabase
 			.from('products')
-			.insert(body)
+			.insert({
+				...body,
+				tenant_id: tenant.id,
+			})
 			.select()
 			.single();
 

@@ -1,12 +1,19 @@
 import type { TablesInsert } from '~/types/database.types';
+import { requireTenantContext, requireTenantProduct } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
 		const body = await readBody<TablesInsert<'transactions'>>(event);
+		const tenant = await requireTenantContext(event);
+
+		await requireTenantProduct(event, Number(body.product_id));
 
 		const { data, error } = await event.context.supabase
 			.from('transactions')
-			.insert(body)
+			.insert({
+				...body,
+				tenant_id: tenant.id,
+			})
 			.select()
 			.single();
 

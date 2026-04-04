@@ -1,7 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import { serverSupabaseServiceRole } from '#supabase/server';
-import { useRuntimeConfig } from '#imports';
-import type { Database } from '~/types/database.types';
+import { requireAdminUser } from '~/server/utils/user-management';
 
 type DeleteBuildingBody = {
 	id?: number | string;
@@ -10,6 +7,7 @@ type DeleteBuildingBody = {
 
 export default defineEventHandler(async (event) => {
 	try {
+		const { tenant } = await requireAdminUser(event);
 		const body = await readBody<DeleteBuildingBody>(event);
 		const rawId = body?.id;
 
@@ -22,30 +20,12 @@ export default defineEventHandler(async (event) => {
 
 		const force = Boolean(body?.force);
 
-		const supabase = process.env.SUPABASE_SERVICE_KEY
-			? await serverSupabaseServiceRole<Database>(event)
-			: (() => {
-					const config = useRuntimeConfig(event);
-					const supabaseUrl = config.supabase?.url || config.public?.supabaseUrl;
-					const supabaseAnonKey = process.env.SUPABASE_KEY || config.supabase?.key || config.public?.supabaseKey;
-
-					if (!supabaseUrl || !supabaseAnonKey) {
-						throw createError({
-							statusCode: 500,
-							message: 'Supabase configuration is missing',
-						});
-					}
-
-					return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-						auth: {
-							persistSession: false,
-						},
-					});
-				})();
+		const supabase = event.context.supabase;
 
 		const { data: building, error: buildingError } = await supabase
 			.from('location_buildings')
 			.select('id, name')
+			.eq('tenant_id', tenant.id)
 			.eq('id', buildingId)
 			.maybeSingle();
 
@@ -63,6 +43,7 @@ export default defineEventHandler(async (event) => {
 		const { data: locations, error: locationsError } = await supabase
 			.from('locations')
 			.select('id')
+			.eq('tenant_id', tenant.id)
 			.eq('building_id', buildingId);
 
 		if (locationsError) {
@@ -72,12 +53,13 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		const locationIds = (locations ?? []).map(item => item.id);
+		const locationIds = (locations ?? []).map((item: { id: number }) => item.id);
 
 		const { data: products, error: productsError } = locationIds.length
 			? await supabase
 				.from('products')
 				.select('id')
+				.eq('tenant_id', tenant.id)
 				.in('location', locationIds)
 			: { data: [], error: null };
 
@@ -88,21 +70,24 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		const productIds = (products ?? []).map(item => item.id);
+		const productIds = (products ?? []).map((item: { id: number }) => item.id);
 
 		const [{ count: transactionsCount, error: transactionsCountError }, { count: fillRecordsCount, error: fillRecordsCountError }, { count: inspectionsCount, error: inspectionsCountError }] = productIds.length
 			? await Promise.all([
 				supabase
 					.from('transactions')
 					.select('id', { count: 'exact', head: true })
+					.eq('tenant_id', tenant.id)
 					.in('product_id', productIds),
 				supabase
 					.from('fill_records')
 					.select('id', { count: 'exact', head: true })
+					.eq('tenant_id', tenant.id)
 					.in('product_id', productIds),
 				supabase
 					.from('inspections')
 					.select('id', { count: 'exact', head: true })
+					.eq('tenant_id', tenant.id)
 					.in('fire_extinguisher_id', productIds),
 			])
 			: [
@@ -155,9 +140,9 @@ export default defineEventHandler(async (event) => {
 
 		if (productIds.length) {
 			const [transactionsResult, fillRecordsResult, inspectionsResult] = await Promise.all([
-				supabase.from('transactions').delete({ count: 'exact' }).in('product_id', productIds),
-				supabase.from('fill_records').delete({ count: 'exact' }).in('product_id', productIds),
-				supabase.from('inspections').delete({ count: 'exact' }).in('fire_extinguisher_id', productIds),
+				supabase.from('transactions').delete({ count: 'exact' }).eq('tenant_id', tenant.id).in('product_id', productIds),
+				supabase.from('fill_records').delete({ count: 'exact' }).eq('tenant_id', tenant.id).in('product_id', productIds),
+				supabase.from('inspections').delete({ count: 'exact' }).eq('tenant_id', tenant.id).in('fire_extinguisher_id', productIds),
 			]);
 
 			if (transactionsResult.error || fillRecordsResult.error || inspectionsResult.error) {
@@ -178,6 +163,7 @@ export default defineEventHandler(async (event) => {
 			const { count: productsDeletedCount, error: productsDeleteError } = await supabase
 				.from('products')
 				.delete({ count: 'exact' })
+				.eq('tenant_id', tenant.id)
 				.in('id', productIds);
 
 			if (productsDeleteError) {
@@ -195,6 +181,7 @@ export default defineEventHandler(async (event) => {
 			const { count: locationsDeletedCount, error: locationsDeleteError } = await supabase
 				.from('locations')
 				.delete({ count: 'exact' })
+				.eq('tenant_id', tenant.id)
 				.in('id', locationIds);
 
 			if (locationsDeleteError) {
@@ -210,6 +197,7 @@ export default defineEventHandler(async (event) => {
 		const { count: buildingsDeleted, error: buildingDeleteError } = await supabase
 			.from('location_buildings')
 			.delete({ count: 'exact' })
+			.eq('tenant_id', tenant.id)
 			.eq('id', buildingId);
 
 		if (buildingDeleteError) {

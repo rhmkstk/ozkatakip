@@ -1,5 +1,6 @@
 export default defineNuxtRouteMiddleware(async () => {
 	const user = useSupabaseUser();
+	const { toTenantPath } = useTenant();
 
 	if (!user.value) {
 		return navigateTo('/login');
@@ -9,6 +10,6 @@ export default defineNuxtRouteMiddleware(async () => {
 	await loadCurrentUser();
 
 	if (!currentUser.value || currentUser.value.role !== 'admin') {
-		return navigateTo('/mobile');
+		return navigateTo(toTenantPath('/mobile'));
 	}
 });

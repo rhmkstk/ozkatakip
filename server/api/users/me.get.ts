@@ -1,5 +1,6 @@
 import { requireAuthenticatedUserId } from '~/server/utils/user-management';
 import { serverSupabaseUser } from '#supabase/server';
+import { listUserTenantMemberships, resolveTenantContext } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	const userId = await requireAuthenticatedUserId(event);
@@ -20,15 +21,20 @@ export default defineEventHandler(async (event) => {
 
 	if (!data) {
 		const metadata = authUser?.user_metadata || {};
+		const memberships = await listUserTenantMemberships(event, userId);
+		const resolvedTenant = await resolveTenantContext(event);
+		const activeMembership = memberships.find(item => item.tenant_id === resolvedTenant?.id) ?? memberships[0] ?? null;
 		return {
 			id: userId,
 			first_name: metadata.first_name || 'Kullanıcı',
 			last_name: metadata.last_name || '',
 			username: metadata.username || authUser?.email || userId,
-			role: metadata.role === 'admin' ? 'admin' : 'employee',
+			role: activeMembership?.role ?? (metadata.role === 'admin' ? 'admin' : 'employee'),
 			is_active: true,
 			created_at: authUser?.created_at || new Date().toISOString(),
 			updated_at: authUser?.updated_at || new Date().toISOString(),
+			activeTenant: activeMembership?.tenant ?? null,
+			memberships,
 		};
 	}
 
@@ -39,5 +45,14 @@ export default defineEventHandler(async (event) => {
 		});
 	}
 
-	return data;
+	const memberships = await listUserTenantMemberships(event, userId);
+	const resolvedTenant = await resolveTenantContext(event);
+	const activeMembership = memberships.find(item => item.tenant_id === resolvedTenant?.id) ?? memberships[0] ?? null;
+
+	return {
+		...data,
+		role: activeMembership?.role ?? data.role,
+		activeTenant: activeMembership?.tenant ?? null,
+		memberships,
+	};
 });

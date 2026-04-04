@@ -1,10 +1,25 @@
+import { requireTenantContext, requireTenantProduct } from '~/server/utils/tenant';
+
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
+    const tenant = await requireTenantContext(event);
+
+    if (!body?.product_id) {
+      throw createError({
+        statusCode: 400,
+        message: 'product_id zorunludur',
+      });
+    }
+
+    await requireTenantProduct(event, Number(body.product_id));
 
     const { data, error } = await event.context.supabase
       .from('fill_records')
-      .insert(body)
+      .insert({
+        ...body,
+        tenant_id: tenant.id,
+      })
       .select()
       .single();
 

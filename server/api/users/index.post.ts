@@ -15,7 +15,7 @@ type CreateUserBody = {
 };
 
 export default defineEventHandler(async (event) => {
-	await requireAdminUser(event);
+	const { tenant } = await requireAdminUser(event);
 	const adminClient = await getAdminClient(event);
 	const body = await readBody<CreateUserBody>(event);
 
@@ -95,6 +95,24 @@ export default defineEventHandler(async (event) => {
 		throw createError({
 			statusCode: 500,
 			statusMessage: `Uygulama kullanicisi kaydedilemedi: ${appUserError.message}`,
+		});
+	}
+
+	const { error: membershipError } = await adminClient
+		.from('user_tenants')
+		.insert({
+			user_id: authUserId,
+			tenant_id: tenant.id,
+			role,
+			is_active: true,
+		});
+
+	if (membershipError) {
+		await adminClient.from('app_users').delete().eq('id', authUserId);
+		await adminClient.auth.admin.deleteUser(authUserId);
+		throw createError({
+			statusCode: 500,
+			statusMessage: `Tenant uyeligi kaydedilemedi: ${membershipError.message}`,
 		});
 	}
 

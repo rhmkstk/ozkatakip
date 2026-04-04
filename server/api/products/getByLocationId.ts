@@ -1,7 +1,10 @@
+import { requireTenantContext } from '~/server/utils/tenant';
+
 // getProductWithLocationId.ts
 export default defineEventHandler(async (event) => {
 	try {
 		const locationID = getQuery(event).location_id;
+		const tenant = await requireTenantContext(event);
 
 		if (!locationID) {
 			throw createError({
@@ -15,7 +18,8 @@ export default defineEventHandler(async (event) => {
 		const { data } = await event.context.supabase
 			.from('products')
 			.select('*')
-			.eq('location', locationID); // Filter by location_id
+			.eq('tenant_id', tenant.id)
+			.eq('location', locationID);
 
 		console.log('data:', data);
 		return data;

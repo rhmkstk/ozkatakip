@@ -11,6 +11,7 @@ type Props = {
 };
 
 const props = defineProps<Props>();
+const { activeTenantSlug } = useTenant();
 
 // Store a map of product.id to QR data URL
 const qrCodes = ref<Record<string, string>>({});
@@ -18,7 +19,10 @@ const qrCodes = ref<Record<string, string>>({});
 onMounted(async () => {
 	for (const product of props.products) {
 		try {
-			const qrUrl = generateQrCodeUrl(String(product.locations?.location_id) || '');
+			if (!activeTenantSlug.value) {
+				continue;
+			}
+			const qrUrl = generateQrCodeUrl(activeTenantSlug.value, String(product.locations?.location_id) || '');
 			const dataUrl = await QRCode.toDataURL(qrUrl);
 			qrCodes.value[product.id] = dataUrl;
 		}

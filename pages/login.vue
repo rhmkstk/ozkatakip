@@ -7,6 +7,7 @@ definePageMeta({
 });
 
 const supabase = useSupabaseClient();
+const { setActiveTenant } = useTenant();
 const loading = ref(false);
 const userCredentials = ref({
 	username: '',
@@ -49,13 +50,25 @@ const login = async () => {
 		console.error('Giriş başarısız:', error.message);
 	}
 	else {
-		const profile = await $fetch<{ role: 'admin' | 'employee' }>('/api/users/me').catch(() => null);
+		const profile = await $fetch<{
+			role: 'admin' | 'employee';
+			activeTenant: { slug: string; name: string } | null;
+		}>('/api/users/me').catch(() => null);
 		const userRole = profile?.role || 'employee';
+		if (profile?.activeTenant) {
+			setActiveTenant(profile.activeTenant);
+		}
+		const tenantSlug = profile?.activeTenant?.slug;
+		if (!tenantSlug) {
+			errorMessage.value = 'Kullanıcının aktif tenant erişimi bulunamadı';
+			loading.value = false;
+			return;
+		}
 		if (userRole === 'admin') {
-			navigateTo('/');
+			navigateTo(`/${tenantSlug}`);
 		}
 		else {
-			navigateTo('/mobile');
+			navigateTo(`/${tenantSlug}/mobile`);
 		}
 	}
 	loading.value = false;

@@ -74,6 +74,78 @@ export type Database = {
         }
         Relationships: []
       }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_tenants: {
+        Row: {
+          created_at: string
+          id: number
+          is_active: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_tenants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_tenants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fill_records: {
         Row: {
           created_at: string
@@ -84,6 +156,7 @@ export type Database = {
           manometer: boolean
           paint: boolean
           product_id: number
+          tenant_id: string
           trigger_valve: boolean
           user_id: string
           wheel: boolean
@@ -97,6 +170,7 @@ export type Database = {
           manometer: boolean
           paint: boolean
           product_id: number
+          tenant_id?: string
           trigger_valve: boolean
           user_id?: string
           wheel: boolean
@@ -110,6 +184,7 @@ export type Database = {
           manometer?: boolean
           paint?: boolean
           product_id?: number
+          tenant_id?: string
           trigger_valve?: boolean
           user_id?: string
           wheel?: boolean
@@ -142,6 +217,7 @@ export type Database = {
           position: boolean
           pressure: boolean | null
           result: boolean | null
+          tenant_id: string
           user_id: string | null
           working_mechanism: boolean | null
         }
@@ -162,6 +238,7 @@ export type Database = {
           position: boolean
           pressure?: boolean | null
           result?: boolean | null
+          tenant_id?: string
           user_id?: string | null
           working_mechanism?: boolean | null
         }
@@ -182,6 +259,7 @@ export type Database = {
           position?: boolean
           pressure?: boolean | null
           result?: boolean | null
+          tenant_id?: string
           user_id?: string | null
           working_mechanism?: boolean | null
         }
@@ -200,18 +278,29 @@ export type Database = {
           created_at: string
           id: number
           name: string
+          tenant_id: string
         }
         Insert: {
           created_at?: string
           id?: number
           name: string
+          tenant_id?: string
         }
         Update: {
           created_at?: string
           id?: number
           name?: string
+          tenant_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "location_buildings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       locations: {
         Row: {
@@ -220,6 +309,7 @@ export type Database = {
           id: number
           location_id: string
           room: string
+          tenant_id: string
         }
         Insert: {
           building_id: number
@@ -227,6 +317,7 @@ export type Database = {
           id?: number
           location_id: string
           room: string
+          tenant_id?: string
         }
         Update: {
           building_id?: number
@@ -234,6 +325,7 @@ export type Database = {
           id?: number
           location_id?: string
           room?: string
+          tenant_id?: string
         }
         Relationships: [
           {
@@ -264,6 +356,7 @@ export type Database = {
           safety_valve_setting_pressure_bar: string | null
           serial_number: number
           test_pressure_bar: number | null
+          tenant_id: string
           unit: string | null
           working_pressure_bar: string | null
           working_temperature_celsius: string | null
@@ -286,6 +379,7 @@ export type Database = {
           safety_valve_setting_pressure_bar?: string | null
           serial_number: number
           test_pressure_bar?: number | null
+          tenant_id?: string
           unit?: string | null
           working_pressure_bar?: string | null
           working_temperature_celsius?: string | null
@@ -308,6 +402,7 @@ export type Database = {
           safety_valve_setting_pressure_bar?: string | null
           serial_number?: number
           test_pressure_bar?: number | null
+          tenant_id?: string
           unit?: string | null
           working_pressure_bar?: string | null
           working_temperature_celsius?: string | null
@@ -328,6 +423,7 @@ export type Database = {
           details: string | null
           id: number
           product_id: number
+          tenant_id: string
           type: Database["public"]["Enums"]["transaction_types"]
           user: string
         }
@@ -336,6 +432,7 @@ export type Database = {
           details?: string | null
           id?: number
           product_id: number
+          tenant_id?: string
           type: Database["public"]["Enums"]["transaction_types"]
           user?: string
         }
@@ -344,6 +441,7 @@ export type Database = {
           details?: string | null
           id?: number
           product_id?: number
+          tenant_id?: string
           type?: Database["public"]["Enums"]["transaction_types"]
           user?: string
         }

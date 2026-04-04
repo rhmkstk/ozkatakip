@@ -1,12 +1,17 @@
+import { requireTenantContext } from '~/server/utils/tenant';
+
 export default defineEventHandler(async (event) => {
 	try {
+		const tenant = await requireTenantContext(event);
 		const [locationResponse, modelTypeResponse] = await Promise.all([
 			event.context.supabase
 				.from('locations')
-				.select('room'),
+				.select('room')
+				.eq('tenant_id', tenant.id),
 			event.context.supabase
 				.from('products')
-				.select('model_type'),
+				.select('model_type')
+				.eq('tenant_id', tenant.id),
 		]);
 
 		if (locationResponse.error || modelTypeResponse.error) {
