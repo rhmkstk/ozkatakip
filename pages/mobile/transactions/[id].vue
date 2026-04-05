@@ -126,6 +126,32 @@ const inspectionAlert = computed(() => {
   return `  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
 });
 
+const isRefillDateExpired = computed(() => {
+  const nextRefillDate = data.value?.product.next_refill_date;
+
+  if (!nextRefillDate) {
+    return false;
+  }
+
+  const refillDate = new Date(nextRefillDate);
+  const today = new Date();
+
+  refillDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  return refillDate < today;
+});
+
+const refillDateAlert = computed(() => {
+  const nextRefillDate = data.value?.product.next_refill_date;
+
+  if (!nextRefillDate) {
+    return "";
+  }
+
+  return `Bu ürünün dolum süresi ${formatTurkishDate(nextRefillDate)} tarihinde dolmuş. Lütfen dolum işlemini planlayın.`;
+});
+
 const checkInspectionForm = () => {
   return controlFields.every(
     (field) => inspectionForm[field as keyof typeof inspectionForm] === true,
@@ -158,6 +184,7 @@ async function saveInspectionForm() {
   const result = checkInspectionForm();
   inspectionFormLoading.value = true;
   try {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
     if (compressedImage.value) {
       inspectionForm.photo_url = await handleUploadImage(compressedImage.value);
     }
@@ -167,12 +194,12 @@ async function saveInspectionForm() {
         ...inspectionForm,
         fire_extinguisher_id: data.value?.product.id,
         result,
+        user_id: userId,
+        date: formatDateOnlyForApi(new Date()),
       },
     });
 
     if (response) {
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-
       $fetch("/api/transactions", {
         method: "POST",
         body: {
@@ -415,6 +442,9 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+      <Message v-if="isRefillDateExpired" severity="error" class="my-4">
+        {{ refillDateAlert }}
+      </Message>
       <Message v-if="showInspectionAlert" severity="warn" class="my-4">
         {{ inspectionAlert }}
       </Message>

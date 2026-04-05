@@ -1,9 +1,33 @@
 <script setup lang="ts">
-import { headerLabels, fireExtinguishers, productStatusOptions } from '@/constants';
+import {
+	headerLabels,
+	fireExtinguishers,
+	productStatusOptions,
+} from '@/constants';
 import type { Tables, TablesInsert } from '~/types/database.types';
 
 const HYDROSTATIC_TEST_PERIOD = 4; // years
 type BuildingRow = Tables<'location_buildings'>;
+type LocationRow = Tables<'locations'>;
+type ProductRow = Tables<'products'>;
+type InsertProductForm = Omit<
+	TablesInsert<'products'>,
+	| 'tenant_id'
+	| 'serial_number'
+	| 'manufacture_year'
+	| 'refill_date'
+	| 'next_refill_date'
+	| 'hydrostatic_test_date'
+	| 'next_hydrostatic_test_date'
+> & {
+	serial_number: number | null;
+	manufacture_year: Date | null;
+	refill_date: Date | null;
+	next_refill_date: Date | null;
+	hydrostatic_test_date: Date | null;
+	next_hydrostatic_test_date: Date | null;
+};
+type InsertLocationForm = Omit<TablesInsert<'locations'>, 'tenant_id'>;
 type BuildingRelations = {
 	locations: number;
 	products: number;
@@ -14,6 +38,27 @@ type BuildingRelations = {
 type PendingDeleteItem = {
 	building: BuildingRow;
 	relations: BuildingRelations | null;
+};
+type DeleteBuildingConfirmPayload = {
+	requiresConfirmation?: boolean;
+	relations?: BuildingRelations;
+};
+type DeleteBuildingFetchError = {
+	statusCode?: number;
+	data?: {
+		statusCode?: number;
+		message?: string;
+		data?: DeleteBuildingConfirmPayload;
+	};
+	message?: string;
+};
+type GenericFetchError = {
+	statusCode?: number;
+	data?: {
+		statusCode?: number;
+		message?: string;
+	};
+	message?: string;
 };
 
 const toast = useToast();
@@ -41,6 +86,96 @@ const deleteConfirm = ref({
 const buildings = ref<BuildingRow[]>([]);
 const selectedBuildingIds = ref<number[]>([]);
 const selectedBuilding = ref<BuildingRow | null>(null);
+
+const notify = (
+	severity: 'success' | 'warn' | 'error',
+	detail: string,
+	life = severity === 'success' ? 2000 : 6000,
+) => {
+	toast.add({
+		severity,
+		summary:
+      severity === 'success' ? 'Başarılı' : severity === 'warn' ? 'Uyarı' : 'Hata',
+		detail,
+		life,
+	});
+};
+
+const getFetchErrorStatus = (error: GenericFetchError | DeleteBuildingFetchError) =>
+	error.statusCode ?? error.data?.statusCode;
+
+const getFetchErrorMessage = (error: GenericFetchError | DeleteBuildingFetchError) =>
+	error.data?.message ?? error.message;
+
+const createInitialProductForm = (): InsertProductForm => ({
+	brand: '',
+	model_type: '',
+	serial_number: null,
+	manufacture_year: null,
+	unit: '',
+	refill_period: 2,
+	refill_date: null,
+	next_refill_date: null,
+	hydrostatic_test_date: null,
+	next_hydrostatic_test_date: null,
+	current_status: 'active',
+	location: null,
+	pressure_source: 'Azot(N)',
+});
+
+const createInitialLocationForm = (): InsertLocationForm => ({
+	room: '',
+	location_id: '',
+	building_id: 0,
+});
+
+const getSelectedFireExtinguisher = () =>
+	fireExtinguishers.find(item => item.name === form.product.model_type);
+
+const buildProductPayload = (locationId: number) => {
+	const manufactureYear = form.product.manufacture_year
+		? formatDateOnlyForApi(
+				new Date(form.product.manufacture_year.getFullYear(), 0, 1),
+			)
+		: null;
+
+	return {
+		...form.product,
+		...getSelectedFireExtinguisher()?.tecnicDetails,
+		location: locationId,
+		manufacture_year: manufactureYear,
+		refill_date: formatDateOnlyForApi(form.product.refill_date),
+		next_refill_date: formatDateOnlyForApi(form.product.next_refill_date),
+		hydrostatic_test_date: formatDateOnlyForApi(
+			form.product.hydrostatic_test_date,
+		),
+		next_hydrostatic_test_date: formatDateOnlyForApi(
+			form.product.next_hydrostatic_test_date,
+		),
+	};
+};
+
+const blurActiveElement = async () => {
+	await nextTick();
+	if (document.activeElement instanceof HTMLElement) {
+		document.activeElement.blur();
+	}
+};
+
+const openDeleteConfirm = (items: PendingDeleteItem[]) => {
+	deleteConfirm.value.items = items;
+	deleteConfirm.value.visible = true;
+};
+
+const deleteBuildingRequest = async (buildingId: number, force = false) => {
+	await $fetch('/api/location-buildings', {
+		method: 'DELETE',
+		body: {
+			id: buildingId,
+			force,
+		},
+	});
+};
 
 const { error, refresh: refreshBuildings } = await useFetch<BuildingRow[]>(
 	'/api/location-buildings',
@@ -96,28 +231,11 @@ const closeDeleteConfirm = () => {
 };
 
 const form = reactive<{
-	product: TablesInsert<'products'>;
-	location: TablesInsert<'locations'>;
+	product: InsertProductForm;
+	location: InsertLocationForm;
 }>({
-	product: {
-		brand: '',
-		model_type: '',
-		serial_number: 0,
-		manufacture_year: '',
-		unit: '',
-		refill_period: 2,
-		refill_date: null,
-		next_refill_date: null,
-		hydrostatic_test_date: null,
-		next_hydrostatic_test_date: null,
-		current_status: 'active',
-		location: null,
-	},
-	location: {
-		room: '',
-		location_id: '',
-		building_id: 0,
-	},
+	product: createInitialProductForm(),
+	location: createInitialLocationForm(),
 });
 
 const fireExtinguisherWeightOptions = computed(() => {
@@ -129,42 +247,25 @@ const fireExtinguisherWeightOptions = computed(() => {
 });
 
 const resetForm = () => {
-	form.product = {
-		brand: '',
-		model_type: '',
-		serial_number: 0,
-		manufacture_year: '',
-		unit: '',
-		refill_period: 2,
-		refill_date: null,
-		next_refill_date: null,
-		hydrostatic_test_date: null,
-		next_hydrostatic_test_date: null,
-		current_status: 'active',
-		location: null,
-		pressure_source: 'Azot(N)',
-	};
-	form.location = {
-		room: '',
-		location_id: '',
-		building_id: 0,
-	};
+	Object.assign(form.product, createInitialProductForm());
+	Object.assign(form.location, createInitialLocationForm());
+};
+
+const resetTransientState = () => {
+	loading.value = false;
+	buildingManager.value.modal = false;
+	deleteConfirm.value.visible = false;
 };
 
 const saveProduct = async () => {
 	try {
 		if (!selectedBuilding.value?.id) {
-			toast.add({
-				severity: 'warn',
-				summary: 'Uyarı',
-				detail: 'Lütfen önce bir bina seçin.',
-				life: 2000,
-			});
+			notify('warn', 'Lütfen önce bir bina seçin.');
 			return;
 		}
 
 		loading.value = true;
-		const locationResponse = await $fetch('/api/locations', {
+		const locationResponse = await $fetch<LocationRow>('/api/locations', {
 			method: 'POST',
 			body: {
 				location_id: form.location.location_id,
@@ -174,73 +275,43 @@ const saveProduct = async () => {
 		});
 
 		if (locationResponse.id) {
-			const item = fireExtinguishers.find(
-				f => f.name === form.product.model_type,
-			);
-			const year = new Date(form.product.manufacture_year).getFullYear();
-			await $fetch('/api/products', {
+			await $fetch<ProductRow>('/api/products', {
 				method: 'POST',
-				body: {
-					...form.product,
-					...item?.tecnicDetails,
-					location: locationResponse.id,
-					manufacture_year: formatDateOnlyForApi(new Date(year, 0, 1)),
-					refill_date: formatDateOnlyForApi(form.product.refill_date),
-					next_refill_date: formatDateOnlyForApi(form.product.next_refill_date),
-					hydrostatic_test_date: formatDateOnlyForApi(form.product.hydrostatic_test_date),
-					next_hydrostatic_test_date: formatDateOnlyForApi(form.product.next_hydrostatic_test_date),
-				},
+				body: buildProductPayload(locationResponse.id),
 			});
 
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'YSC kaydedildi.',
-				life: 2000,
-			});
+			notify('success', 'YSC kaydedildi.');
 		}
 	}
 	catch (error) {
 		console.error('Error saving product:', error);
-		const fetchError = error as {
-			statusCode?: number;
-			data?: { statusCode?: number; message?: string };
-			message?: string;
-		};
-		const statusCode = fetchError?.statusCode ?? fetchError?.data?.statusCode;
-		const message = fetchError?.data?.message ?? fetchError?.message;
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail:
-				statusCode === 409
-					? 'Bu konum için zaten bir YSC kayıtlı.'
-					: message || 'YSC kaydedilirken bir hata oluştu.',
-			life: 20000,
-		});
+		const fetchError = error as GenericFetchError;
+		notify(
+			'error',
+			getFetchErrorStatus(fetchError) === 409
+				? 'Bu konum için zaten bir YSC kayıtlı.'
+				: getFetchErrorMessage(fetchError)
+					|| 'YSC kaydedilirken bir hata oluştu.',
+			20000,
+		);
 	}
 	finally {
 		loading.value = false;
-
 		resetForm();
+		await blurActiveElement();
 	}
 };
 
 const saveNewBuilding = async () => {
 	const buildingName = buildingManager.value.name.trim();
 	if (!buildingName) {
-		toast.add({
-			severity: 'warn',
-			summary: 'Uyarı',
-			detail: 'Bina adı boş olamaz.',
-			life: 2000,
-		});
+		notify('warn', 'Bina adı boş olamaz.');
 		return;
 	}
 
 	try {
 		buildingManager.value.saving = true;
-		const response = await $fetch('/api/location-buildings', {
+		const response = await $fetch<BuildingRow>('/api/location-buildings', {
 			method: 'POST',
 			body: {
 				name: buildingName,
@@ -248,22 +319,12 @@ const saveNewBuilding = async () => {
 		});
 
 		if (response) {
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Bina kaydedildi.',
-				life: 2000,
-			});
+			notify('success', 'Bina kaydedildi.');
 		}
 	}
 	catch (error) {
 		console.error('Error saving building:', error);
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: 'Bina kaydedilirken bir hata oluştu.',
-			life: 2000,
-		});
+		notify('error', 'Bina kaydedilirken bir hata oluştu.');
 	}
 	finally {
 		resetBuildingManagerForm();
@@ -277,28 +338,18 @@ const updateBuilding = async () => {
 	const editingId = buildingManager.value.editingId;
 
 	if (!editingId) {
-		toast.add({
-			severity: 'warn',
-			summary: 'Uyarı',
-			detail: 'Lütfen düzenlemek için bir bina seçin.',
-			life: 2000,
-		});
+		notify('warn', 'Lütfen düzenlemek için bir bina seçin.');
 		return;
 	}
 
 	if (!buildingName) {
-		toast.add({
-			severity: 'warn',
-			summary: 'Uyarı',
-			detail: 'Bina adı boş olamaz.',
-			life: 2000,
-		});
+		notify('warn', 'Bina adı boş olamaz.');
 		return;
 	}
 
 	try {
 		buildingManager.value.updating = true;
-		const response = await $fetch('/api/location-buildings', {
+		const response = await $fetch<BuildingRow>('/api/location-buildings', {
 			method: 'PUT',
 			body: {
 				id: editingId,
@@ -307,26 +358,18 @@ const updateBuilding = async () => {
 		});
 
 		if (response) {
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Bina adı güncellendi.',
-				life: 2000,
-			});
+			notify('success', 'Bina adı güncellendi.');
 		}
 	}
 	catch (error) {
 		console.error('Error updating building:', error);
-		const fetchError = error as {
-			data?: { message?: string };
-			message?: string;
-		};
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: fetchError?.data?.message ?? fetchError?.message ?? 'Bina güncellenirken bir hata oluştu.',
-			life: 2500,
-		});
+		const fetchError = error as GenericFetchError;
+		notify(
+			'error',
+			getFetchErrorMessage(fetchError)
+			|| 'Bina güncellenirken bir hata oluştu.',
+			2500,
+		);
 	}
 	finally {
 		resetBuildingManagerForm();
@@ -337,20 +380,9 @@ const updateBuilding = async () => {
 
 const deleteBuilding = async (building: BuildingRow, force = false) => {
 	try {
-		await $fetch('/api/location-buildings', {
-			method: 'DELETE',
-			body: {
-				id: building.id,
-				force,
-			},
-		});
+		await deleteBuildingRequest(building.id, force);
 
-		toast.add({
-			severity: 'success',
-			summary: 'Başarılı',
-			detail: 'Bina silindi.',
-			life: 2000,
-		});
+		notify('success', 'Bina silindi.');
 
 		if (selectedBuilding.value?.id === building.id) {
 			selectedBuilding.value = null;
@@ -359,44 +391,25 @@ const deleteBuilding = async (building: BuildingRow, force = false) => {
 		closeDeleteConfirm();
 	}
 	catch (error) {
-		const fetchError = error as {
-			statusCode?: number;
-			data?: {
-				statusCode?: number;
-				message?: string;
-				data?: {
-					requiresConfirmation?: boolean;
-					relations?: BuildingRelations;
-				};
-			};
-			message?: string;
-		};
-
-		const statusCode = fetchError?.statusCode ?? fetchError?.data?.statusCode;
-		const message = fetchError?.data?.message ?? fetchError?.message;
+		const fetchError = error as DeleteBuildingFetchError;
+		const statusCode = getFetchErrorStatus(fetchError);
 		const payload = fetchError?.data?.data;
 
-		if (
-			statusCode === 409
-			&& payload?.requiresConfirmation
-			&& !force
-		) {
-			deleteConfirm.value.items = [
+		if (statusCode === 409 && payload?.requiresConfirmation && !force) {
+			openDeleteConfirm([
 				{
 					building,
 					relations: payload.relations ?? null,
 				},
-			];
-			deleteConfirm.value.visible = true;
+			]);
 			return;
 		}
 
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: message || 'Bina silinirken bir hata oluştu.',
-			life: 2500,
-		});
+		notify(
+			'error',
+			getFetchErrorMessage(fetchError) || 'Bina silinirken bir hata oluştu.',
+			2500,
+		);
 	}
 };
 
@@ -422,12 +435,7 @@ const confirmDeleteBuilding = async () => {
 
 const deleteSelectedBuildings = async () => {
 	if (!selectedBuildingIds.value.length) {
-		toast.add({
-			severity: 'warn',
-			summary: 'Uyarı',
-			detail: 'Lütfen silmek için en az bir bina seçin.',
-			life: 2000,
-		});
+		notify('warn', 'Lütfen silmek için en az bir bina seçin.');
 		return;
 	}
 
@@ -442,13 +450,7 @@ const deleteSelectedBuildings = async () => {
 
 		for (const building of selectedBuildings) {
 			try {
-				await $fetch('/api/location-buildings', {
-					method: 'DELETE',
-					body: {
-						id: building.id,
-						force: false,
-					},
-				});
+				await deleteBuildingRequest(building.id);
 
 				if (selectedBuilding.value?.id === building.id) {
 					selectedBuilding.value = null;
@@ -456,55 +458,35 @@ const deleteSelectedBuildings = async () => {
 				deletedCount += 1;
 			}
 			catch (error) {
-				const fetchError = error as {
-					statusCode?: number;
-					data?: {
-						statusCode?: number;
-						message?: string;
-						data?: {
-							requiresConfirmation?: boolean;
-							relations?: BuildingRelations;
-						};
-					};
-					message?: string;
-				};
-				const statusCode = fetchError?.statusCode ?? fetchError?.data?.statusCode;
+				const fetchError = error as DeleteBuildingFetchError;
+				const statusCode = getFetchErrorStatus(fetchError);
 				const payload = fetchError?.data?.data;
 
-				if (
-					statusCode === 409
-					&& payload?.requiresConfirmation
-				) {
+				if (statusCode === 409 && payload?.requiresConfirmation) {
 					pendingConfirmItems.push({
 						building,
 						relations: payload.relations ?? null,
 					});
 				}
 				else {
-					toast.add({
-						severity: 'error',
-						summary: 'Hata',
-						detail: fetchError?.data?.message ?? fetchError?.message ?? 'Bina silinirken bir hata oluştu.',
-						life: 2500,
-					});
+					notify(
+						'error',
+						getFetchErrorMessage(fetchError)
+						|| 'Bina silinirken bir hata oluştu.',
+						2500,
+					);
 				}
 			}
 		}
 
 		if (deletedCount > 0) {
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: `${deletedCount} bina silindi.`,
-				life: 2000,
-			});
+			notify('success', `${deletedCount} bina silindi.`);
 		}
 
 		await refreshBuildingOptions();
 
 		if (pendingConfirmItems.length) {
-			deleteConfirm.value.items = pendingConfirmItems;
-			deleteConfirm.value.visible = true;
+			openDeleteConfirm(pendingConfirmItems);
 		}
 		else {
 			selectedBuildingIds.value = [];
@@ -518,7 +500,7 @@ const deleteSelectedBuildings = async () => {
 watch(
 	() => [form.product.refill_date, form.product.refill_period],
 	([refillDate, refillPeriod]) => {
-		if (!refillDate) {
+		if (!refillDate || typeof refillPeriod !== 'number') {
 			form.product.next_refill_date = null;
 			return;
 		}
@@ -544,6 +526,10 @@ watch(
 		form.product.next_hydrostatic_test_date = nextRefillDate;
 	},
 );
+
+onBeforeRouteLeave(() => {
+	resetTransientState();
+});
 </script>
 
 <template>
@@ -726,7 +712,7 @@ watch(
 			</div>
 			<Button
 				label="Kaydet"
-				type="submit"
+				type="button"
 				class="w-full mt-8"
 				size="large"
 				@click="saveProduct"
@@ -739,13 +725,15 @@ watch(
 			:style="{ width: '32rem' }"
 		>
 			<span class="text-surface-500 dark:text-surface-400 block mb-6">
-				Bu ekrandan yeni bina ekleyebilir, varolan binaları yeniden adlandırabilir ve silebilirsin.
+				Bu ekrandan yeni bina ekleyebilir, varolan binaları yeniden
+				adlandırabilir ve silebilirsin.
 			</span>
 			<div
 				v-if="buildingManager.editingId"
 				class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
 			>
-				Düzenleme modu açık. Kaydı güncelledikten sonra istersen yeni bina eklemeye dönebilirsin.
+				Düzenleme modu açık. Kaydı güncelledikten sonra istersen yeni bina
+				eklemeye dönebilirsin.
 			</div>
 			<div class="form-item mb-4">
 				<label for="building-name">Bina adi</label>
@@ -760,14 +748,22 @@ watch(
 					type="button"
 					label="Guncelle"
 					:loading="buildingManager.updating"
-					:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+					:disabled="
+						buildingManager.saving
+							|| buildingManager.updating
+							|| buildingManager.deleting
+					"
 					@click="updateBuilding"
 				/>
 				<Button
 					type="button"
 					label="Yeni bina kaydet"
 					:loading="buildingManager.saving"
-					:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+					:disabled="
+						buildingManager.saving
+							|| buildingManager.updating
+							|| buildingManager.deleting
+					"
 					@click="saveNewBuilding"
 				/>
 				<Button
@@ -776,7 +772,11 @@ watch(
 					label="Vazgec"
 					severity="secondary"
 					text
-					:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+					:disabled="
+						buildingManager.saving
+							|| buildingManager.updating
+							|| buildingManager.deleting
+					"
 					@click="resetBuildingManagerForm"
 				/>
 			</div>
@@ -800,14 +800,20 @@ watch(
 							:key="building.id"
 							class="flex items-center justify-between gap-3 rounded border border-gray-200 px-3 py-2"
 						>
-							<span class="truncate text-sm font-medium">{{ building.name }}</span>
+							<span class="truncate text-sm font-medium">{{
+								building.name
+							}}</span>
 							<Button
 								type="button"
 								label="Duzenle"
 								severity="secondary"
 								text
 								size="small"
-								:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+								:disabled="
+									buildingManager.saving
+										|| buildingManager.updating
+										|| buildingManager.deleting
+								"
 								@click="startBuildingEdit(building)"
 							/>
 						</div>
@@ -821,7 +827,11 @@ watch(
 						filter
 						placeholder="Silmek için bina seçin"
 						class="w-full"
-						:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting"
+						:disabled="
+							buildingManager.saving
+								|| buildingManager.updating
+								|| buildingManager.deleting
+						"
 					/>
 					<div class="flex justify-end mb-12">
 						<Button
@@ -829,7 +839,12 @@ watch(
 							label="Secili binalari sil"
 							severity="danger"
 							:loading="buildingManager.deleting"
-							:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting || !selectedBuildingIds.length"
+							:disabled="
+								buildingManager.saving
+									|| buildingManager.updating
+									|| buildingManager.deleting
+									|| !selectedBuildingIds.length
+							"
 							@click="deleteSelectedBuildings"
 						/>
 					</div>
@@ -852,8 +867,8 @@ watch(
 			:closable="!deleteConfirm.deleting"
 		>
 			<span class="text-surface-700 block mb-4">
-				Seçili binalardan bazılarına bağlı kayıtlar var.
-				Onaylarsan bu veriler de kalıcı olarak silinecek.
+				Seçili binalardan bazılarına bağlı kayıtlar var. Onaylarsan bu veriler
+				de kalıcı olarak silinecek.
 			</span>
 			<ul class="list-disc pl-5 text-sm text-surface-600 mb-6">
 				<li
@@ -862,7 +877,11 @@ watch(
 				>
 					<b>{{ item.building.name }}</b>
 					<span v-if="item.relations">
-						({{ item.relations.locations }} konum, {{ item.relations.products }} YSC, {{ item.relations.transactions }} işlem, {{ item.relations.fillRecords }} dolum, {{ item.relations.inspections }} kontrol)
+						({{ item.relations.locations }} konum,
+						{{ item.relations.products }} YSC,
+						{{ item.relations.transactions }} işlem,
+						{{ item.relations.fillRecords }} dolum,
+						{{ item.relations.inspections }} kontrol)
 					</span>
 				</li>
 			</ul>
