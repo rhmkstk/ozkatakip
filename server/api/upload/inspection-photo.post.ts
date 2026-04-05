@@ -1,12 +1,15 @@
-import { requireTenantContext } from '~/server/utils/tenant';
+import { requireTenantMembership } from '~/server/utils/tenant';
+import { getAdminClient } from '~/server/utils/user-management';
 
 export default defineEventHandler(async (event) => {
 	try {
 		// const body = await readBody(event);
 		const formData = await readMultipartFormData(event);
-		const tenant = await requireTenantContext(event);
+		const { tenant } = await requireTenantMembership(event);
+		const supabase = process.env.SUPABASE_SERVICE_KEY
+			? await getAdminClient(event)
+			: event.context.supabase;
 
-		console.log('formData:', formData);
 		if (!formData || !formData.length) {
 			throw new Error('No file uploaded');
 		}
@@ -17,9 +20,28 @@ export default defineEventHandler(async (event) => {
 			throw new Error('File not found in form data');
 		}
 
+		const getFileExtension = () => {
+			const fileName = filePart.filename ?? '';
+			const fileNameExtension = fileName.includes('.') ? fileName.split('.').pop()?.toLowerCase() : '';
+
+			if (fileNameExtension) {
+				return `.${fileNameExtension}`;
+			}
+
+			const mimeExtensionMap: Record<string, string> = {
+				'image/jpeg': '.jpg',
+				'image/png': '.png',
+				'image/webp': '.webp',
+				'image/gif': '.gif',
+				'image/svg+xml': '.svg',
+			};
+
+			return mimeExtensionMap[filePart.type || ''] ?? '';
+		};
+
 		const now = new Date();
-		const filePath = `${tenant.slug}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${Date.now()}`;
-		const { error: uploadError } = await event.context.supabase.storage.from('inspection-photos')
+		const filePath = `${tenant.slug}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${Date.now()}${getFileExtension()}`;
+		const { error: uploadError } = await supabase.storage.from('inspection-photos')
 			.upload(filePath, filePart.data, {
 				contentType: filePart.type || 'image/jpeg',
 			});
@@ -37,7 +59,7 @@ export default defineEventHandler(async (event) => {
 		// 	return signedUrlError;
 		// }
 
-		return {filePath};
+		return { filePath };
 	}
 	catch (error: unknown) {
 		console.log('ERROR:', error);
