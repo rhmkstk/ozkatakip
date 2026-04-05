@@ -2,9 +2,22 @@
 type Props = {
 	src: string | null;
 };
-defineProps<Props>();
-
+const props = defineProps<Props>();
 const showModal = ref(false);
+
+const imageSrc = computed(() => {
+	if (!props.src) {
+		return '';
+	}
+
+	const normalizedPath = props.src
+		.split('/')
+		.filter(Boolean)
+		.map(segment => encodeURIComponent(segment))
+		.join('/');
+
+	return `/api/storage/inspection-photos/${normalizedPath}`;
+});
 
 const handleKeyDown = (event: KeyboardEvent) => {
 	if (event.key === 'Escape') {
@@ -26,7 +39,7 @@ onUnmounted(() => {
 		<!-- Thumbnail with hover zoom -->
 		<button v-if="src" @click="showModal = true">
 			<img
-				:src="`/api/storage/inspection-photos/${encodeURIComponent(src)}`"
+				:src="imageSrc"
 				alt="Zoomable"
 				class="transition-transform duration-300 ease-in-out transform hover:scale-110 cursor-pointer size-20 object-cover rounded-md"
 			>
@@ -58,7 +71,7 @@ onUnmounted(() => {
 					<!-- Full-height Image -->
 					<img
 						v-if="src"
-						:src="`/api/storage/inspection-photos/${encodeURIComponent(src)}`"
+						:src="imageSrc"
 						alt="Full view"
 						class="object-contain h-screen w-full"
 					>
