@@ -13,7 +13,7 @@ export const headerLabels = {
   pressure: "Basınç",
   position: "Pozisyon",
   unit: "Ağırlık",
-  working_mechanism: "Çalışma mekanizması",
+  working_mechanism: "Tetik (Çalışma mekanizması)",
   model_type: "Modeli / tipi",
   refill_date: "Dolum tarihi",
   next_refill_date: "Yeniden dolum tarihi",
@@ -161,16 +161,16 @@ export const productStatusOptions = Object.entries(productStatusTypeLabels).map(
   }),
 );
 export const inspectionFormFields = [
+	{ key: 'is_expiry', label: headerLabels.is_expiry },
+	{ key: 'pressure', label: headerLabels.pressure },
+	{ key: 'working_mechanism', label: headerLabels.working_mechanism },
 	{ key: 'position', label: headerLabels.position },
 	{ key: 'body', label: headerLabels.body },
-	{ key: 'control_card', label: headerLabels.control_card },
 	{ key: 'hose_and_nozzle', label: headerLabels.hoze_and_nozzle },
 	{ key: 'instruction_and_label', label: headerLabels.instruction_and_label },
 	{ key: 'mass', label: headerLabels.mass },
 	{ key: 'pin_and_seal', label: headerLabels.pin_and_seal },
-	{ key: 'pressure', label: headerLabels.pressure },
-	{ key: 'working_mechanism', label: headerLabels.working_mechanism },
-	{ key: 'is_expiry', label: headerLabels.is_expiry },
+	{ key: 'control_card', label: headerLabels.control_card },
 ];
 
 export const fillFormFields = [

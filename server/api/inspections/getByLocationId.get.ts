@@ -16,8 +16,8 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-			const { data, error } = await supabase
-				.from('inspections')
+		const { data, error } = await supabase
+			.from('inspections')
 			.select(`
         *,
         products!inner(
@@ -36,8 +36,8 @@ export default defineEventHandler(async (event) => {
           )
         )
       `)
-				.eq('tenant_id', tenant.id)
-				.eq('products.locations.location_id', String(locationID))
+			.eq('tenant_id', tenant.id)
+			.eq('products.locations.location_id', String(locationID))
 			.not('created_at', 'is', null)
 			.order('created_at', { ascending: false })
 			.limit(1);
@@ -47,7 +47,30 @@ export default defineEventHandler(async (event) => {
 				message: error.message,
 			});
 		}
-		return data ?? [];
+		const [latestInspection] = data ?? [];
+		if (!latestInspection?.user_id) {
+			return data ?? [];
+		}
+
+		const { data: inspector, error: inspectorError } = await supabase
+			.from('app_users')
+			.select('first_name, last_name')
+			.eq('id', latestInspection.user_id)
+			.maybeSingle();
+
+		if (inspectorError) {
+			throw createError({
+				statusCode: 500,
+				message: inspectorError.message,
+			});
+		}
+
+		return [
+			{
+				...latestInspection,
+				inspector,
+			},
+		];
 	}
 	catch (error: unknown) {
 		console.log('ERROR:', error);
