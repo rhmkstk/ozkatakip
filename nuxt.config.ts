@@ -161,7 +161,7 @@ export default defineNuxtConfig({
 			'pwa/apple-touch-icon-180x180.png',
 		],
 		manifest: {
-			id: '/login?source=pwa',
+			id: '/mobile?source=pwa',
 			name: 'ozkatakip',
 			short_name: 'ozkatakip',
 			description: 'ozkatakip mobil saha uygulamasi',
@@ -169,7 +169,7 @@ export default defineNuxtConfig({
 			background_color: '#B62472',
 			display: 'standalone',
 			scope: '/',
-			start_url: '/login?source=pwa',
+			start_url: '/mobile?source=pwa',
 			lang: 'tr',
 			orientation: 'portrait',
 			icons: [
