@@ -1,5 +1,6 @@
 <template>
 	<div>
+		<NuxtPwaManifest />
 		<NuxtLoadingIndicator
 			color="#0ea5e9"
 			:height="3"
