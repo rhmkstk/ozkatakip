@@ -16,5 +16,17 @@
 }
 
 body {
-  @apply text-gray-900
+  @apply text-gray-900 bg-slate-100;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
 }

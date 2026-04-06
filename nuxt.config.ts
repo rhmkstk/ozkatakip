@@ -1,8 +1,8 @@
+import { cp } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import Aura from '@primeuix/themes/aura';
 import { tr as primeLocaleTr } from 'primelocale/js/tr.js';
-import { cp } from 'node:fs/promises';
-import { resolve } from 'node:path';
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -11,6 +11,7 @@ export default defineNuxtConfig({
 		'@samk-dev/nuxt-vcalendar',
 		'@primevue/nuxt-module',
 		'@nuxt/eslint',
+		'@vite-pwa/nuxt',
 	],
 	ssr: false,
 	devtools: { enabled: true },
@@ -20,7 +21,61 @@ export default defineNuxtConfig({
 			mode: 'out-in',
 		},
 		head: {
+			htmlAttrs: {
+				lang: 'tr',
+			},
+			meta: [
+				{
+					name: 'viewport',
+					content: 'width=device-width, initial-scale=1, viewport-fit=cover',
+				},
+				{
+					name: 'theme-color',
+					content: '#225AEB',
+				},
+				{
+					name: 'mobile-web-app-capable',
+					content: 'yes',
+				},
+				{
+					name: 'apple-mobile-web-app-capable',
+					content: 'yes',
+				},
+				{
+					name: 'apple-mobile-web-app-status-bar-style',
+					content: 'default',
+				},
+				{
+					name: 'apple-mobile-web-app-title',
+					content: 'ozkatakip',
+				},
+			],
 			link: [
+				{
+					rel: 'icon',
+					type: 'image/png',
+					href: '/pwa/icon-64x64.png',
+				},
+				{
+					rel: 'apple-touch-icon',
+					sizes: '120x120',
+					href: '/pwa/apple-touch-icon-120x120.png',
+				},
+				{
+					rel: 'apple-touch-icon',
+					sizes: '152x152',
+					href: '/pwa/apple-touch-icon-152x152.png',
+				},
+				{
+					rel: 'apple-touch-icon',
+					sizes: '167x167',
+					href: '/pwa/apple-touch-icon-167x167.png',
+				},
+				{
+					rel: 'apple-touch-icon',
+					sizes: '180x180',
+					href: '/pwa/apple-touch-icon-180x180.png',
+				},
 				{
 					rel: 'preconnect',
 					href: 'https://fonts.googleapis.com',
@@ -52,6 +107,25 @@ export default defineNuxtConfig({
 	vite: {
 		plugins: [tailwindcss()],
 	},
+	hooks: {
+		async 'nitro:build:public-assets'(nitro) {
+			const rootDir = nitro.options.rootDir;
+
+			await cp(resolve(rootDir, 'public'), nitro.options.output.publicDir, {
+				force: true,
+				recursive: true,
+			});
+
+			await cp(
+				resolve(rootDir, '.nuxt/dist/client'),
+				nitro.options.output.publicDir,
+				{
+					force: true,
+					recursive: true,
+				},
+			);
+		},
+	},
 	eslint: {
 		config: {
 			stylistic: {
@@ -76,6 +150,64 @@ export default defineNuxtConfig({
 			locale: primeLocaleTr,
 		},
 	},
+	pwa: {
+		registerType: 'autoUpdate',
+		includeAssets: [
+			'app-icon.png',
+			'pwa/icon-64x64.png',
+			'pwa/apple-touch-icon-120x120.png',
+			'pwa/apple-touch-icon-152x152.png',
+			'pwa/apple-touch-icon-167x167.png',
+			'pwa/apple-touch-icon-180x180.png',
+		],
+		manifest: {
+			id: '/login?source=pwa',
+			name: 'ozkatakip',
+			short_name: 'ozkatakip',
+			description: 'ozkatakip mobil saha uygulamasi',
+			theme_color: '#225AEB',
+			background_color: '#B62472',
+			display: 'standalone',
+			scope: '/',
+			start_url: '/login?source=pwa',
+			lang: 'tr',
+			orientation: 'portrait',
+			icons: [
+				{
+					src: '/pwa/icon-192x192.png',
+					sizes: '192x192',
+					type: 'image/png',
+				},
+				{
+					src: '/pwa/icon-192x192-maskable.png',
+					sizes: '192x192',
+					type: 'image/png',
+					purpose: 'maskable',
+				},
+				{
+					src: '/pwa/icon-512x512.png',
+					sizes: '512x512',
+					type: 'image/png',
+				},
+				{
+					src: '/pwa/icon-512x512-maskable.png',
+					sizes: '512x512',
+					type: 'image/png',
+					purpose: 'maskable',
+				},
+			],
+		},
+		workbox: {
+			globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff2}'],
+		},
+		client: {
+			installPrompt: true,
+		},
+		devOptions: {
+			enabled: false,
+			suppressWarnings: true,
+		},
+	},
 	supabase: {
 		url: process.env.SUPABASE_URL,
 		key: process.env.SUPABASE_KEY,
@@ -84,24 +216,5 @@ export default defineNuxtConfig({
 		//   login: '/',
 		//   callback: '/confirm',
 		// },
-	},
-	hooks: {
-		async 'nitro:build:public-assets'(nitro) {
-			const rootDir = nitro.options.rootDir;
-
-			await cp(resolve(rootDir, 'public'), nitro.options.output.publicDir, {
-				force: true,
-				recursive: true,
-			});
-
-			await cp(
-				resolve(rootDir, '.nuxt/dist/client'),
-				nitro.options.output.publicDir,
-				{
-					force: true,
-					recursive: true,
-				},
-			);
-		},
 	},
 });
