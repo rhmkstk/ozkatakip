@@ -53,6 +53,16 @@ function loadImage(src: string) {
 	});
 }
 
+function getTenantLogoPath(tenantSlug: string) {
+	const normalizedTenantSlug = tenantSlug.trim().toLowerCase();
+
+	if (normalizedTenantSlug.includes('polimetal')) {
+		return '/assets/logo/polimetal-logo.jpeg';
+	}
+
+	return '/assets/logo/tuprag-logo.jpeg';
+}
+
 export async function generateLabelsPng(products: Product[], tenantSlug: string) {
 	const MM_TO_PX = 300 / 25.4; // 300 DPI
 	// Yazici kafa genisligi sinirina uyum icin etiket uzun kenari feed yonunde kullaniliyor.
@@ -63,12 +73,12 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 	const SAFE_MARGIN_PX = 24;
 
 	let providerLogo: HTMLImageElement | null = null;
-	let tupragLogo: HTMLImageElement | null = null;
+	let tenantLogo: HTMLImageElement | null = null;
 
 	try {
-		[providerLogo, tupragLogo] = await Promise.all([
+		[providerLogo, tenantLogo] = await Promise.all([
 			loadImage('/assets/logo/provider-logo.jpeg'),
-			loadImage('/assets/logo/tuprag-logo.jpeg'),
+			loadImage(getTenantLogoPath(tenantSlug)),
 		]);
 	}
 	catch (error) {
@@ -91,7 +101,7 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 		ctx.fillRect(0, 0, LABEL_WIDTH_PX, LABEL_HEIGHT_PX);
 
 		const INFO_BLOCK_HEIGHT_PX = 152;
-		const logosRowHeightPx = providerLogo && tupragLogo ? 126 : 0;
+		const logosRowHeightPx = providerLogo && tenantLogo ? 126 : 0;
 		const qrMaxWidth = LABEL_WIDTH_PX - SAFE_MARGIN_PX * 2;
 		const qrMaxHeight
 			= LABEL_HEIGHT_PX
@@ -147,7 +157,7 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 			ctx.fillText(fitted, textX, textY + lineIndex * lineHeight);
 		});
 
-		if (providerLogo && tupragLogo) {
+		if (providerLogo && tenantLogo) {
 			const logosX = SAFE_MARGIN_PX;
 			const logosY = textY + INFO_BLOCK_HEIGHT_PX;
 			const logosWidth = LABEL_WIDTH_PX - SAFE_MARGIN_PX * 2;
@@ -171,7 +181,7 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 			};
 
 			drawContain(
-				tupragLogo,
+				tenantLogo,
 				logosX,
 				logosY,
 				singleLogoWidth,
@@ -184,7 +194,6 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 				singleLogoWidth,
 				logosHeight,
 			);
-
 		}
 
 		const blob = await new Promise<Blob>(resolve =>
