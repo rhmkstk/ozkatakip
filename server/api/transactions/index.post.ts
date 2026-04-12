@@ -1,9 +1,10 @@
 import type { TablesInsert } from '~/types/database.types';
+import type { MobileTransactionPayload } from '~/types/mobile-transaction';
 import { requireTenantContext, requireTenantProduct } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
-		const body = await readBody<TablesInsert<'transactions'>>(event);
+		const body = await readBody<MobileTransactionPayload>(event);
 		const tenant = await requireTenantContext(event);
 
 		await requireTenantProduct(event, Number(body.product_id));
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
 			.insert({
 				...body,
 				tenant_id: tenant.id,
-			})
+			} satisfies TablesInsert<'transactions'>)
 			.select()
 			.single();
 

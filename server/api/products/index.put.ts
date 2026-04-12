@@ -1,9 +1,10 @@
 // product.put.ts
 import { requireTenantContext } from '~/server/utils/tenant';
+import type { MobileProductPatchPayload } from '~/types/mobile-transaction';
 
 export default defineEventHandler(async (event) => {
 	try {
-		const body = await readBody(event);
+		const body = await readBody<MobileProductPatchPayload>(event);
 		const tenant = await requireTenantContext(event);
 
 		if (!body?.id) {
@@ -13,14 +14,32 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		const { id, ...updateData } = body;
+		const {
+			id,
+			current_status,
+			refill_period,
+			refill_date,
+			next_refill_date,
+			hydrostatic_test_date,
+			next_hydrostatic_test_date,
+		} = body;
+
+		const updateData = {
+			...(current_status !== undefined ? { current_status } : {}),
+			...(refill_period !== undefined ? { refill_period } : {}),
+			...(refill_date !== undefined ? { refill_date } : {}),
+			...(next_refill_date !== undefined ? { next_refill_date } : {}),
+			...(hydrostatic_test_date !== undefined ? { hydrostatic_test_date } : {}),
+			...(next_hydrostatic_test_date !== undefined ? { next_hydrostatic_test_date } : {}),
+		};
 
 		const { data, error } = await event.context.supabase
 			.from('products')
 			.update(updateData)
 			.eq('tenant_id', tenant.id)
 			.eq('id', id)
-			.select(); // return the updated row(s)
+			.select()
+			.single();
 
 		if (error) {
 			throw createError({

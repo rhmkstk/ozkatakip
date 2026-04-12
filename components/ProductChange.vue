@@ -1,9 +1,11 @@
 <script lang="ts" setup>
+import type {
+	MobileTransactionContext,
+	MobileTransactionCurrentProductData,
+} from '~/types/mobile-transaction';
+
 type Props = {
-	currentProductData: {
-		product: unknown;
-		location: unknown;
-	};
+	currentProductData: MobileTransactionCurrentProductData;
 };
 
 type Emits = {
@@ -19,8 +21,8 @@ const loading = ref(false);
 const state = ref(0);
 const newProductId = ref('');
 const newProductData = reactive({
-	location: null,
-	product: null,
+	location: null as MobileTransactionCurrentProductData['location'] | null,
+	product: null as MobileTransactionCurrentProductData['product'] | null,
 });
 
 const currentProductSummaryCardData = computed(() => {
@@ -36,7 +38,7 @@ const currentProductSummaryCardData = computed(() => {
 			},
 			{
 				key: 'Bina',
-				value: currentProductData.location.building_id.name,
+				value: currentProductData.location.building_id?.name,
 			},
 			{
 				key: 'Oda',
@@ -60,7 +62,7 @@ const newProductSummaryCardData = computed(() => {
 			},
 			{
 				key: 'Bina',
-				value: newProductData.location.building_id.name,
+				value: newProductData.location.building_id?.name,
 			},
 			{
 				key: 'Oda',
@@ -74,20 +76,17 @@ const newProductSummaryCardData = computed(() => {
 async function getNewProductData() {
 	try {
 		loading.value = true;
-		const location = await $fetch('/api/locations/getByLocationId', {
-			params: { location_id: newProductId.value },
-		});
-		if (!location || location.length === 0) {
-			throw new Error('Location not found');
-		}
-		const product = await $fetch('/api/products/getByLocationId', {
-			params: { location_id: location[0].id },
-		});
-		if (!product || product.length === 0) {
+		const mobileTransaction = await $fetch<MobileTransactionContext>(
+			'/api/mobile/transactions/getByLocationId',
+			{
+				params: { location_id: newProductId.value },
+			},
+		);
+		if (!mobileTransaction?.location || !mobileTransaction?.product) {
 			throw new Error('Product not found');
 		}
-		newProductData.location = location[0];
-		newProductData.product = product[0];
+		newProductData.location = mobileTransaction.location;
+		newProductData.product = mobileTransaction.product;
 	}
 	catch (error) {
 		console.error('Error fetching product data:', error);
@@ -102,12 +101,16 @@ async function getNewProductData() {
 async function applyChanges() {
 	loading.value = true;
 	try {
-		const currentResponse = await $fetch('/api/products', {
-			method: 'PUT',
+		if (!newProductData.product?.id || !newProductData.location?.location_id) {
+			throw new Error('Missing new product data');
+		}
+
+		const currentResponse = await $fetch('/api/products/switch', {
+			method: 'POST',
 			body: {
-				...currentProductData.product,
-				location: newProductData.product.location,
-				current_status: 'damaged',
+				currentProduct: currentProductData.product,
+				newProduct: newProductData.product,
+				details: `arizali YSC no: ${currentProductData.location.location_id}, yeni YSC no: ${newProductData.location.location_id}`,
 			},
 		});
 
@@ -120,15 +123,6 @@ async function applyChanges() {
 			});
 			return;
 		}
-		await $fetch('/api/products', {
-			method: 'PUT',
-			body: {
-				...newProductData.product,
-				location: currentProductData.product.location,
-				current_status: 'active',
-			},
-		});
-
 		toast.add({
 			severity: 'success',
 			summary: 'Başarılı',

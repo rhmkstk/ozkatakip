@@ -2,6 +2,12 @@
 import imageCompression from "browser-image-compression";
 import type { FileUploadSelectEvent } from "primevue";
 import type { Database } from "~/types/database.types";
+import type {
+  MobileFillPayload,
+  MobileInspectionPayload,
+  MobileProductPatchPayload,
+  MobileTransactionPayload,
+} from "~/types/mobile-transaction";
 import { handleUploadImage } from "~/utils/handleUploadImage";
 import {
   imageCompressionOptions,
@@ -9,18 +15,20 @@ import {
   fillFormFields,
   productStatusTypeLabels,
 } from "~/constants";
-
-definePageMeta({
-  layout: "mobile",
-});
+import { useMobileTransactionContext } from "~/composables/use-mobile-transaction-context";
+import { useMobileTransactionActions } from "~/composables/use-mobile-transaction-actions";
 
 const route = useRoute();
 const supabase = useSupabaseClient();
 const toast = useToast();
 const { toTenantPath } = useTenant();
+const {
+  createInspection,
+  createFillRecord,
+  updateProduct,
+  createTransaction,
+} = useMobileTransactionActions();
 const activeTab = ref("0");
-const lastInspectionDate = ref<Date | null>(null);
-const showInspectionAlert = ref(false);
 const compressedImage = ref<File | null>(null);
 const inspectionFormLoading = ref(false);
 const drawersShow = reactive({
@@ -95,62 +103,14 @@ const controlFields = [
   "is_expiry",
 ];
 
-const { data, status, error } = await useAsyncData("product", async () => {
-  const location = await $fetch("/api/locations/getByLocationId", {
-    params: { location_id: route.params.id },
-  });
-
-  if (!location) {
-    throw new Error("Location not found");
-  }
-  const product = await $fetch("/api/products/getByLocationId", {
-    params: { location_id: location[0].id },
-  });
-
-  if (!product || product.length === 0) {
-    throw new Error("Product not found");
-  }
-
-  return { product: product[0], location: location[0] };
-});
-
-const inspectionAlert = computed(() => {
-  const formattedDate = lastInspectionDate.value
-    ? new Date(lastInspectionDate.value).toLocaleDateString("tr-TR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "";
-
-  return `  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
-});
-
-const isRefillDateExpired = computed(() => {
-  const nextRefillDate = data.value?.product.next_refill_date;
-
-  if (!nextRefillDate) {
-    return false;
-  }
-
-  const refillDate = new Date(nextRefillDate);
-  const today = new Date();
-
-  refillDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-
-  return refillDate < today;
-});
-
-const refillDateAlert = computed(() => {
-  const nextRefillDate = data.value?.product.next_refill_date;
-
-  if (!nextRefillDate) {
-    return "";
-  }
-
-  return `Bu ürünün dolum süresi ${formatTurkishDate(nextRefillDate)} tarihinde dolmuş. Lütfen dolum işlemini planlayın.`;
-});
+const {
+  data,
+  status,
+  showInspectionAlert,
+  inspectionAlert,
+  isRefillDateExpired,
+  refillDateAlert,
+} = await useMobileTransactionContext(String(route.params.id));
 
 const checkInspectionForm = () => {
   return controlFields.every(
@@ -184,31 +144,39 @@ async function saveInspectionForm() {
   const result = checkInspectionForm();
   inspectionFormLoading.value = true;
   try {
+    const productId = data.value?.product.id;
     const userId = (await supabase.auth.getUser()).data.user?.id;
+
+    if (!productId || !userId) {
+      throw new Error("Missing required inspection context");
+    }
+
     if (compressedImage.value) {
       inspectionForm.photo_url = await handleUploadImage(compressedImage.value);
     }
-    const response = await $fetch("/api/inspections", {
-      method: "POST",
-      body: {
-        ...inspectionForm,
-        fire_extinguisher_id: data.value?.product.id,
-        result,
-        user_id: userId,
-        date: formatDateOnlyForApi(new Date()),
-      },
-    });
+    const inspectionPayload: MobileInspectionPayload = {
+      ...inspectionForm,
+      fire_extinguisher_id: productId,
+      result,
+      user_id: userId,
+      date: formatDateOnlyForApi(new Date()),
+    };
+    const response = await createInspection(inspectionPayload);
 
     if (response) {
-      $fetch("/api/transactions", {
-        method: "POST",
-        body: {
-          type: "inspection",
-          user: userId,
-          product_id: data.value?.product.id,
-          details: response.id,
-        },
-      });
+      const locationId = data.value?.location.location_id;
+
+      if (!locationId) {
+        throw new Error("Missing inspection location id");
+      }
+
+      const transactionPayload: MobileTransactionPayload = {
+        type: "inspection",
+        user: userId,
+        product_id: productId,
+        details: `YSC no: ${locationId}`,
+      };
+      createTransaction(transactionPayload);
       inspectionFormLoading.value = false;
       if (result) {
         drawersShow.success = true;
@@ -241,18 +209,27 @@ async function saveFillRecord() {
     return;
   }
   inspectionFormLoading.value = true;
+  const productId = data.value?.product.id;
   const userId = (await supabase.auth.getUser()).data.user?.id;
   try {
-    const response = await $fetch("/api/fill", {
-      method: "POST",
-      body: {
-        ...fillForm,
-        product_id: data.value?.product.id,
-        user_id: userId,
-      },
-    });
+    if (!productId || !userId) {
+      throw new Error("Missing required fill context");
+    }
+
+    const fillPayload: MobileFillPayload = {
+      ...fillForm,
+      product_id: productId,
+      user_id: userId,
+    };
+    const response = await createFillRecord(fillPayload);
 
     if (response) {
+      const locationId = data.value?.location.location_id;
+
+      if (!locationId) {
+        throw new Error("Missing fill location id");
+      }
+
       const refillPeriod = data.value?.product.refill_period || 2;
       const now = new Date();
       const fillDate = now.toISOString().split("T")[0];
@@ -267,35 +244,32 @@ async function saveFillRecord() {
         .toISOString()
         .split("T")[0];
 
-      await $fetch("/api/products", {
-        method: "PUT",
-        body: {
-          ...data.value?.product,
-          current_status: "active",
-          ...(fillForm.filling
-            ? {
-                refill_date: fillDate,
-                next_refill_date: formattedRefillDate,
-              }
-            : {}),
-          ...(fillForm.hydrostatic_pressure_test
-            ? {
-                hydrostatic_test_date: fillDate,
-                next_hydrostatic_test_date: formattedHydrostaticTestDate,
-              }
-            : {}),
-        },
-      });
+      const productPatchPayload: MobileProductPatchPayload = {
+        id: productId,
+        current_status: "active",
+        ...(fillForm.filling
+          ? {
+              refill_date: fillDate,
+              next_refill_date: formattedRefillDate,
+            }
+          : {}),
+        ...(fillForm.hydrostatic_pressure_test
+          ? {
+              hydrostatic_test_date: fillDate,
+              next_hydrostatic_test_date: formattedHydrostaticTestDate,
+            }
+          : {}),
+      };
 
-      $fetch("/api/transactions", {
-        method: "POST",
-        body: {
-          type: "fill",
-          user: userId,
-          product_id: data.value?.product.id,
-          details: response.id,
-        },
-      });
+      await updateProduct(productPatchPayload);
+
+      const transactionPayload: MobileTransactionPayload = {
+        type: "fill",
+        user: userId,
+        product_id: productId,
+        details: `YSC no: ${locationId}`,
+      };
+      createTransaction(transactionPayload);
       drawersShow.success = true;
     }
   } catch (error) {
@@ -310,29 +284,6 @@ async function saveFillRecord() {
     inspectionFormLoading.value = false;
   }
 }
-
-function isInSameMonth(dateInput: Date): boolean {
-  const date = new Date(dateInput);
-  const now = new Date();
-
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth()
-  );
-}
-
-onMounted(async () => {
-  const id = route.params.id as string;
-
-  const data = await $fetch("/api/inspections/getByLocationId", {
-    params: { location_id: id },
-  });
-
-  if (data?.[0] && isInSameMonth(new Date(data[0].created_at))) {
-    lastInspectionDate.value = new Date(data[0].created_at);
-    showInspectionAlert.value = true;
-  }
-});
 </script>
 
 <template>
@@ -399,7 +350,7 @@ onMounted(async () => {
               <i class="ri-map-pin-line -mt-0.5" />
               <p class="text-sm text-gray-700">
                 Konum:
-                <b>{{ data.location.room }} , {{ data.location.building_id.name }}</b>
+                <b>{{ data.location.room }} , {{ data.location.building_id?.name }}</b>
               </p>
             </div>
             <div class="flex space-x-1 mt-1">
@@ -477,8 +428,6 @@ onMounted(async () => {
                   <Textarea v-model="inspectionForm.note" rows="3" />
                 </div>
                 <div class="flex flex-col items-start gap-2">
-                  <!-- auto attributesi dosyanin select olduktan hemen sonra otomatik olarak update olmasini sagliyor.
-										Ayni zamanda yuklenen dosyanin isminin gozukmesini engelledigi icin kullandim. -->
                   <FileUpload
                     mode="basic"
                     custom-upload
@@ -539,9 +488,10 @@ onMounted(async () => {
       style="height: auto"
     >
       <InspectionStepper
+        v-if="data?.product && data?.location"
         :current-product-data="{
-          product: data?.product,
-          location: data?.location,
+          product: data.product,
+          location: data.location,
         }"
         @close="drawersShow.change = false"
       />

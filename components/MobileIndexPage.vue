@@ -1,8 +1,4 @@
 <script setup lang="ts">
-definePageMeta({
-	layout: 'mobile',
-});
-
 const locationId = ref<string | null>('');
 const showScanner = ref(false);
 const { toTenantPath } = useTenant();

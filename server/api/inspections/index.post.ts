@@ -1,9 +1,10 @@
 import type { TablesInsert } from '~/types/database.types';
+import type { MobileInspectionPayload } from '~/types/mobile-transaction';
 import { requireTenantContext, requireTenantProduct } from '~/server/utils/tenant';
 
 export default defineEventHandler(async (event) => {
 	try {
-		const body = await readBody<TablesInsert<'inspections'>>(event);
+		const body = await readBody<MobileInspectionPayload>(event);
 		const tenant = await requireTenantContext(event);
 
 		if (body.fire_extinguisher_id) {
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
 			.insert({
 				...body,
 				tenant_id: tenant.id,
-			})
+			} satisfies TablesInsert<'inspections'>)
 			.select()
 			.single();
 
@@ -39,8 +40,15 @@ export default defineEventHandler(async (event) => {
 	catch (error: unknown) {
 		console.log('ERROR:', error);
 		if (error instanceof Error) {
+			const statusCode = (
+				'statusCode' in error
+				&& typeof error.statusCode === 'number'
+			)
+				? error.statusCode
+				: 500;
+
 			throw createError({
-				statusCode: (error as any).statusCode || 500,
+				statusCode,
 				message: error.message,
 			});
 		}
