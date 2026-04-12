@@ -1,5 +1,3 @@
-import { cp } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import Aura from '@primeuix/themes/aura';
 import { tr as primeLocaleTr } from 'primelocale/js/tr.js';
@@ -107,25 +105,6 @@ export default defineNuxtConfig({
 	vite: {
 		plugins: [tailwindcss()],
 	},
-	hooks: {
-		async 'nitro:build:public-assets'(nitro) {
-			const rootDir = nitro.options.rootDir;
-
-			await cp(resolve(rootDir, 'public'), nitro.options.output.publicDir, {
-				force: true,
-				recursive: true,
-			});
-
-			await cp(
-				resolve(rootDir, '.nuxt/dist/client'),
-				nitro.options.output.publicDir,
-				{
-					force: true,
-					recursive: true,
-				},
-			);
-		},
-	},
 	eslint: {
 		config: {
 			stylistic: {
@@ -151,6 +130,9 @@ export default defineNuxtConfig({
 		},
 	},
 	pwa: {
+		strategies: 'injectManifest',
+		srcDir: 'service-worker',
+		filename: 'sw.ts',
 		registerType: 'autoUpdate',
 		includeAssets: [
 			'app-icon.png',
@@ -197,7 +179,7 @@ export default defineNuxtConfig({
 				},
 			],
 		},
-		workbox: {
+		injectManifest: {
 			globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff2}'],
 		},
 		client: {

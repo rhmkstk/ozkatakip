@@ -1,4 +1,5 @@
 import type { MobileTransactionContext } from '~/types/mobile-transaction';
+import { getOfflineAwareMobileTransactionContext } from '~/utils/mobile-offline-sync';
 
 export async function fetchMobileTransactionContext(locationId: string) {
 	return await $fetch<MobileTransactionContext>(
@@ -10,10 +11,29 @@ export async function fetchMobileTransactionContext(locationId: string) {
 }
 
 export async function useMobileTransactionContext(locationId: string) {
+	const { activeTenantSlug } = useTenant();
+	const contextSource = useState<'network' | 'cache' | 'empty'>(
+		`mobile-transaction-source-${locationId}`,
+		() => 'network',
+	);
+	const hasCachedFallback = useState(
+		`mobile-transaction-has-cache-${locationId}`,
+		() => false,
+	);
 	const { data, status } = await useAsyncData<MobileTransactionContext>(
 		`mobile-transaction-${locationId}`,
 		async () => {
-			return await fetchMobileTransactionContext(locationId);
+			if (!activeTenantSlug.value) {
+				return await fetchMobileTransactionContext(locationId);
+			}
+
+			const result = await getOfflineAwareMobileTransactionContext(
+				activeTenantSlug.value,
+				locationId,
+			);
+			contextSource.value = result.source;
+			hasCachedFallback.value = result.hasCachedFallback;
+			return result.context;
 		},
 	);
 
@@ -76,5 +96,7 @@ export async function useMobileTransactionContext(locationId: string) {
 		inspectionAlert,
 		isRefillDateExpired,
 		refillDateAlert,
+		contextSource,
+		hasCachedFallback,
 	};
 }

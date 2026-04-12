@@ -2,14 +2,13 @@
 import type { FileUploadSelectEvent } from 'primevue';
 import imageCompression from 'browser-image-compression';
 import { imageCompressionOptions } from '~/constants';
-import { fetchMobileTransactionContext } from '~/composables/use-mobile-transaction-context';
 import { useMobileTransactionActions } from '~/composables/use-mobile-transaction-actions';
-import { handleUploadImage } from '~/utils/handleUploadImage';
+import { useMobileOfflineState } from '~/composables/use-mobile-offline-state';
+import { getOfflineAwareMobileTransactionContext } from '~/utils/mobile-offline-sync';
 import type {
 	MobileProductPatchPayload,
 	MobileTransactionCurrentProductData,
 	MobileInspectionPayload,
-	MobileTransactionPayload,
 } from '~/types/mobile-transaction';
 
 type Props = {
@@ -24,12 +23,13 @@ const { currentProductData } = defineProps<Props>();
 
 const supabase = useSupabaseClient();
 const toast = useToast();
+const { activeTenantSlug } = useTenant();
 const {
-	createInspection,
-	createTransaction,
-	switchProducts,
-	updateProduct,
+	submitInspection,
+	submitProductSwitch,
+	submitProductUpdate,
 } = useMobileTransactionActions();
+const { syncNow } = useMobileOfflineState();
 const compressedImage = ref<File | null>(null);
 const newProductData = reactive<NewProductData>({
 	location: null,
@@ -142,7 +142,14 @@ async function getNewProductData(
 ) {
 	try {
 		loading.value = true;
-		const mobileTransaction = await fetchMobileTransactionContext(newLocationId);
+		if (!activeTenantSlug.value) {
+			throw new Error('Tenant slug missing');
+		}
+		const result = await getOfflineAwareMobileTransactionContext(
+			activeTenantSlug.value,
+			newLocationId,
+		);
+		const mobileTransaction = result.context;
 		if (!mobileTransaction?.location || !mobileTransaction?.product) {
 			throw new Error('Product not found');
 		}
@@ -182,10 +189,14 @@ async function updateNewProductRefillPeriod() {
 
 	loading.value = true;
 	try {
-		await updateProduct({
-			id: newProductData.product.id,
-			refill_period: selectedNewProductRefillPeriod.value,
-		} satisfies MobileProductPatchPayload);
+		const response = await submitProductUpdate({
+			locationId: newProductData.location.location_id,
+			productId: newProductData.product.id,
+			patch: {
+				id: newProductData.product.id,
+				refill_period: selectedNewProductRefillPeriod.value,
+			} satisfies MobileProductPatchPayload,
+		});
 
 		const refreshSuccess = await getNewProductData(
 			newProductData.location.location_id,
@@ -197,9 +208,11 @@ async function updateNewProductRefillPeriod() {
 		}
 
 		toast.add({
-			severity: 'success',
+			severity: response.mode === 'queued' ? 'info' : 'success',
 			summary: 'Başarılı',
-			detail: 'Yeni ürünün dolum periyodu güncellendi.',
+			detail: response.mode === 'queued'
+				? 'Dolum periyodu kuyruğa alındı.'
+				: 'Yeni ürünün dolum periyodu güncellendi.',
 			life: 2000,
 		});
 	}
@@ -226,24 +239,21 @@ async function applyChanges(callback: () => void) {
 
 		const details = `arizali YSC no: ${currentProductData.location.location_id}, yeni YSC no: ${newProductData.location?.location_id}`;
 
-		const res = await switchProducts({
-			currentProduct: currentProductData.product,
-			newProduct: newProductData.product,
+		const res = await submitProductSwitch({
+			currentLocationId: currentProductData.location.location_id,
+			newLocationId: newProductData.location.location_id,
 			details,
 		});
 
-		if (res.success) {
-			callback();
-			toast.add({
-				severity: 'success',
-				summary: 'Başarılı',
-				detail: 'Degisim kaydı başarıyla oluşturuldu.',
-				life: 2000,
-			});
-		}
-		else {
-			throw new Error('Switch failed');
-		}
+		callback();
+		toast.add({
+			severity: res.mode === 'queued' ? 'info' : 'success',
+			summary: 'Başarılı',
+			detail: res.mode === 'queued'
+				? 'Degisim kaydı kuyruğa alındı.'
+				: 'Degisim kaydı başarıyla oluşturuldu.',
+			life: 2000,
+		});
 	}
 	catch (error) {
 		console.error('Error switching products:', error);
@@ -263,18 +273,16 @@ async function createInspectionForm() {
 	loading.value = true;
 	try {
 		const userId = (await supabase.auth.getUser()).data.user?.id;
-		const productId = newProductData.product?.id;
 		const locationId = newProductData.location?.location_id;
 
-		if (!userId || !productId || !locationId) {
+		if (!userId || !locationId) {
 			throw new Error('Missing inspection context');
 		}
 
-		if (compressedImage.value) {
-			photo_url.value = await handleUploadImage(compressedImage.value);
-		}
-
-		const inspectionPayload: MobileInspectionPayload = {
+		const inspectionPayload: Omit<
+			MobileInspectionPayload,
+			'fire_extinguisher_id' | 'photo_url' | 'user_id'
+		> = {
 			position: true,
 			body: true,
 			control_card: true,
@@ -286,21 +294,20 @@ async function createInspectionForm() {
 			working_mechanism: true,
 			result: true,
 			note: null,
-			photo_url: photo_url.value,
-			user_id: userId,
 			date: formatDateOnlyForApi(new Date()),
 			is_expiry: true,
-			fire_extinguisher_id: productId,
 		};
-		await createInspection(inspectionPayload);
-
-		const transactionPayload: MobileTransactionPayload = {
-			type: 'inspection',
-			user: userId,
-			product_id: productId,
-			details: `YSC no: ${locationId}`,
-		};
-		await createTransaction(transactionPayload);
+		const response = await submitInspection({
+			locationId,
+			userId,
+			inspection: inspectionPayload,
+			photoFile: compressedImage.value,
+			photoFileName: compressedImage.value?.name,
+			photoFileType: compressedImage.value?.type,
+		});
+		if (response.mode === 'queued') {
+			await syncNow();
+		}
 		drawerShow.value = true;
 	}
 	catch {

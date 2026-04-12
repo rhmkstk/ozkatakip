@@ -5,10 +5,7 @@ import type { Database } from "~/types/database.types";
 import type {
   MobileFillPayload,
   MobileInspectionPayload,
-  MobileProductPatchPayload,
-  MobileTransactionPayload,
 } from "~/types/mobile-transaction";
-import { handleUploadImage } from "~/utils/handleUploadImage";
 import {
   imageCompressionOptions,
   inspectionFormFields,
@@ -17,17 +14,17 @@ import {
 } from "~/constants";
 import { useMobileTransactionContext } from "~/composables/use-mobile-transaction-context";
 import { useMobileTransactionActions } from "~/composables/use-mobile-transaction-actions";
+import { useMobileOfflineState } from "~/composables/use-mobile-offline-state";
 
 const route = useRoute();
 const supabase = useSupabaseClient();
 const toast = useToast();
 const { toTenantPath } = useTenant();
 const {
-  createInspection,
-  createFillRecord,
-  updateProduct,
-  createTransaction,
+  submitInspection,
+  submitFill,
 } = useMobileTransactionActions();
+const { isOnline, pendingCount, syncNow } = useMobileOfflineState();
 const activeTab = ref("0");
 const compressedImage = ref<File | null>(null);
 const inspectionFormLoading = ref(false);
@@ -110,7 +107,22 @@ const {
   inspectionAlert,
   isRefillDateExpired,
   refillDateAlert,
+  contextSource,
+  hasCachedFallback,
 } = await useMobileTransactionContext(String(route.params.id));
+
+const locationId = computed(() => String(route.params.id));
+const offlineBannerText = computed(() => {
+  if (contextSource.value === "cache") {
+    return "Cevrimdisi modda kayitli son urun bilgileri gosteriliyor.";
+  }
+
+  if (contextSource.value === "empty") {
+    return "Bu YSC daha once cihaza alinmamis. Urun bilgileri bos olabilir; kayitlariniz kuyruga alinacak.";
+  }
+
+  return "";
+});
 
 const checkInspectionForm = () => {
   return controlFields.every(
@@ -144,46 +156,46 @@ async function saveInspectionForm() {
   const result = checkInspectionForm();
   inspectionFormLoading.value = true;
   try {
-    const productId = data.value?.product.id;
     const userId = (await supabase.auth.getUser()).data.user?.id;
 
-    if (!productId || !userId) {
+    if (!userId) {
       throw new Error("Missing required inspection context");
     }
 
-    if (compressedImage.value) {
-      inspectionForm.photo_url = await handleUploadImage(compressedImage.value);
-    }
-    const inspectionPayload: MobileInspectionPayload = {
+    const inspectionPayload: Omit<
+      MobileInspectionPayload,
+      "fire_extinguisher_id" | "photo_url" | "user_id"
+    > = {
       ...inspectionForm,
-      fire_extinguisher_id: productId,
       result,
-      user_id: userId,
       date: formatDateOnlyForApi(new Date()),
     };
-    const response = await createInspection(inspectionPayload);
 
-    if (response) {
-      const locationId = data.value?.location.location_id;
+    const response = await submitInspection({
+      locationId: locationId.value,
+      userId,
+      inspection: inspectionPayload,
+      photoFile: compressedImage.value,
+      photoFileName: compressedImage.value?.name,
+      photoFileType: compressedImage.value?.type,
+    });
 
-      if (!locationId) {
-        throw new Error("Missing inspection location id");
-      }
+    if (response.mode === "queued") {
+      toast.add({
+        severity: "info",
+        summary: "Kuyruga alindi",
+        detail: "Bakim kaydi internet geldiginde gonderilecek.",
+        life: 2500,
+      });
+      await syncNow();
+    }
 
-      const transactionPayload: MobileTransactionPayload = {
-        type: "inspection",
-        user: userId,
-        product_id: productId,
-        details: `YSC no: ${locationId}`,
-      };
-      createTransaction(transactionPayload);
-      inspectionFormLoading.value = false;
-      if (result) {
-        drawersShow.success = true;
-        return;
-      } else {
-        drawersShow.needChange = true;
-      }
+    inspectionFormLoading.value = false;
+    if (result) {
+      drawersShow.success = true;
+      return;
+    } else {
+      drawersShow.needChange = true;
     }
   } catch {
     toast.add({
@@ -209,69 +221,33 @@ async function saveFillRecord() {
     return;
   }
   inspectionFormLoading.value = true;
-  const productId = data.value?.product.id;
   const userId = (await supabase.auth.getUser()).data.user?.id;
   try {
-    if (!productId || !userId) {
+    if (!userId) {
       throw new Error("Missing required fill context");
     }
 
-    const fillPayload: MobileFillPayload = {
+    const fillPayload: Omit<MobileFillPayload, "product_id" | "user_id"> = {
       ...fillForm,
-      product_id: productId,
-      user_id: userId,
     };
-    const response = await createFillRecord(fillPayload);
 
-    if (response) {
-      const locationId = data.value?.location.location_id;
+    const response = await submitFill({
+      locationId: locationId.value,
+      userId,
+      fill: fillPayload,
+    });
 
-      if (!locationId) {
-        throw new Error("Missing fill location id");
-      }
-
-      const refillPeriod = data.value?.product.refill_period || 2;
-      const now = new Date();
-      const fillDate = now.toISOString().split("T")[0];
-      const refillDate = new Date(now);
-      refillDate.setFullYear(refillDate.getFullYear() + Number(refillPeriod));
-      const formattedRefillDate = refillDate.toISOString().split("T")[0];
-      const nextHydrostaticTestDate = new Date(now);
-      nextHydrostaticTestDate.setFullYear(
-        nextHydrostaticTestDate.getFullYear() + 4,
-      );
-      const formattedHydrostaticTestDate = nextHydrostaticTestDate
-        .toISOString()
-        .split("T")[0];
-
-      const productPatchPayload: MobileProductPatchPayload = {
-        id: productId,
-        current_status: "active",
-        ...(fillForm.filling
-          ? {
-              refill_date: fillDate,
-              next_refill_date: formattedRefillDate,
-            }
-          : {}),
-        ...(fillForm.hydrostatic_pressure_test
-          ? {
-              hydrostatic_test_date: fillDate,
-              next_hydrostatic_test_date: formattedHydrostaticTestDate,
-            }
-          : {}),
-      };
-
-      await updateProduct(productPatchPayload);
-
-      const transactionPayload: MobileTransactionPayload = {
-        type: "fill",
-        user: userId,
-        product_id: productId,
-        details: `YSC no: ${locationId}`,
-      };
-      createTransaction(transactionPayload);
-      drawersShow.success = true;
+    if (response.mode === "queued") {
+      toast.add({
+        severity: "info",
+        summary: "Kuyruga alindi",
+        detail: "Dolum kaydi internet geldiginde gonderilecek.",
+        life: 2500,
+      });
+      await syncNow();
     }
+
+    drawersShow.success = true;
   } catch (error) {
     console.error("Error saving fill record:", error);
     toast.add({
@@ -298,18 +274,28 @@ async function saveFillRecord() {
         @click="$router.push(toTenantPath('/mobile'))"
       />
     </header>
-    <div
-      v-if="!isLoading && status === 'error'"
-      class="py-2 flex flex-col gap-y-8"
-    >
-      <p class="text-lg">
-        Aradiginiz YSC bulunamadi! Geri donup farkli mevcut bir YSC ile islem
-        yapabilirsiniz
-      </p>
-      <Button label="Geri" @click="$router.push(toTenantPath('/mobile'))" />
-    </div>
-
-    <div v-else-if="!isLoading" class="flex flex-col h-full">
+    <div v-if="!isLoading" class="flex flex-col h-full">
+      <div
+        v-if="status === 'error' && isOnline && contextSource === 'network'"
+        class="py-2 flex flex-col gap-y-8"
+      >
+        <p class="text-lg">
+          Aradiginiz YSC bulunamadi! Geri donup farkli mevcut bir YSC ile islem
+          yapabilirsiniz
+        </p>
+        <Button label="Geri" @click="$router.push(toTenantPath('/mobile'))" />
+      </div>
+      <template v-else>
+      <Message v-if="isOnline && pendingCount > 0" severity="info" class="mb-4">
+        {{ pendingCount }} islem senkronizasyon icin bekliyor.
+      </Message>
+      <Message
+        v-if="contextSource !== 'network'"
+        severity="secondary"
+        class="mb-4"
+      >
+        {{ offlineBannerText }}
+      </Message>
       <div
         v-if="data?.product"
         class="bg-slate-50 p-2 rounded-lg mb-4"
@@ -319,19 +305,21 @@ async function saveFillRecord() {
         >
           <div class="min-w-0">
             <h3 class="text-base font-semibold truncate">
-              {{ data.product.model_type }}
+              {{ data.product.model_type || "Model bilgisi yok" }}
             </h3>
             <h4 class="text-sm text-slate-600">
               {{ data.product.unit ? `${data.product.unit}` : "Birim belirtilmemiş" }}
             </h4>
           </div>
-          <div class="flex items-center space-x-1 shrink-0">
-            <span class="size-1.5 rounded-full" :class="statusBgColor" />
-            <span class="text-xs text-slate-500 uppercase">{{
-              productStatusTypeLabels[
-                data.product
-                  .current_status as keyof typeof productStatusTypeLabels
-              ]
+            <div class="flex items-center space-x-1 shrink-0">
+              <span class="size-1.5 rounded-full" :class="statusBgColor" />
+              <span class="text-xs text-slate-500 uppercase">{{
+              data.product.current_status
+                ? productStatusTypeLabels[
+                    data.product
+                      .current_status as keyof typeof productStatusTypeLabels
+                  ]
+                : "BILGI YOK"
             }}</span>
           </div>
         </div>
@@ -350,7 +338,7 @@ async function saveFillRecord() {
               <i class="ri-map-pin-line -mt-0.5" />
               <p class="text-sm text-gray-700">
                 Konum:
-                <b>{{ data.location.room }} , {{ data.location.building_id?.name }}</b>
+                <b>{{ data.location.room || "Belirtilmemiş" }} , {{ data.location.building_id?.name || "Belirtilmemiş" }}</b>
               </p>
             </div>
             <div class="flex space-x-1 mt-1">
@@ -381,7 +369,7 @@ async function saveFillRecord() {
             <div class="flex space-x-1 mt-1">
               <i class="ri-refresh-line -mt-0.5"></i>
               <p class="text-sm text-gray-700">
-                Dolum periyodu: <b>{{ data.product.refill_period }} yıl</b>
+                Dolum periyodu: <b>{{ data.product.refill_period ? `${data.product.refill_period} yıl` : "Belirtilmemiş" }}</b>
               </p>
             </div>
             <div class="flex space-x-1 mt-1">
@@ -396,11 +384,11 @@ async function saveFillRecord() {
       <Message v-if="isRefillDateExpired" severity="error" class="my-4">
         {{ refillDateAlert }}
       </Message>
-      <Message v-if="showInspectionAlert" severity="warn" class="my-4">
+      <Message v-if="showInspectionAlert && hasCachedFallback" severity="warn" class="my-4">
         {{ inspectionAlert }}
       </Message>
-      <div class="card">
-        <Tabs v-model:value="activeTab">
+	      <div class="card">
+	        <Tabs v-model:value="activeTab">
           <TabList>
             <Tab value="0" class="w-1/2"> Bakım kayıt </Tab>
             <Tab value="1" class="w-1/2"> Dolum kayıt </Tab>
@@ -478,10 +466,11 @@ async function saveFillRecord() {
               </form>
             </TabPanel>
           </TabPanels>
-        </Tabs>
-      </div>
-    </div>
-    <Drawer
+	        </Tabs>
+	      </div>
+	      </template>
+	    </div>
+	    <Drawer
       v-model:visible="drawersShow.change"
       header="Degisim"
       position="full"
@@ -506,8 +495,8 @@ async function saveFillRecord() {
         activeTab === '0'
           ? 'Bakim kaydi basariyla olusturuldu!'
           : 'Dolum kaydi basariyla olusturuldu!'
-      "
-      @close="drawersShow.success = false"
-    />
-  </div>
+	      "
+	      @close="drawersShow.success = false"
+	    />
+	  </div>
 </template>
