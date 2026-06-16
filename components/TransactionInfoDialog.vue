@@ -21,35 +21,60 @@ function handleChangeClick() {
 <template>
   <Dialog
     :visible="isActive"
-    :show-header="false"
+    header="Bakım Kaydı"
     modal
     @update:visible="closeDialog"
-    class="mx-4"
+    class="w-full max-w-md mx-4"
+    :dismissable-mask="true"
   >
-    <div class="flex flex-col items-center pt-4">
-      <div class="flex space-x-1">
-        <h3 class="text-lg font-semibold">Bakım kaydı oluşturuldu</h3>
-        <i class="ri-check-line text-green-600 text-4xl leading-5" />
+    <div class="flex items-start gap-3">
+      <div
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full app-status-success-soft"
+      >
+        <i class="ri-check-line text-xl" />
       </div>
 
-      <Message severity="warn" class="my-6">
-				<div class="flex gap-2">
-        <i class="ri-error-warning-line text-2xl leading-6" />
-        <p
-          >YSC kullanima uygun olmadigi icin degisim gerektirmektedir. Lütfen
-          degisim kaydi olusturunuz!</p>
-				</div>
-      </Message>
+      <div class="min-w-0">
+        <h3 class="text-lg font-semibold tracking-tight app-text">
+          Bakım kaydı oluşturuldu
+        </h3>
+        <p class="mt-1 text-sm app-text-muted">
+          PR-10 No'lu YSC için bakım kaydı oluşturuldu. Ancak ürün şu anda
+          kullanıma uygun değil.
+        </p>
+      </div>
     </div>
 
+    <!-- Warning box -->
+    <Message
+      severity="warn"
+      class="mt-6"
+      :closable="false"
+      :pt="{ content: { class: '!items-start' } }"
+    >
+      <template #icon>
+        <i class="ri-error-warning-line text-2xl" />
+      </template>
+      <span>Mevcut YSC'yi kullanıma uygun başka bir YSC ile değiştirin.</span>
+    </Message>
+
     <template #footer>
-      <Button
-        label="Degisim kaydi olustur"
-        severity="warn"
-        size="large"
-        class="w-full"
-        @click="handleChangeClick"
-      />
+      <div class="flex gap-2 mt-4">
+        <Button
+          label="Vazgeç"
+          severity="secondary"
+          class="sm:w-auto"
+          size="small"
+          @click="closeDialog"
+        />
+        <Button
+          label="Değişim kaydı oluştur"
+          class="sm:w-auto"
+          icon="ri-refresh-line"
+          size="small"
+          @click="handleChangeClick"
+        />
+      </div>
     </template>
   </Dialog>
 </template>

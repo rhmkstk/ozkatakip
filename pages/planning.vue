@@ -273,7 +273,7 @@ const getFilteredDates = computed(() => {
 					<span>Filtreler</span>
 					<span
 						v-if="activeFilterCount"
-						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
+						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium app-badge-muted"
 					>
 						{{ activeFilterCount }}
 					</span>
@@ -289,7 +289,7 @@ const getFilteredDates = computed(() => {
 						v-if="yscNoSearch"
 						type="button"
 						aria-label="YSC aramasını temizle"
-						class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+						class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded app-icon-button"
 						@click="clearYscSearch"
 					>
 						<i class="ri-close-line text-sm leading-none" />
@@ -306,7 +306,7 @@ const getFilteredDates = computed(() => {
 		>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Ay</label>
+					<label class="app-label">Ay</label>
 					<DatePicker
 						v-model="filters.date"
 						view="month"
@@ -316,7 +316,7 @@ const getFilteredDates = computed(() => {
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Model tipi</label>
+					<label class="app-label">Model tipi</label>
 					<Select
 						v-model="filters.modelType"
 						:options="filterOptions.modelTypes"
@@ -325,7 +325,7 @@ const getFilteredDates = computed(() => {
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Lokasyon</label>
+					<label class="app-label">Lokasyon</label>
 					<Select
 						v-model="filters.location"
 						:options="filterOptions.locations"

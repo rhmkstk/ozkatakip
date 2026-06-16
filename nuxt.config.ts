@@ -1,6 +1,108 @@
 import tailwindcss from '@tailwindcss/vite';
-import Aura from '@primeuix/themes/aura';
+// import Aura from '@primeuix/themes/aura';
+import { definePreset } from '@primeuix/themes';
+import Lara from '@primeuix/themes/lara';
 import { tr as primeLocaleTr } from 'primelocale/js/tr.js';
+
+const AppPreset = definePreset(Lara, {
+	semantic: {
+		primary: {
+			50: '{zinc.50}',
+			100: '{zinc.100}',
+			200: '{zinc.200}',
+			300: '{zinc.300}',
+			400: '{zinc.400}',
+			500: '{zinc.500}',
+			600: '{zinc.600}',
+			700: '{zinc.700}',
+			800: '{zinc.800}',
+			900: '{zinc.900}',
+			950: '{zinc.950}',
+		},
+		colorScheme: {
+			light: {
+				surface: {
+					0: '#ffffff',
+					50: '{zinc.50}',
+					100: '{zinc.100}',
+					200: '{zinc.200}',
+					300: '{zinc.300}',
+					400: '{zinc.400}',
+					500: '{zinc.500}',
+					600: '{zinc.600}',
+					700: '{zinc.700}',
+					800: '{zinc.800}',
+					900: '{zinc.900}',
+					950: '{zinc.950}',
+				},
+				primary: {
+					color: '{zinc.950}',
+					contrastColor: '#ffffff',
+					hoverColor: '{zinc.900}',
+					activeColor: '{zinc.800}',
+				},
+				highlight: {
+					background: '{zinc.950}',
+					focusBackground: '{zinc.700}',
+					color: '#ffffff',
+					focusColor: '#ffffff',
+				},
+			},
+			dark: {
+				surface: {
+					0: '#ffffff',
+					50: '{zinc.50}',
+					100: '{zinc.100}',
+					200: '{zinc.200}',
+					300: '{zinc.300}',
+					400: '{zinc.400}',
+					500: '{zinc.500}',
+					600: '{zinc.600}',
+					700: '{zinc.700}',
+					800: '{zinc.800}',
+					900: '{zinc.900}',
+					950: '{zinc.950}',
+				},
+				primary: {
+					color: '{zinc.50}',
+					contrastColor: '{zinc.950}',
+					hoverColor: '{zinc.100}',
+					activeColor: '{zinc.200}',
+				},
+				highlight: {
+					background: 'rgba(250, 250, 250, 0.16)',
+					focusBackground: 'rgba(250, 250, 250, 0.24)',
+					color: 'rgba(255, 255, 255, 0.87)',
+					focusColor: 'rgba(255, 255, 255, 0.87)',
+				},
+			},
+		},
+	},
+	components: {
+		datatable: {
+			colorScheme: {
+				light: {
+					header: {
+						background: 'transparent',
+					},
+					headerCell: {
+						background: 'transparent',
+						hoverBackground: 'transparent',
+					},
+				},
+				dark: {
+					header: {
+						background: 'transparent',
+					},
+					headerCell: {
+						background: 'transparent',
+						hoverBackground: 'transparent',
+					},
+				},
+			},
+		},
+	},
+});
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -116,10 +218,10 @@ export default defineNuxtConfig({
 	},
 	primevue: {
 		options: {
-			ripple: true,
-			inputVariant: 'filled',
+			ripple: false,
+			// inputVariant: 'filled',
 			theme: {
-				preset: Aura,
+				preset: AppPreset,
 				options: {
 					prefix: 'p',
 					darkModeSelector: '.my-app-dark',
@@ -148,7 +250,7 @@ export default defineNuxtConfig({
 			short_name: 'ozkatakip',
 			description: 'ozkatakip mobil saha uygulamasi',
 			theme_color: '#225AEB',
-			background_color: '#B62472',
+			background_color: '#ffffff',
 			display: 'standalone',
 			scope: '/',
 			start_url: '/mobile?source=pwa',

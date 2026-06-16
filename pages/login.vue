@@ -151,7 +151,7 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div class="flex justify-center items-center min-h-screen bg-gray-100 px-4">
+	<div class="flex justify-center items-center min-h-screen app-shell px-4">
 		<Card class="w-full max-w-md shadow-lg">
 			<template #title>
 				Giriş Yap

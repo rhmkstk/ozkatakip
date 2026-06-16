@@ -276,76 +276,75 @@ const expandColumns = [
 		header: fillLabels.hydrostatic_pressure_test,
 	},
 ];
+
+const getExpandedInfoGroups = () => {
+	return [expandColumns.slice(0, 4), expandColumns.slice(4)];
+};
 </script>
 
 <template>
 	<div>
-		<PageHeader title="Dolum kayıtları listeleniyor">
-			<template #right>
-				<Button
-					v-if="hasActiveFilters"
-					label="Temizle"
-					icon="ri-close-line"
+		<PageHeader title="Dolum kayıtları">
+			<IconField>
+				<InputIcon class="ri-search-line" />
+				<InputText
+					v-model="yscNoSearch"
+					placeholder="Search"
 					size="small"
-					severity="secondary"
-					outlined
-					@click="clearFilters"
 				/>
-				<Button
-					:outlined="!hasActiveFilters"
-					size="small"
-					@click="showFilters = true"
+				<InputIcon
+					v-if="yscNoSearch"
+					class="ri-close-line cursor-pointer"
+					@click="clearYscSearch"
+				/>
+			</IconField>
+			<Button
+				:outlined="!hasActiveFilters"
+				size="small"
+				class="ml-auto"
+				@click="showFilters = true"
+			>
+				<i class="ri-filter-3-line text-base" />
+				<span>Filtreler</span>
+				<span
+					v-if="activeFilterCount"
+					class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium app-badge-muted"
 				>
-					<i class="ri-filter-3-line text-base" />
-					<span>Filtreler</span>
-					<span
-						v-if="activeFilterCount"
-						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
-					>
-						{{ activeFilterCount }}
-					</span>
-				</Button>
-				<div class="relative">
-					<InputText
-						v-model="yscNoSearch"
-						size="small"
-						placeholder="YSC no ara"
-						class="w-52 pr-10"
-					/>
-					<button
-						v-if="yscNoSearch"
-						type="button"
-						aria-label="YSC aramasını temizle"
-						class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-						@click="clearYscSearch"
-					>
-						<i class="ri-close-line text-sm leading-none" />
-					</button>
-				</div>
-			</template>
+					{{ activeFilterCount }}
+				</span>
+			</Button>
+			<Button
+				v-if="hasActiveFilters"
+				label="Temizle"
+				icon="ri-close-line"
+				size="small"
+				severity="secondary"
+				outlined
+				@click="clearFilters"
+			/>
 		</PageHeader>
 
 		<Drawer
 			v-model:visible="showFilters"
 			header="Filtreler"
-			position="left"
+			position="right"
 			:style="{ width: '22rem' }"
 		>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Dolum tarihi</label>
+					<label class="app-label">Dolum tarihi</label>
 					<Select
 						v-model="filters.fillDateMode"
 						:options="dateModeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 					/>
 				</div>
 				<div
 					v-if="filters.fillDateMode !== 'none'"
 					class="flex flex-col gap-2"
 				>
-					<label class="text-sm font-medium text-gray-600">Tarih</label>
+					<label class="app-label">Tarih</label>
 					<DatePicker
 						v-model="filters.fillDate"
 						:view="filters.fillDateMode === 'monthly' ? 'month' : 'date'"
@@ -355,19 +354,19 @@ const expandColumns = [
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Hidrostatik test tarihi</label>
+					<label class="app-label">Hidrostatik test tarihi</label>
 					<Select
 						v-model="filters.hydroDateMode"
 						:options="dateModeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 					/>
 				</div>
 				<div
 					v-if="filters.hydroDateMode !== 'none'"
 					class="flex flex-col gap-2"
 				>
-					<label class="text-sm font-medium text-gray-600">Tarih</label>
+					<label class="app-label">Tarih</label>
 					<DatePicker
 						v-model="filters.hydroDate"
 						:view="filters.hydroDateMode === 'monthly' ? 'month' : 'date'"
@@ -377,7 +376,7 @@ const expandColumns = [
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Bulduğu bina/alan</label>
+					<label class="app-label">Bulduğu bina/alan</label>
 					<Select
 						v-model="filters.building"
 						:options="filterOptions.buildings"
@@ -386,7 +385,7 @@ const expandColumns = [
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Ağırlık</label>
+					<label class="app-label">Ağırlık</label>
 					<Select
 						v-model="filters.weight"
 						:options="filterOptions.units"
@@ -396,7 +395,7 @@ const expandColumns = [
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">Modeli / tipi</label>
+					<label class="app-label">Modeli / tipi</label>
 					<Select
 						v-model="filters.modelType"
 						:options="filterOptions.modelTypes"
@@ -406,7 +405,7 @@ const expandColumns = [
 					/>
 				</div>
 			</div>
-			<div class="mt-6 flex items-center gap-2">
+			<div class="mt-6 flex items-center justify-end gap-2">
 				<Button
 					label="Temizle"
 					severity="secondary"
@@ -422,10 +421,10 @@ const expandColumns = [
 		</Drawer>
 		<EmptyState v-if="!tabledata.length">
 			<template #title>
-				Bakım Kayıdı bulunamadı
+				Dolum kaydı bulunamadı
 			</template>
 			<template #subtitle>
-				Seçilen tarihler için bakım kayıdı bulunamadı.
+				Seçilen filtreler için dolum kaydı bulunamadı.
 			</template>
 		</EmptyState>
 		<div
@@ -436,8 +435,6 @@ const expandColumns = [
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"
 				:loading="isLoading"
-				striped-rows
-				size="large"
 				class="text-sm"
 			>
 				<Column
@@ -462,28 +459,36 @@ const expandColumns = [
 				</Column>
 				<template #expansion="slotProps">
 					<div class="p-4">
-						<DataTable
-							:value="[slotProps.data]"
-							size="small"
+						<div
+							class="grid gap-3 rounded-md border app-border-subtle bg-surface-0 p-3 md:grid-cols-2 dark:bg-surface-900"
 						>
-							<Column
-								v-for="item in expandColumns"
-								:key="item.accessorKey"
-								:field="item.accessorKey"
-								:header="item.header"
+							<div
+								v-for="(group, groupIndex) in getExpandedInfoGroups()"
+								:key="groupIndex"
+								class="flex min-w-0 flex-col gap-2 px-4"
 							>
-								<template
-									v-if="isCellCustom(item.accessorKey)"
-									#body="expandSlotProps"
+								<div
+									v-for="item in group"
+									:key="item.accessorKey"
+									class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md px-3 py-2"
 								>
-									<CustomCell
-										:field="item.accessorKey"
-										:value="expandSlotProps.data[item.accessorKey]"
-										type="fill"
-									/>
-								</template>
-							</Column>
-						</DataTable>
+									<span class="min-w-0 text-sm font-medium app-text-muted">
+										{{ item.header }}
+									</span>
+									<span class="app-text">
+										<CustomCell
+											v-if="isCellCustom(item.accessorKey)"
+											:field="item.accessorKey"
+											:value="slotProps.data[item.accessorKey]"
+											type="fill"
+										/>
+										<span v-else>
+											{{ slotProps.data[item.accessorKey] ?? '-' }}
+										</span>
+									</span>
+								</div>
+							</div>
+						</div>
 					</div>
 				</template>
 			</DataTable>

@@ -119,25 +119,25 @@ const table = useVueTable({
 .excel-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--p-surface-0);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--p-surface-900) 12%, transparent);
 }
 
 .excel-table th,
 .excel-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--p-content-border-color);
   white-space: pre-line; /* \r\n karakterlerini yeni satır olarak göster */
 }
 
 .excel-table th {
-  background-color: #f8f9fa;
+  background-color: var(--p-surface-100);
   font-weight: 600;
 }
 
 .excel-table tr:hover {
-  background-color: #f5f5f5;
+  background-color: var(--p-surface-100);
 }
 
 .column-controls {
@@ -146,7 +146,7 @@ const table = useVueTable({
   flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: var(--p-surface-100);
   border-radius: 4px;
 }
 

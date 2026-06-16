@@ -53,7 +53,7 @@ onUnmounted(() => {
 			>
 				<!-- Background overlay -->
 				<div
-					class="absolute inset-0 bg-gray-200 opacity-70"
+					class="absolute inset-0 app-overlay-soft"
 					@click="showModal = false"
 				/>
 

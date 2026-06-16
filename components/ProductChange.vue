@@ -193,11 +193,11 @@ async function applyChanges() {
 				<p class="text-lg mb-8 pt-2">
 					Degisim islemini tamamlamak istedigine emin misin ? Eger islemi onaylarsan Yeni YSC ile Mevcut YSC nin konum bilgileri degisecek ?
 				</p>
-				<div class="bg-gray-400 rounded-xl p-px">
+				<div class="rounded-xl p-px" style="background: var(--p-surface-400)">
 					<h5 class="text-lg text-center font-semibold text-white">
 						MEVCUT
 					</h5>
-					<div class="mt-1 bg-white p-3 rounded-xl">
+					<div class="mt-1 app-surface p-3 rounded-xl">
 						<ul
 							class="space-y-2 list-disc list-inside"
 						>
@@ -221,11 +221,11 @@ async function applyChanges() {
 				>
 					<i class="ri-swap-line text-3xl" />
 				</Divider>
-				<div class="bg-green-600 rounded-xl p-px mb-12">
+				<div class="rounded-xl p-px mb-12" style="background: var(--p-green-600)">
 					<h5 class="text-lg text-center font-semibold text-white">
 						YENI
 					</h5>
-					<div class="mt-1 bg-white p-3 rounded-xl">
+					<div class="mt-1 app-surface p-3 rounded-xl">
 						<ul
 							class="space-y-2 list-disc list-inside"
 						>
@@ -244,7 +244,7 @@ async function applyChanges() {
 						</ul>
 					</div>
 				</div>
-				<footer class="flex justify-end px-4 py-6 space-x-4 -m-5 border-t border-slate-200">
+				<footer class="flex justify-end px-4 py-6 space-x-4 -m-5 border-t app-border">
 					<Button
 						label="Vazgeç"
 						icon="ri-close-line"

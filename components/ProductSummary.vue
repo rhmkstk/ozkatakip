@@ -1,43 +1,148 @@
 <script setup lang="ts">
-// import type { Database } from '~/types/database.types';
+import { productStatusTypeLabels } from "~/constants";
+import type {
+  MobileTransactionLocation,
+  MobileTransactionProduct,
+} from "~/types/mobile-transaction";
 
-// const statusBadgeClasses: Record<Database['public']['Enums']['product_status'], string> = {
-// 	aktif: 'bg-green-600',
-// 	arızalı: 'bg-red-600',
-// 	kayıp: 'bg-gray-600',
-// 	yedek: 'bg-yellow-600',
-// };
+const props = defineProps<{
+  product: MobileTransactionProduct;
+  location: MobileTransactionLocation;
+}>();
+
+const productStatusLabel = computed(() => {
+  const currentStatus = props.product.current_status;
+  return currentStatus ? productStatusTypeLabels[currentStatus] : "BILGI YOK";
+});
+
+function toTitleCase(value?: string | null) {
+  if (!value) {
+    return "Belirtilmemiş";
+  }
+
+  return value
+    .toLocaleLowerCase("tr-TR")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toLocaleUpperCase("tr-TR") + word.slice(1))
+    .join(" ");
+}
 </script>
 
 <template>
-	<div class="bg-slate-100 p-2 rounded-lg space-x-3 mb-4 flex">
-		<img
-			src="https://www.capitalsolutions.pk/wp-content/uploads/2021/06/DCP6Kg-ABC-2.jpg"
-			alt="fire-estinguisher"
-			class="object-cover max-w-full w-1/3 h-[200px] rounded"
-		>
-		<div class="pt-2 px-2 flex-1 flex flex-col">
-			<h4 class="text-sm font-semibold leading-3">
-				12 KG
-			</h4>
-			<h3 class="text-lg font-semibold truncate">
-				Karbondioksit gazli
-			</h3>
+  <div class="app-bg-subtle p-2 rounded-lg mb-4">
+    <div
+      class="px-1 pb-2 mb-4 flex items-start justify-between border-b app-divider"
+    >
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold truncate">
+          {{ product.unit ? `${product.unit}` : "Birim belirtilmemiş" }}
+          ·
+          {{ product.model_type || "Model bilgisi yok" }}
+        </h3>
+        <div class="flex items-center space-x-1 mt-1 app-text-muted">
+          <i class="ri-map-pin-line" />
+          <p>
+            {{ toTitleCase(location.building_id?.name) }}
+            /
+            {{ toTitleCase(location.room) }}
+          </p>
+        </div>
+        <!-- <h4 class="text-sm app-text-muted">
+          {{ product.unit ? `${product.unit}` : "Birim belirtilmemiş" }}
+        </h4> -->
+      </div>
+      <Message
+        severity="danger"
+        icon="ri-error-warning-line"
+        size="small"
+        variant="outlined"
+      >
+        {{ productStatusLabel }}
+      </Message>
+      <!-- <div class="flex items-center space-x-1 shrink-0">
+        <span class="size-1.5 rounded-full" :class="statusBgColor" />
+        <span class="text-xs app-text-muted uppercase">
+          {{ productStatusLabel }}
+        </span>
+      </div> -->
+    </div>
 
-			<div class="flex items-center space-x-1">
-				<span class="size-1.5 rounded-full bg-green-600" />
-				<span class="text-xs text-slate-500">AKTİF</span>
-			</div>
-			<div class="flex space-x-1 mt-4">
-				<i class="ri-map-pin-line -mt-0.5" />
-				<span class="text-sm">MOBİL EKİPMAN BAKIM	, YEDEK , YEDEK225452</span>
-			</div>
-			<div class="flex space-x-1 mt-2">
-				<i class="ri-calendar-line -mt-0.5" />
-				<p class="text-sm text-gray-700">
-					Dolum tarihi: <b>2027-07-05</b>, Hidrastatik test tarihi: <b>2027-07-05</b>
-				</p>
-			</div>
-		</div>
-	</div>
+    <div class="flex items-stretch gap-4 min-h-[200px]">
+      <div class="w-[25%] max-w-[140px] rounded overflow-hidden">
+        <img
+          src="https://www.capitalsolutions.pk/wp-content/uploads/2021/06/DCP6Kg-ABC-2.jpg"
+          alt="fire-estinguisher"
+          class="object-cover w-full h-full opacity-80"
+        />
+      </div>
+      <div class="flex-1 flex flex-col gap-4">
+        <!-- <div class="flex space-x-1">
+          <i class="ri-map-pin-line" />
+          <div class="flex flex-col">
+            <p class="font-semibold">Konum</p>
+            <p>
+              {{ location.building_id?.name || "Belirtilmemiş" }} /
+              {{ location.room || "Belirtilmemiş" }}
+            </p>
+          </div>
+        </div> -->
+        <div class="flex space-x-1">
+          <i class="ri-calendar-line" />
+          <div class="flex flex-col flex-1">
+            <p class="font-semibold">Tarihler</p>
+            <div class="flex flex-col mt-2 gap-1">
+              <div class="flex flex-1 text-sm">
+                <p class="">SKT</p>
+                <p class="flex-1 text-end font-semibold">
+                  {{ formatTurkishDate(product.next_refill_date) }}
+                </p>
+              </div>
+              <div class="flex flex-1 text-sm">
+                <p class="">Dolum</p>
+                <p class="flex-1 text-end font-semibold">
+                  {{ formatTurkishDate(product.refill_date) }}
+                </p>
+              </div>
+              <div class="flex flex-1 text-sm">
+                <p class="">Test</p>
+                <p class="flex-1 text-end font-semibold">
+                  {{
+                    product.hydrostatic_test_date
+                      ? formatTurkishDate(product.hydrostatic_test_date)
+                      : "Belirtilmemiş"
+                  }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex space-x-1 gap-1">
+          <i class="ri-profile-line" />
+          <div class="flex flex-col flex-1">
+            <p class="font-semibold">Kimlik</p>
+            <div class="flex flex-col gap-1 mt-2">
+              <div class="flex flex-1 text-sm">
+                <p class="">Dolum periyodu</p>
+                <p class="flex-1 text-end font-semibold">
+                  {{
+                    product.refill_period
+                      ? `${product.refill_period} yıl`
+                      : "Belirtilmemiş"
+                  }}
+                </p>
+              </div>
+              <div class="flex flex-1 text-sm">
+                <p class="">Seri no</p>
+                <p class="flex-1 text-end font-semibold">
+                  {{ product.serial_number ?? "Belirtilmemiş" }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

@@ -15,88 +15,49 @@ const logout = async () => {
 };
 
 onMounted(async () => {
-	await Promise.all([
-		loadCurrentUser(true),
-		loadUserDirectory(true),
-	]);
+  await Promise.all([loadCurrentUser(true), loadUserDirectory(true)]);
 });
 
-const allMenuItems = [
+const MENU_ITEMS = [
   { name: "Bakım kayıtları", path: "/", icon: "ri-booklet-line" },
   { name: "Dolum kayıtları", path: "/fill-records", icon: "ri-book-open-line" },
   { name: "İşlem geçmişi", path: "/history", icon: "ri-history-fill" },
   { name: "Planlama", path: "/planning", icon: "ri-calendar-todo-line" },
-  { name: "YSC genel liste", path: "/products", icon: "ri-fire-line" },
-  { name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line', adminOnly: true },
-  { name: "YSC Veri girişi", path: "/insert-data", icon: "ri-booklet-line" },
+  { name: "YSC liste", path: "/products", icon: "ri-fire-line" },
+  {
+    name: "Kullanıcılar",
+    path: "/users",
+    icon: "ri-group-line",
+    adminOnly: true,
+  },
+  { name: "Veri girişi", path: "/insert-data", icon: "ri-booklet-line" },
   { name: "Mobil", path: "/mobile", icon: "ri-cellphone-line" },
 ];
 
-const menuItems = computed(() => {
-	return allMenuItems
-		.filter(item => !item.adminOnly || currentUser.value?.role === 'admin')
-		.map(item => ({
-			...item,
-			path: toTenantPath(item.path),
-		}));
+const filteredMenuItems = computed(() => {
+  return MENU_ITEMS.filter(
+    (item) => !item.adminOnly || currentUser.value?.role === "admin",
+  ).map((item) => ({
+    ...item,
+    path: toTenantPath(item.path),
+  }));
 });
-
-const supportItems = [
-  // { name: 'Yardım', path: '/help' },
-  // { name: 'İletişim', path: '/contact' },
-  {
-    name: "Çıkış yap",
-    icon: "ri-logout-circle-r-line",
-    action: logout,
-  },
-];
-
-const sidebarExpanded = ref(true);
-// const toggleSidebar = () => {
-// 	sidebarExpanded.value = !sidebarExpanded.value;
-// };
 </script>
-
 <template>
-	<div class="flex w-full max-w-full h-screen bg-slate-100">
-		<div
-			v-show="sidebarExpanded"
-			class="sidebar pb-12 pt-8 px-8 text-gray-950 flex flex-col"
-		>
-			<div v-if="currentUser" class="border-b pb-6 border-slate-300 flex justify-between">
-				<div v-if="currentUser" class="flex items-center space-x-3">
-					<img
-            :src="`assets/user_avatar.jpg`"
-            alt="profile image"
-            class="size-11 rounded-full object-cover" />
-					<div>
-						<span class="text-[10px] text-gray-500">{{ currentUser.role ==="admin" ? 'YÖNETİCİ': 'ÇALIŞAN' }}</span>
-						<p class="font-bold  text-sm">
-							{{ currentUser.first_name }} {{ currentUser.last_name }}
-						</p>
-						<p v-if="currentUser.activeTenant" class="text-[10px] text-gray-500">
-							{{ currentUser.activeTenant.name }}
-						</p>
-					</div>
-				</div>
-			</div>
-
-      <!-- <div class="user">
-        <img
-          :src="profileImg"
-          alt="profile image"
-          class="size-14 rounded-xl object-cover"
-        />
-        <p class="text-2xl mt-5 mb-0.5">Samantha</p>
-        <p class="text-gray-400">samantha@email.com</p>
-      </div> -->
-      <nav class="mt-8">
-        <ul class="text-gray-950 space-y-2">
-          <li v-for="item in menuItems" :key="item.name">
+  <div class="flex w-full max-w-full h-screen gap-2 bg-[var(--p-surface-50)]">
+    <div class="sidebar flex flex-col p-2 md:p-4">
+      <img
+        src="/assets/logo/provider-logo.jpeg"
+        alt="provider logo"
+        class="w-24 h-auto mx-auto mb-4 rounded-2xl"
+      />
+      <nav class="mt-12">
+        <ul class="space-y-2">
+          <li v-for="item in filteredMenuItems" :key="item.name">
             <NuxtLink
               :to="item.path"
-              class="flex items-center px-2 py-2 space-x-1.5 rounded-lg"
-              active-class="!bg-white shadow-sm"
+              class="flex items-center px-4 py-2 gap-1.5 rounded-md text-[var(--p-text-color]) hover:bg-[var(--p-surface-100)]"
+              active-class="bg-[var(--p-primary-color)] text-white"
             >
               <i :class="item.icon" class="text-lg" />
               <span>{{ item.name }}</span>
@@ -104,31 +65,19 @@ const sidebarExpanded = ref(true);
           </li>
         </ul>
       </nav>
-      <nav class="mt-auto">
-        <ul class="space-y-4">
-          <li
-            v-for="item in supportItems"
-            :key="item.name"
-            @click="item.action ? item.action() : null"
-          >
-            <NuxtLink :to="item.path" class="flex items-center gap-2">
-              <i :class="item.icon" class="text-lg" />
-              <span>{{ item.name }}</span>
-            </NuxtLink>
-          </li>
-        </ul>
-      </nav>
+      <div class="mt-auto">
+        <!-- <div>Aktif Firma</div> -->
+        <button
+          @click="logout"
+          class="flex items-center px-2 py-2 gap-1.5 rounded-md text-[var(--p-text-color]) hover:bg-[var(--p-surface-100)] w-full cursor-pointer"
+        >
+          <i class="ri-logout-circle-r-line text-lg" />
+          <span>Çıkış yap</span>
+        </button>
+      </div>
     </div>
-    <div class="content flex-1 h-full p-2.5 overflow-x-auto">
-      <div
-        class="py-6 w-full relative z-50 px-4 md:px-6 h-full max-h-full min-h-full overflow-y-auto border border-slate-300 rounded-xl bg-white"
-      >
-        <!-- <button
-					class="absolute top-6 -left-4 z-[99] flex size-8 rounded-full border border-slate-300 bg-white shadow-md"
-					@click="toggleSidebar"
-				>
-					<i class="ri-arrow-left-s-line text-2xl text-blue-500 m-auto" />
-				</button> -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="border-l app-border-subtle bg-white min-h-full">
         <slot />
       </div>
     </div>

@@ -730,7 +730,7 @@ onBeforeRouteLeave(() => {
 			</span>
 			<div
 				v-if="buildingManager.editingId"
-				class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+				class="mb-4 rounded border app-status-warn px-3 py-2 text-sm"
 			>
 				Düzenleme modu açık. Kaydı güncelledikten sonra istersen yeni bina
 				eklemeye dönebilirsin.
@@ -780,7 +780,7 @@ onBeforeRouteLeave(() => {
 					@click="resetBuildingManagerForm"
 				/>
 			</div>
-			<div class="border-t border-gray-200 pt-6">
+			<div class="border-t app-border pt-6">
 				<h3 class="font-semibold text-base mb-4">
 					Mevcut binalar
 				</h3>
@@ -798,7 +798,7 @@ onBeforeRouteLeave(() => {
 						<div
 							v-for="building in buildings"
 							:key="building.id"
-							class="flex items-center justify-between gap-3 rounded border border-gray-200 px-3 py-2"
+							class="flex items-center justify-between gap-3 rounded border app-border px-3 py-2"
 						>
 							<span class="truncate text-sm font-medium">{{
 								building.name

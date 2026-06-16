@@ -56,22 +56,22 @@ onMounted(() => {
 	>
 		<section
 			v-if="showPrompt"
-			class="rounded-2xl border border-blue-200 bg-white px-4 py-3 shadow-sm"
+			class="rounded-2xl border app-border app-surface px-4 py-3 shadow-sm"
 		>
 			<div class="flex items-start gap-3">
 				<div class="flex-1">
-					<p class="text-sm font-semibold text-slate-900">
+					<p class="text-sm font-semibold app-text">
 						Uygulamayi yukle
 					</p>
 					<p
 						v-if="showAndroidPrompt"
-						class="mt-1 text-sm leading-6 text-slate-600"
+						class="mt-1 text-sm leading-6 app-text-muted"
 					>
 						ozkatakip'i bu cihazda uygulama gibi acmak icin yukleyebilirsin.
 					</p>
 					<p
 						v-else
-						class="mt-1 text-sm leading-6 text-slate-600"
+						class="mt-1 text-sm leading-6 app-text-muted"
 					>
 						iPhone veya iPad'de tarayici menusundeki Paylas seciminden Ana Ekrana Ekle adimini kullan.
 					</p>
@@ -103,14 +103,14 @@ onMounted(() => {
 
 		<section
 			v-if="showUpdatePrompt"
-			class="rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-sm"
+			class="rounded-2xl border app-border app-surface px-4 py-3 shadow-sm"
 		>
 			<div class="flex items-start gap-3">
 				<div class="flex-1">
-					<p class="text-sm font-semibold text-slate-900">
+					<p class="text-sm font-semibold app-text">
 						Yeni surum hazir
 					</p>
-					<p class="mt-1 text-sm leading-6 text-slate-600">
+					<p class="mt-1 text-sm leading-6 app-text-muted">
 						Guncel surume gecmek icin uygulamayi yenile.
 					</p>
 				</div>

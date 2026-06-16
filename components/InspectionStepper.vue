@@ -1,22 +1,22 @@
 <script lang="ts" setup>
-import type { FileUploadSelectEvent } from 'primevue';
-import imageCompression from 'browser-image-compression';
-import { imageCompressionOptions } from '~/constants';
-import { useMobileTransactionActions } from '~/composables/use-mobile-transaction-actions';
-import { useMobileOfflineState } from '~/composables/use-mobile-offline-state';
-import { getOfflineAwareMobileTransactionContext } from '~/utils/mobile-offline-sync';
+import type { FileUploadSelectEvent } from "primevue";
+import imageCompression from "browser-image-compression";
+import { imageCompressionOptions } from "~/constants";
+import { useMobileTransactionActions } from "~/composables/use-mobile-transaction-actions";
+import { useMobileOfflineState } from "~/composables/use-mobile-offline-state";
+import { getOfflineAwareMobileTransactionContext } from "~/utils/mobile-offline-sync";
 import type {
-	MobileProductPatchPayload,
-	MobileTransactionCurrentProductData,
-	MobileInspectionPayload,
-} from '~/types/mobile-transaction';
+  MobileProductPatchPayload,
+  MobileTransactionCurrentProductData,
+  MobileInspectionPayload,
+} from "~/types/mobile-transaction";
 
 type Props = {
-	currentProductData: MobileTransactionCurrentProductData;
+  currentProductData: MobileTransactionCurrentProductData;
 };
 type NewProductData = {
-	product: MobileTransactionCurrentProductData['product'] | null;
-	location: MobileTransactionCurrentProductData['location'] | null;
+  product: MobileTransactionCurrentProductData["product"] | null;
+  location: MobileTransactionCurrentProductData["location"] | null;
 };
 
 const { currentProductData } = defineProps<Props>();
@@ -24,303 +24,296 @@ const { currentProductData } = defineProps<Props>();
 const supabase = useSupabaseClient();
 const toast = useToast();
 const { activeTenantSlug } = useTenant();
-const {
-	submitInspection,
-	submitProductSwitch,
-	submitProductUpdate,
-} = useMobileTransactionActions();
+const { submitInspection, submitProductSwitch, submitProductUpdate } =
+  useMobileTransactionActions();
 const { syncNow } = useMobileOfflineState();
 const compressedImage = ref<File | null>(null);
 const newProductData = reactive<NewProductData>({
-	location: null,
-	product: null,
+  location: null,
+  product: null,
 });
-const activeStep = ref('1');
+const activeStep = ref("1");
 const loading = ref(false);
 const showScanner = ref(false);
-const newProductId = ref('');
+const newProductId = ref("");
 const photo_url = ref<string | null>(null);
 const drawerShow = ref<boolean>(false);
 const selectedNewProductRefillPeriod = ref<number | null>(null);
 const refillPeriodOptions = [
-	{ label: '1 yıl', value: 1 },
-	{ label: '2 yıl', value: 2 },
-	{ label: '3 yıl', value: 3 },
-	{ label: '4 yıl', value: 4 },
+  { label: "1 yıl", value: 1 },
+  { label: "2 yıl", value: 2 },
+  { label: "3 yıl", value: 3 },
+  { label: "4 yıl", value: 4 },
 ];
 
 const formatRefillPeriod = (value: number | null | undefined) => {
-	if (!value) return 'Belirtilmemiş';
-	return `${value} yıl`;
+  if (!value) return "Belirtilmemiş";
+  return `${value} yıl`;
 };
 
 async function onFileSelect(event: FileUploadSelectEvent) {
-	const imageFile = event.files[0];
-	const reader = new FileReader();
-	reader.onload = (e) => {
-		if (e.target && e.target.result) {
-			photo_url.value = e.target.result as string;
-		}
-	};
-	reader.readAsDataURL(imageFile);
-	try {
-		const compressedFile = await imageCompression(
-			imageFile,
-			imageCompressionOptions,
-		);
-		compressedImage.value = compressedFile as File;
-	}
-	catch (error) {
-		console.warn(error);
-	}
+  const imageFile = event.files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    if (e.target && e.target.result) {
+      photo_url.value = e.target.result as string;
+    }
+  };
+  reader.readAsDataURL(imageFile);
+  try {
+    const compressedFile = await imageCompression(
+      imageFile,
+      imageCompressionOptions,
+    );
+    compressedImage.value = compressedFile as File;
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 const currentProductSummaryCardData = computed(() => {
-	if (currentProductData?.product && currentProductData?.location) {
-		return [
-			{
-				key: 'YSC no',
-				value: currentProductData.location.location_id,
-			},
-			{
-				key: 'Modeli',
-				value: currentProductData.product.model_type,
-			},
-			{
-				key: 'Bina',
-				value: currentProductData.location.building_id?.name,
-			},
-			{
-				key: 'Oda',
-				value: currentProductData.location.room,
-			},
-			{
-				key: 'Dolum periyodu',
-				value: formatRefillPeriod(currentProductData.product.refill_period),
-			},
-		];
-	}
-	return [];
+  if (currentProductData?.product && currentProductData?.location) {
+    return [
+      {
+        key: "YSC no",
+        value: currentProductData.location.location_id,
+      },
+      {
+        key: "Modeli",
+        value: currentProductData.product.model_type,
+      },
+      {
+        key: "Bina",
+        value: currentProductData.location.building_id?.name,
+      },
+      {
+        key: "Oda",
+        value: currentProductData.location.room,
+      },
+      {
+        key: "Dolum periyodu",
+        value: formatRefillPeriod(currentProductData.product.refill_period),
+      },
+    ];
+  }
+  return [];
 });
 
 const newProductSummaryCardData = computed(() => {
-	if (newProductData?.product && newProductData?.location) {
-		return [
-			{
-				key: 'YSC no',
-				value: newProductData.location.location_id,
-			},
-			{
-				key: 'Modeli',
-				value: newProductData.product.model_type,
-			},
-			{
-				key: 'Bina',
-				value: newProductData.location.building_id?.name,
-			},
-			{
-				key: 'Oda',
-				value: newProductData.location.room,
-			},
-			{
-				key: 'Dolum periyodu',
-				value: formatRefillPeriod(newProductData.product.refill_period),
-			},
-		];
-	}
-	return [];
+  if (newProductData?.product && newProductData?.location) {
+    return [
+      {
+        key: "YSC no",
+        value: newProductData.location.location_id,
+      },
+      {
+        key: "Modeli",
+        value: newProductData.product.model_type,
+      },
+      {
+        key: "Bina",
+        value: newProductData.location.building_id?.name,
+      },
+      {
+        key: "Oda",
+        value: newProductData.location.room,
+      },
+      {
+        key: "Dolum periyodu",
+        value: formatRefillPeriod(newProductData.product.refill_period),
+      },
+    ];
+  }
+  return [];
 });
 const isRefillPeriodDirty = computed(() => {
-	if (!newProductData.product) return false;
-	return newProductData.product.refill_period !== selectedNewProductRefillPeriod.value;
+  if (!newProductData.product) return false;
+  return (
+    newProductData.product.refill_period !==
+    selectedNewProductRefillPeriod.value
+  );
 });
 
 async function getNewProductData(
-	newLocationId: string,
-	callback?: () => void,
-	showErrorAlert = true,
+  newLocationId: string,
+  callback?: () => void,
+  showErrorAlert = true,
 ) {
-	try {
-		loading.value = true;
-		if (!activeTenantSlug.value) {
-			throw new Error('Tenant slug missing');
-		}
-		const result = await getOfflineAwareMobileTransactionContext(
-			activeTenantSlug.value,
-			newLocationId,
-		);
-		const mobileTransaction = result.context;
-		if (!mobileTransaction?.location || !mobileTransaction?.product) {
-			throw new Error('Product not found');
-		}
-		newProductData.location = mobileTransaction.location;
-		newProductData.product = mobileTransaction.product;
-		selectedNewProductRefillPeriod.value
-				= mobileTransaction.product.refill_period ?? null;
-		callback?.();
-		return true;
-	}
-	catch (error) {
-		console.error('Error fetching product data:', error);
-		if (showErrorAlert) {
-			alert('YSC bulunamadı. Lütfen YSC noyu kontrol edin.');
-		}
-		return false;
-	}
-	finally {
-		loading.value = false;
-	}
+  try {
+    loading.value = true;
+    if (!activeTenantSlug.value) {
+      throw new Error("Tenant slug missing");
+    }
+    const result = await getOfflineAwareMobileTransactionContext(
+      activeTenantSlug.value,
+      newLocationId,
+    );
+    const mobileTransaction = result.context;
+    if (!mobileTransaction?.location || !mobileTransaction?.product) {
+      throw new Error("Product not found");
+    }
+    newProductData.location = mobileTransaction.location;
+    newProductData.product = mobileTransaction.product;
+    selectedNewProductRefillPeriod.value =
+      mobileTransaction.product.refill_period ?? null;
+    callback?.();
+    return true;
+  } catch (error) {
+    console.error("Error fetching product data:", error);
+    if (showErrorAlert) {
+      alert("YSC bulunamadı. Lütfen YSC noyu kontrol edin.");
+    }
+    return false;
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function updateNewProductRefillPeriod() {
-	if (
-		!newProductData.product?.id
-		|| !newProductData.location?.location_id
-		|| selectedNewProductRefillPeriod.value === null
-	) {
-		toast.add({
-			severity: 'warn',
-			summary: 'Eksik bilgi',
-			detail: 'Lütfen yeni ürün için dolum periyodu seçin.',
-			life: 2000,
-		});
-		return;
-	}
+  if (
+    !newProductData.product?.id ||
+    !newProductData.location?.location_id ||
+    selectedNewProductRefillPeriod.value === null
+  ) {
+    toast.add({
+      severity: "warn",
+      summary: "Eksik bilgi",
+      detail: "Lütfen yeni ürün için dolum periyodu seçin.",
+      life: 2000,
+    });
+    return;
+  }
 
-	loading.value = true;
-	try {
-		const response = await submitProductUpdate({
-			locationId: newProductData.location.location_id,
-			productId: newProductData.product.id,
-			patch: {
-				id: newProductData.product.id,
-				refill_period: selectedNewProductRefillPeriod.value,
-			} satisfies MobileProductPatchPayload,
-		});
+  loading.value = true;
+  try {
+    const response = await submitProductUpdate({
+      locationId: newProductData.location.location_id,
+      productId: newProductData.product.id,
+      patch: {
+        id: newProductData.product.id,
+        refill_period: selectedNewProductRefillPeriod.value,
+      } satisfies MobileProductPatchPayload,
+    });
 
-		const refreshSuccess = await getNewProductData(
-			newProductData.location.location_id,
-			undefined,
-			false,
-		);
-		if (!refreshSuccess) {
-			throw new Error('Refresh after refill update failed');
-		}
+    const refreshSuccess = await getNewProductData(
+      newProductData.location.location_id,
+      undefined,
+      false,
+    );
+    if (!refreshSuccess) {
+      throw new Error("Refresh after refill update failed");
+    }
 
-		toast.add({
-			severity: response.mode === 'queued' ? 'info' : 'success',
-			summary: 'Başarılı',
-			detail: response.mode === 'queued'
-				? 'Dolum periyodu kuyruğa alındı.'
-				: 'Yeni ürünün dolum periyodu güncellendi.',
-			life: 2000,
-		});
-	}
-	catch (error) {
-		console.error('Error updating refill period:', error);
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: 'Dolum periyodu güncellenirken bir hata oluştu.',
-			life: 2000,
-		});
-	}
-	finally {
-		loading.value = false;
-	}
+    toast.add({
+      severity: response.mode === "queued" ? "info" : "success",
+      summary: "Başarılı",
+      detail:
+        response.mode === "queued"
+          ? "Dolum periyodu kuyruğa alındı."
+          : "Yeni ürünün dolum periyodu güncellendi.",
+      life: 2000,
+    });
+  } catch (error) {
+    console.error("Error updating refill period:", error);
+    toast.add({
+      severity: "error",
+      summary: "Hata",
+      detail: "Dolum periyodu güncellenirken bir hata oluştu.",
+      life: 2000,
+    });
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function applyChanges(callback: () => void) {
-	loading.value = true;
-	try {
-		if (!newProductData.product?.id || !newProductData.location?.location_id) {
-			throw new Error('Missing new product data');
-		}
+  loading.value = true;
+  try {
+    if (!newProductData.product?.id || !newProductData.location?.location_id) {
+      throw new Error("Missing new product data");
+    }
 
-		const details = `arizali YSC no: ${currentProductData.location.location_id}, yeni YSC no: ${newProductData.location?.location_id}`;
+    const details = `arizali YSC no: ${currentProductData.location.location_id}, yeni YSC no: ${newProductData.location?.location_id}`;
 
-		const res = await submitProductSwitch({
-			currentLocationId: currentProductData.location.location_id,
-			newLocationId: newProductData.location.location_id,
-			details,
-		});
+    const res = await submitProductSwitch({
+      currentLocationId: currentProductData.location.location_id,
+      newLocationId: newProductData.location.location_id,
+      details,
+    });
 
-		callback();
-		toast.add({
-			severity: res.mode === 'queued' ? 'info' : 'success',
-			summary: 'Başarılı',
-			detail: res.mode === 'queued'
-				? 'Degisim kaydı kuyruğa alındı.'
-				: 'Degisim kaydı başarıyla oluşturuldu.',
-			life: 2000,
-		});
-	}
-	catch (error) {
-		console.error('Error switching products:', error);
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: 'Degisim kaydı oluşturulurken bir hata oluştu.',
-			life: 2000,
-		});
-	}
-	finally {
-		loading.value = false;
-	}
+    callback();
+    toast.add({
+      severity: res.mode === "queued" ? "info" : "success",
+      summary: "Başarılı",
+      detail:
+        res.mode === "queued"
+          ? "Degisim kaydı kuyruğa alındı."
+          : "Degisim kaydı başarıyla oluşturuldu.",
+      life: 2000,
+    });
+  } catch (error) {
+    console.error("Error switching products:", error);
+    toast.add({
+      severity: "error",
+      summary: "Hata",
+      detail: "Degisim kaydı oluşturulurken bir hata oluştu.",
+      life: 2000,
+    });
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function createInspectionForm() {
-	loading.value = true;
-	try {
-		const userId = (await supabase.auth.getUser()).data.user?.id;
-		const locationId = newProductData.location?.location_id;
+  loading.value = true;
+  try {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    const locationId = newProductData.location?.location_id;
 
-		if (!userId || !locationId) {
-			throw new Error('Missing inspection context');
-		}
+    if (!userId || !locationId) {
+      throw new Error("Missing inspection context");
+    }
 
-		const inspectionPayload: Omit<
-			MobileInspectionPayload,
-			'fire_extinguisher_id' | 'photo_url' | 'user_id'
-		> = {
-			position: true,
-			body: true,
-			control_card: true,
-			hose_and_nozzle: true,
-			instruction_and_label: true,
-			mass: true,
-			pin_and_seal: true,
-			pressure: true,
-			working_mechanism: true,
-			result: true,
-			note: null,
-			date: formatDateOnlyForApi(new Date()),
-			is_expiry: true,
-		};
-		const response = await submitInspection({
-			locationId,
-			userId,
-			inspection: inspectionPayload,
-			photoFile: compressedImage.value,
-			photoFileName: compressedImage.value?.name,
-			photoFileType: compressedImage.value?.type,
-		});
-		if (response.mode === 'queued') {
-			await syncNow();
-		}
-		drawerShow.value = true;
-	}
-	catch {
-		toast.add({
-			severity: 'error',
-			summary: 'Hata',
-			detail: 'Rutin kontrol formu oluşturulurken bir hata oluştu.',
-			life: 2000,
-		});
-	}
-	finally {
-		loading.value = false;
-	}
+    const inspectionPayload: Omit<
+      MobileInspectionPayload,
+      "fire_extinguisher_id" | "photo_url" | "user_id"
+    > = {
+      position: true,
+      body: true,
+      control_card: true,
+      hose_and_nozzle: true,
+      instruction_and_label: true,
+      mass: true,
+      pin_and_seal: true,
+      pressure: true,
+      working_mechanism: true,
+      result: true,
+      note: null,
+      date: formatDateOnlyForApi(new Date()),
+      is_expiry: true,
+    };
+    const response = await submitInspection({
+      locationId,
+      userId,
+      inspection: inspectionPayload,
+      photoFile: compressedImage.value,
+      photoFileName: compressedImage.value?.name,
+      photoFileType: compressedImage.value?.type,
+    });
+    if (response.mode === "queued") {
+      await syncNow();
+    }
+    drawerShow.value = true;
+  } catch {
+    toast.add({
+      severity: "error",
+      summary: "Hata",
+      detail: "Rutin kontrol formu oluşturulurken bir hata oluştu.",
+      life: 2000,
+    });
+  } finally {
+    loading.value = false;
+  }
 }
 
 // function handleScanComplete(scannedNumber: string) {
@@ -333,67 +326,45 @@ async function createInspectionForm() {
 </script>
 
 <template>
-	<div class="card flex justify-center border-t border-slate-200 pt-5">
-		<BaseLoader v-if="loading" />
-		<Stepper v-model:value="activeStep">
-			<StepList>
-				<Step
-					value="1"
-					as-child
-				>
-					<CustomStepperButton
-						step="1"
-						title="Yeni YSC"
-						:is-active="activeStep === '1'"
-						:is-done="parseInt(activeStep) > 1"
-					/>
-				</Step>
-				<Step
-					value="2"
-					as-child
-				>
-					<CustomStepperButton
-						step="2"
-						title="Degisim"
-						:is-active="activeStep === '2'"
-						:is-done="parseInt(activeStep) > 2"
-					/>
-				</Step>
-				<Step
-					value="3"
-					as-child
-				>
-					<CustomStepperButton
-						step="3"
-						title="Onay"
-						:is-active="activeStep === '3'"
-						:is-done="parseInt(activeStep) > 3"
-					/>
-				</Step>
-			</StepList>
-			<StepPanels>
-				<StepPanel
-					v-slot="{ activateCallback }"
-					value="1"
-				>
-					<div>
-						<h4 class="mb-4 mt-10 font-semibold text-slate-600">
-							Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
-						</h4>
+  <div class="">
+    <BaseLoader v-if="loading" />
+    <Stepper v-model:value="activeStep">
+      <StepItem value="1">
+        <Step value="1"> Yeni YSC </Step>
+        <StepPanel v-slot="{ activateCallback }">
+          <div>
+            <h4 class="app-text-muted mb-8">
+              Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
+            </h4>
 
-						<div>
-							<form
-								class="mt-auto w-full"
-								@submit.prevent
-							>
-								<div class="form-row">
+            <div>
+              <form class="mt-auto w-full" @submit.prevent>
+                <InputGroup size="small">
+                  <InputText
+                    id="building_area"
+                    v-model="newProductId"
+										size="small"
+                    placeholder="ATM-2"
+                  />
+                  <Button
+                    label="YSC Ara"
+                    severity="secondary"
+										size="small"
+                    @click="
+                      getNewProductData(newProductId, () =>
+                        activateCallback('2'),
+                      )
+                    "
+                  />
+                </InputGroup>
+                <!-- <div class="form-row">
 									<div class="form-item">
-										<label for="building_area">YSC no</label>
 										<div class="flex space-x-2">
 											<InputText
 												id="building_area"
 												v-model="newProductId"
 												placeholder="ATM-2"
+												size="small"
 												class="flex-1"
 											/>
 											<Button
@@ -407,199 +378,184 @@ async function createInspectionForm() {
 											/>
 										</div>
 									</div>
-								</div>
-							</form>
-							<Divider align="center">
-								<span class="text-sm">Veya</span>
-							</Divider>
-							<Button
-								class="w-full"
-								icon="ri-camera-fill"
-								outlined
-								label="QR Kod Tara"
-								@click="showScanner = true"
-							/>
-							<QRScanner
-								v-if="showScanner"
-								@close="showScanner = false"
-								@scan-complete="
-									(scannedNumber: string) => {
-										newProductId = scannedNumber;
-										showScanner = false;
-										getNewProductData(scannedNumber, () => {
-											activateCallback('2');
-										});
-									}
-								"
-							/>
-						</div>
-					</div>
-					<!-- <div class="p-4">
-						<div class="flex flex-col items-center mb-6">
-							<i class="ri-checkbox-circle-line text-6xl text-green-600" />
-							<h3 class="text-lg font-semibold mb-2">
-								Rutin kontrol formunu olusturdun
-							</h3>
-							<h4 class="text-gray-800 text-center">
-								YSC gerekli kontrollerden gecemedigi icin degistirilmesi gerekli! Devam ederek degisim islemini tamamlayabilirsin.
-							</h4>
-						</div>
-					</div> -->
+								</div> -->
+              </form>
+              <Divider align="center">
+                <span class="text-sm">Veya</span>
+              </Divider>
+              <Button
+                class="w-full"
+                icon="ri-camera-fill"
+                outlined
+                label="QR Kod Tara"
+                @click="showScanner = true"
+              />
+              <QRScanner
+                v-if="showScanner"
+                @close="showScanner = false"
+                @scan-complete="
+                  (scannedNumber: string) => {
+                    newProductId = scannedNumber;
+                    showScanner = false;
+                    getNewProductData(scannedNumber, () => {
+                      activateCallback('2');
+                    });
+                  }
+                "
+              />
+            </div>
+          </div>
+        </StepPanel>
+      </StepItem>
 
-					<!-- <div class="flex pt-6 justify-end">
-						<Button
-							label="Devam"
-							icon="ri-arrow-right-line"
-							icon-pos="right"
-							@click="activateCallback('2')"
-						/>
-					</div> -->
-				</StepPanel>
-				<StepPanel
-					v-slot="{ activateCallback }"
-					value="2"
-				>
-					<h4 class="mb-4 mt-10 font-semibold text-slate-600">
-						Bu adimda yeni ve eski YSC bilgilerini kontrol et, bilgiler dogruysa
-						son adim icin devam et
-					</h4>
-					<div>
-						<div class="bg-gray-400 rounded-xl p-px">
-							<h5 class="text-lg text-center font-semibold text-white">
-								MEVCUT
-							</h5>
-							<div class="mt-1 bg-white p-3 rounded-xl">
-								<ul class="space-y-2 list-disc list-inside">
-									<li
-										v-for="item in currentProductSummaryCardData"
-										:key="item.key"
-										class="flex space-x-1"
-									>
-										<p class="font-semibold">
-											{{ item.key }}:
-										</p>
-										<p class="truncate">
-											{{ item.value }}
-										</p>
-									</li>
-								</ul>
-							</div>
-						</div>
-						<Divider align="center">
-							<i class="ri-swap-line text-3xl" />
-						</Divider>
-						<div class="bg-green-600 rounded-xl p-px mb-12">
-							<h5 class="text-lg text-center font-semibold text-white">
-								YENI
-							</h5>
-							<div class="mt-1 bg-white p-3 rounded-xl">
-								<ul class="space-y-2 list-disc list-inside">
-									<li
-										v-for="item in newProductSummaryCardData"
-										:key="item.key"
-										class="flex space-x-1"
-									>
-										<p class="font-semibold">
-											{{ item.key }}:
-										</p>
-										<p class="truncate">
-											{{ item.value }}
-										</p>
-									</li>
-								</ul>
-							</div>
-						</div>
-						<div class="mb-8 rounded-xl border border-slate-200 p-4">
-							<h5 class="mb-3 text-base font-semibold text-slate-700">
-								Yeni ürün dolum periyodunu güncelle
-							</h5>
-							<div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-								<div class="w-full sm:max-w-xs">
-									<label
-										for="new-product-refill-period"
-										class="mb-1 block text-sm text-slate-600"
-									>
-										Dolum periyodu
-									</label>
-									<Select
-										id="new-product-refill-period"
-										v-model="selectedNewProductRefillPeriod"
-										:options="refillPeriodOptions"
-										option-label="label"
-										option-value="value"
-										placeholder="Periyot seçin"
-										class="w-full"
-									/>
-								</div>
-								<Button
-									label="Periyodu güncelle"
-									icon="ri-refresh-line"
-									:disabled="!isRefillPeriodDirty"
-									@click="updateNewProductRefillPeriod"
-								/>
-							</div>
-						</div>
-					</div>
+      <StepItem value="2">
+        <Step value="2"> Degisim </Step>
+        <StepPanel v-slot="{ activateCallback }">
+          <h4 class="mb-4 mt-10 font-semibold app-text-muted">
+            Bu adimda yeni ve eski YSC bilgilerini kontrol et, bilgiler dogruysa
+            son adim icin devam et
+          </h4>
+          <div>
+            <div
+              class="rounded-xl p-px"
+              style="background: var(--p-surface-400)"
+            >
+              <h5 class="text-lg text-center font-semibold text-white">
+                MEVCUT
+              </h5>
+              <div class="mt-1 app-surface p-3 rounded-xl">
+                <ul class="space-y-2 list-disc list-inside">
+                  <li
+                    v-for="item in currentProductSummaryCardData"
+                    :key="item.key"
+                    class="flex space-x-1"
+                  >
+                    <p class="font-semibold">{{ item.key }}:</p>
+                    <p class="truncate">
+                      {{ item.value }}
+                    </p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <Divider align="center">
+              <i class="ri-swap-line text-3xl" />
+            </Divider>
+            <div
+              class="rounded-xl p-px mb-12"
+              style="background: var(--p-green-600)"
+            >
+              <h5 class="text-lg text-center font-semibold text-white">YENI</h5>
+              <div class="mt-1 app-surface p-3 rounded-xl">
+                <ul class="space-y-2 list-disc list-inside">
+                  <li
+                    v-for="item in newProductSummaryCardData"
+                    :key="item.key"
+                    class="flex space-x-1"
+                  >
+                    <p class="font-semibold">{{ item.key }}:</p>
+                    <p class="truncate">
+                      {{ item.value }}
+                    </p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="mb-8 rounded-xl border app-border p-4">
+              <h5 class="mb-3 text-base font-semibold app-text">
+                Yeni ürün dolum periyodunu güncelle
+              </h5>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div class="w-full sm:max-w-xs">
+                  <label
+                    for="new-product-refill-period"
+                    class="mb-1 block text-sm app-text-muted"
+                  >
+                    Dolum periyodu
+                  </label>
+                  <Select
+                    id="new-product-refill-period"
+                    v-model="selectedNewProductRefillPeriod"
+                    :options="refillPeriodOptions"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="Periyot seçin"
+                    class="w-full"
+                  />
+                </div>
+                <Button
+                  label="Periyodu güncelle"
+                  icon="ri-refresh-line"
+                  :disabled="!isRefillPeriodDirty"
+                  @click="updateNewProductRefillPeriod"
+                />
+              </div>
+            </div>
+          </div>
 
-					<div class="pt-4 flex justify-between border-t border-slate-200">
-						<Button
-							label="Geri"
-							severity="secondary"
-							icon="ri-arrow-left-line"
-							@click="activateCallback('1')"
-						/>
-						<Button
-							label="Devam et"
-							icon="ri-arrow-right-line"
-							icon-pos="right"
-							@click="applyChanges(() => activateCallback('3'))"
-						/>
-					</div>
-				</StepPanel>
-				<StepPanel value="3">
-					<h4 class="mb-4 mt-10 font-semibold text-slate-600">
-						Son adimdasin! Bu adimda yeni YSC nin fotografini ekle ve degisim
-						kaydini tamamla.
-					</h4>
+          <div class="pt-4 flex justify-between border-t app-border">
+            <Button
+              label="Geri"
+              severity="secondary"
+              icon="ri-arrow-left-line"
+              @click="activateCallback('1')"
+            />
+            <Button
+              label="Devam et"
+              icon="ri-arrow-right-line"
+              icon-pos="right"
+              @click="applyChanges(() => activateCallback('3'))"
+            />
+          </div>
+        </StepPanel>
+      </StepItem>
 
-					<div class="card flex flex-col items-center gap-6">
-						<FileUpload
-							mode="basic"
-							custom-upload
-							auto
-							accept="image/*"
-							class="p-button-outlined p-button-secondary"
-							choose-label="Cihazın fotoğrafını çek/yükle"
-							:pt="{ input: { capture: 'environment' } }"
-							@select="onFileSelect"
-						>
-							<template #chooseicon>
-								<i class="ri-camera-line" />
-							</template>
-						</FileUpload>
-						<img
-							v-if="photo_url"
-							:src="photo_url"
-							alt="Image"
-							class="shadow-md rounded-xl w-64 sm:w-12"
-						>
-					</div>
+      <StepItem value="3">
+        <Step value="3"> Onay </Step>
+        <StepPanel>
+          <h4 class="mb-4 mt-10 font-semibold app-text-muted">
+            Son adimdasin! Bu adimda yeni YSC nin fotografini ekle ve degisim
+            kaydini tamamla.
+          </h4>
 
-					<div class="pt-4 border-t border-slate-200 mt-12 flex justify-end">
-						<Button
-							icon="ri-check-line"
-							icon-pos="right"
-							label="Degisim kaydini tamamla"
-							@click="createInspectionForm"
-						/>
-					</div>
-				</StepPanel>
-			</StepPanels>
-		</Stepper>
-		<TransactionsSuccessDialog
-			:visible="drawerShow"
-			title="Değişim kaydı başarıyla olusturuldu!"
-			@close="drawerShow = false"
-		/>
-	</div>
+          <div class="card flex flex-col items-center gap-6">
+            <FileUpload
+              mode="basic"
+              custom-upload
+              auto
+              accept="image/*"
+              class="p-button-outlined p-button-secondary"
+              choose-label="Cihazın fotoğrafını çek/yükle"
+              :pt="{ input: { capture: 'environment' } }"
+              @select="onFileSelect"
+            >
+              <template #chooseicon>
+                <i class="ri-camera-line" />
+              </template>
+            </FileUpload>
+            <img
+              v-if="photo_url"
+              :src="photo_url"
+              alt="Image"
+              class="shadow-md rounded-xl w-64 sm:w-12"
+            />
+          </div>
+
+          <div class="pt-4 border-t app-border mt-12 flex justify-end">
+            <Button
+              icon="ri-check-line"
+              icon-pos="right"
+              label="Degisim kaydini tamamla"
+              @click="createInspectionForm"
+            />
+          </div>
+        </StepPanel>
+      </StepItem>
+    </Stepper>
+    <TransactionsSuccessDialog
+      :visible="drawerShow"
+      title="Değişim kaydı başarıyla olusturuldu!"
+      @close="drawerShow = false"
+    />
+  </div>
 </template>

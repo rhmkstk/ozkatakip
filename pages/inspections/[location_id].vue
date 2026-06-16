@@ -103,9 +103,11 @@ const extinguisherInfo = computed(() => {
 
 const booleanIconClass = (value: boolean | null | undefined) => {
 	if (value === null || value === undefined) {
-		return 'ri-question-line text-slate-400';
+		return 'ri-question-line app-text-subtle';
 	}
-	return value ? 'ri-checkbox-circle-fill text-emerald-600' : 'ri-close-circle-fill text-rose-600';
+	return value
+		? 'ri-checkbox-circle-fill'
+		: 'ri-close-circle-fill';
 };
 
 const booleanAriaLabel = (value: boolean | null | undefined) => {
@@ -124,14 +126,14 @@ const getInspectionFieldValue = (key: string) => {
 
 const resultToneClass = computed(() => {
 	if (inspection.value?.result === true) {
-		return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+		return 'app-status-success';
 	}
 
 	if (inspection.value?.result === false) {
-		return 'border-rose-200 bg-rose-50 text-rose-700';
+		return 'app-status-danger';
 	}
 
-	return 'border-slate-200 bg-slate-100 text-slate-600';
+	return 'app-border app-bg-subtle app-text-muted';
 });
 
 const resultLabel = computed(() => {
@@ -148,14 +150,14 @@ const resultLabel = computed(() => {
 
 const inspectionFieldCardClass = (value: boolean | null | undefined) => {
 	if (value === true) {
-		return 'border-emerald-200 bg-emerald-50/70';
+		return 'app-status-success';
 	}
 
 	if (value === false) {
-		return 'border-rose-200 bg-rose-50/70';
+		return 'app-status-danger';
 	}
 
-	return 'border-slate-200 bg-slate-50';
+	return 'app-border app-bg-subtle';
 };
 
 useHead(() => ({
@@ -172,22 +174,22 @@ useHead(() => ({
 <template>
 	<div class="flex flex-col gap-5 pb-8">
 		<section
-			class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)]"
+			class="overflow-hidden rounded-[28px] border app-border app-surface shadow-sm"
 		>
 			<div
-				class="border-b border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.18),_transparent_42%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] px-5 py-5"
+				class="border-b app-border app-bg-subtle px-5 py-5"
 			>
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
-						<p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+						<p class="text-[11px] font-semibold uppercase tracking-[0.24em] app-text-muted">
 							YSC No
 						</p>
-						<p class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+						<p class="mt-2 text-3xl font-semibold tracking-tight app-text">
 							{{ locationLabel }}
 						</p>
 						<p
 							v-if="buildingLabel || roomLabel"
-							class="mt-2 text-sm text-slate-600"
+							class="mt-2 text-sm app-text-muted"
 						>
 							{{ roomLabel }}
 							<span v-if="buildingLabel && roomLabel"> · </span>
@@ -209,7 +211,7 @@ useHead(() => ({
 				</div>
 				<p
 					v-if="extinguisherInfo"
-					class="mt-4 max-w-2xl text-sm leading-6 text-slate-600"
+					class="mt-4 max-w-2xl text-sm leading-6 app-text-muted"
 				>
 					{{ extinguisherInfo }}
 				</p>
@@ -217,39 +219,39 @@ useHead(() => ({
 
 			<div class="grid gap-3 p-4 sm:grid-cols-2">
 				<div
-					class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 backdrop-blur"
+					class="rounded-2xl border app-border app-bg-subtle p-4 backdrop-blur"
 				>
-					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] app-text-muted">
 						Son kontrol tarihi
 					</p>
-					<p class="mt-2 text-base font-semibold leading-6 text-slate-900">
+					<p class="mt-2 text-base font-semibold leading-6 app-text">
 						{{ formattedLastInspectionDate || "Bilgi yok" }}
 					</p>
 				</div>
 				<div
-					class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 backdrop-blur"
+					class="rounded-2xl border app-border app-bg-subtle p-4 backdrop-blur"
 				>
-					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] app-text-muted">
 						Dolum tarihi
 					</p>
-					<p class="mt-2 text-base font-semibold leading-6 text-slate-900">
+					<p class="mt-2 text-base font-semibold leading-6 app-text">
 						{{ formattedRefillDate || "Bilgi yok" }}
 					</p>
 				</div>
 				<div
-					class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 backdrop-blur"
+					class="rounded-2xl border app-border app-bg-subtle p-4 backdrop-blur"
 				>
-					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] app-text-muted">
 						Son kontrolü yapan
 					</p>
-					<p class="mt-2 text-base font-semibold leading-6 text-slate-900">
+					<p class="mt-2 text-base font-semibold leading-6 app-text">
 						{{ inspectorLabel || "Bilgi yok" }}
 					</p>
 				</div>
 				<div
-					class="rounded-2xl border border-slate-200 bg-slate-900 p-4 text-slate-50 shadow-inner"
+					class="rounded-2xl border app-border app-surface-inverse p-4 shadow-inner"
 				>
-					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+					<p class="text-[11px] font-semibold uppercase tracking-[0.18em]" style="color: var(--p-surface-300)">
 						{{ headerLabels.result }}
 					</p>
 					<div class="mt-2 flex items-center gap-3">
@@ -269,22 +271,22 @@ useHead(() => ({
 
 		<div
 			v-if="pending"
-			class="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-300 bg-white/90 p-10 text-center shadow-[0_12px_30px_-24px_rgba(15,23,42,0.35)]"
+			class="flex flex-col items-center justify-center rounded-[24px] border border-dashed app-border-subtle app-surface p-10 text-center shadow-sm"
 		>
-			<i class="ri-loader-4-line text-2xl text-slate-500 animate-spin" />
-			<p class="mt-2 text-sm text-slate-500">
+			<i class="ri-loader-4-line text-2xl app-text-muted animate-spin" />
+			<p class="mt-2 text-sm app-text-muted">
 				Bakım kaydı yükleniyor...
 			</p>
 		</div>
 
 		<div
 			v-else-if="error"
-			class="rounded-[24px] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-600 shadow-[0_12px_30px_-24px_rgba(225,29,72,0.35)]"
+			class="rounded-[24px] border app-status-danger p-5 text-sm shadow-sm"
 		>
 			<p class="font-semibold">
 				Kayda ulaşılamadı.
 			</p>
-			<p class="mt-1 text-rose-500">
+			<p class="mt-1">
 				Lütfen bağlantınızı kontrol edip tekrar deneyin.
 			</p>
 			<Button
@@ -297,7 +299,7 @@ useHead(() => ({
 
 		<div
 			v-else-if="!inspection"
-			class="rounded-[24px] border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.35)]"
+			class="rounded-[24px] border app-border app-surface p-8 text-center app-text-muted shadow-sm"
 		>
 			<p class="font-semibold">
 				Bu lokasyon için kayıt bulunamadı.
@@ -309,18 +311,18 @@ useHead(() => ({
 
 		<template v-else>
 			<section
-				class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)]"
+				class="rounded-[28px] border app-border app-surface p-5 shadow-sm"
 			>
 				<div class="mb-5 flex items-end justify-between gap-3">
 					<div>
-						<p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+						<p class="text-[11px] font-semibold uppercase tracking-[0.24em] app-text-muted">
 							Kontrol listesi
 						</p>
-						<h2 class="mt-2 text-lg font-semibold tracking-tight text-slate-900">
+						<h2 class="mt-2 text-lg font-semibold tracking-tight app-text">
 							Bakım maddeleri
 						</h2>
 					</div>
-					<p class="text-xs text-slate-400">
+					<p class="text-xs app-text-subtle">
 						{{ inspectionFormFields.length }} madde
 					</p>
 				</div>
@@ -331,7 +333,7 @@ useHead(() => ({
 						class="rounded-2xl border p-4 transition-colors"
 						:class="inspectionFieldCardClass(getInspectionFieldValue(field.key))"
 					>
-						<p class="text-xs font-medium leading-5 text-slate-600">
+						<p class="text-xs font-medium leading-5 app-text-muted">
 							{{ field.label }}
 						</p>
 						<div class="mt-3 flex items-center justify-between gap-3">
@@ -341,7 +343,7 @@ useHead(() => ({
 								:aria-label="booleanAriaLabel(getInspectionFieldValue(field.key))"
 								role="img"
 							/>
-							<span class="text-xs font-medium text-slate-500">
+							<span class="text-xs font-medium app-text-muted">
 								{{ booleanAriaLabel(getInspectionFieldValue(field.key)) }}
 							</span>
 						</div>
@@ -351,29 +353,29 @@ useHead(() => ({
 
 			<section class="grid gap-4 lg:grid-cols-2">
 				<div
-					class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)]"
+					class="rounded-[24px] border app-border app-surface p-5 shadow-sm"
 				>
-					<p class="text-sm font-semibold text-slate-600">
+					<p class="text-sm font-semibold app-text-muted">
 						{{ headerLabels.note }}
 					</p>
 					<p
 						v-if="inspection.note"
-						class="mt-2 whitespace-pre-line text-sm text-slate-700"
+						class="mt-2 whitespace-pre-line text-sm app-text"
 					>
 						{{ inspection.note }}
 					</p>
 					<p
 						v-else
-						class="mt-2 text-sm text-slate-400"
+						class="mt-2 text-sm app-text-subtle"
 					>
 						Not girilmemiş.
 					</p>
 				</div>
 
 				<div
-					class="rounded-[24px] border border-slate-200 bg-white p-5 text-sm shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)]"
+					class="rounded-[24px] border app-border app-surface p-5 text-sm shadow-sm"
 				>
-					<p class="text-sm font-semibold text-slate-600">
+					<p class="text-sm font-semibold app-text-muted">
 						{{ headerLabels.photo_url }}
 					</p>
 					<div
@@ -384,7 +386,7 @@ useHead(() => ({
 					</div>
 					<p
 						v-else
-						class="mt-2 text-sm text-slate-400"
+						class="mt-2 text-sm app-text-subtle"
 					>
 						Fotoğraf bulunmuyor.
 					</p>

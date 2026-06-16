@@ -1,21 +1,24 @@
 <script lang="ts" setup>
+import UserBadge from "./UserBadge.vue";
+
 type Props = {
-	title?: string;
+  title?: string;
 };
 const props = defineProps<Props>();
 </script>
 
 <template>
-	<div class="flex items-center space-x-4 mb-6 p-6 -m-6 sticky -top-6 z-10 bg-white shadow-sm">
-		<slot />
-		<h2
-			v-if="props.title"
-			class="text-gray-500 text-sm"
-		>
-			{{ props.title }}
-		</h2>
-		<div class="ml-auto flex items-center space-x-2 shrink-0">
-			<slot name="right"/>
+  <div class="flex flex-col">
+    <div class="flex justify-between border-b app-border-subtle p-4">
+      <h2 v-if="props.title" class="text-2xl font-semibold">
+        {{ props.title }}
+      </h2>
+      <div class="ml-auto shrink-0">
+        <UserBadge />
+      </div>
+    </div>
+		<div class="flex w-full p-4">
+			<slot/>
 		</div>
-	</div>
+  </div>
 </template>

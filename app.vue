@@ -2,7 +2,7 @@
 	<div>
 		<NuxtPwaManifest />
 		<NuxtLoadingIndicator
-			color="#0ea5e9"
+			color="var(--p-primary-color)"
 			:height="3"
 		/>
 		<NuxtLayout>

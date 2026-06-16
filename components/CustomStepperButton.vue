@@ -13,13 +13,14 @@ defineProps<Props>();
 	<button class="flex flex-col space-y-2 items-center">
 		<div
 			class="size-8 rounded-full border-2 flex items-center justify-center text-lg font-semibold"
-			:class="isActive ? 'border-green-300 text-green-600' : 'border-slate-100 text-slate-400'"
+			:class="isActive ? '' : 'app-text-subtle'"
+			:style="isActive ? 'border-color: var(--p-green-300); color: var(--p-green-600)' : 'border-color: var(--p-surface-100)'"
 		>
 			{{ isDone ? '✓' : step }}
 		</div>
 		<span
 			class="font-semibold text-sm"
-			:class="isActive ? 'text-slate-600' : 'text-slate-400'"
+			:class="isActive ? 'app-text-muted' : 'app-text-subtle'"
 		>
 			{{ title }}
 		</span>

@@ -59,8 +59,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<div class="flex flex-col h-full absolute inset-0 size-full z-50 bg-slate-800">
-		<header class="flex items-center py-4 px-3 bg-slate-900 text-white">
+	<div class="flex flex-col h-full absolute inset-0 size-full z-50 app-overlay">
+		<header class="flex items-center py-4 px-3 app-surface-inverse">
 			<button
 				class="flex"
 				@click="$emit('close')"

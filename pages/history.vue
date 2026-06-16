@@ -51,6 +51,19 @@ const activeFilterCount = computed(() => {
 	return count;
 });
 
+const getTransactionRowClass = (rowData: { type?: string }) => {
+	if (rowData.type === 'change') {
+		return 'app-row-transaction-change';
+	}
+	if (rowData.type === 'fill') {
+		return 'app-row-transaction-fill';
+	}
+	if (rowData.type === 'other') {
+		return 'app-row-transaction-other';
+	}
+	return '';
+};
+
 const getDateRangeQuery = () => {
 	if (filters.dateMode === 'none' || !filters.date) {
 		return {};
@@ -180,55 +193,54 @@ const columns = [
 
 <template>
 	<div>
-		<PageHeader title="İşlem kayıtları listeleniyor">
-			<template #right>
-				<Button
-					:outlined="!hasActiveFilters"
-					size="small"
-					@click="showFilters = true"
+		<PageHeader title="İşlem kayıtları">
+			<Button
+				:outlined="!hasActiveFilters"
+				size="small"
+				class="ml-auto"
+				@click="showFilters = true"
+			>
+				<i class="ri-filter-3-line text-base" />
+				<span>Filtreler</span>
+				<span
+					v-if="activeFilterCount"
+					class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium app-badge-muted"
 				>
-					<i class="ri-filter-3-line text-base" />
-					<span>Filtreler</span>
-					<span
-						v-if="activeFilterCount"
-						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
-					>
-						{{ activeFilterCount }}
-					</span>
-				</Button>
-				<Button
-					v-if="hasActiveFilters"
-					label="Temizle"
-					icon="pi pi-times"
-					size="small"
-					severity="secondary"
-					outlined
-					@click="clearFilters"
-				/>
-			</template>
+					{{ activeFilterCount }}
+				</span>
+			</Button>
+			<Button
+				v-if="hasActiveFilters"
+				label="Temizle"
+				icon="ri-close-line"
+				size="small"
+				severity="secondary"
+				outlined
+				@click="clearFilters"
+			/>
 		</PageHeader>
 
 		<Drawer
 			v-model:visible="showFilters"
 			header="Filtreler"
-			position="left"
+			position="right"
 			:style="{ width: '22rem' }"
 		>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">İşlem tarihi</label>
+					<label class="app-label">İşlem tarihi</label>
 					<Select
 						v-model="filters.dateMode"
 						:options="dateModeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 					/>
 				</div>
 				<div
 					v-if="filters.dateMode !== 'none'"
 					class="flex flex-col gap-2"
 				>
-					<label class="text-sm font-medium text-gray-600">Tarih</label>
+					<label class="app-label">Tarih</label>
 					<DatePicker
 						v-model="filters.date"
 						:view="filters.dateMode === 'monthly' ? 'month' : 'date'"
@@ -238,30 +250,30 @@ const columns = [
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">İşlem tipi</label>
+					<label class="app-label">İşlem tipi</label>
 					<Select
 						v-model="filters.type"
 						:options="typeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 						placeholder="İşlem tipi seç"
 						show-clear
 					/>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label class="text-sm font-medium text-gray-600">İşlemi yapan kullanıcı</label>
+					<label class="app-label">İşlemi yapan kullanıcı</label>
 					<Select
 						v-model="filters.user"
 						:options="userOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 						placeholder="Kullanıcı seç"
 						filter
 						show-clear
 					/>
 				</div>
 			</div>
-			<div class="mt-6 flex items-center gap-2">
+			<div class="mt-6 flex items-center justify-end gap-2">
 				<Button
 					label="Temizle"
 					severity="secondary"
@@ -291,9 +303,9 @@ const columns = [
 			<DataTable
 				:value="tabledata"
 				:loading="isLoading"
-				striped-rows
 				size="large"
 				class="text-sm"
+				:row-class="getTransactionRowClass"
 			>
 				<Column
 					v-for="item in columns"

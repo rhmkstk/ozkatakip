@@ -34,6 +34,7 @@ const createForm = reactive({
 	role: 'employee' as Role,
 });
 
+const createDialogVisible = ref(false);
 const editDialogVisible = ref(false);
 const editTargetId = ref<string | null>(null);
 const editForm = reactive({
@@ -147,6 +148,7 @@ const createUser = async () => {
 		});
 
 		resetCreateForm();
+		createDialogVisible.value = false;
 		await Promise.all([loadUsers(), loadUserDirectory(true), loadCurrentUser(true)]);
 	}
 	catch (error: unknown) {
@@ -275,86 +277,47 @@ await loadUsers();
 <template>
 	<div>
 		<div class="space-y-6">
-			<PageHeader title="Kullanıcı yönetimi" />
+			<PageHeader title="Kullanıcı yönetimi">
+				<div class="ml-auto">
+					<Button
+						label="Yeni kullanıcı"
+						icon="ri-user-add-line"
+						size="small"
+						@click="createDialogVisible = true"
+					/>
+				</div>
+			</PageHeader>
 
-			<Card>
-				<template #title>
-					Yeni kullanıcı oluştur
-				</template>
-				<template #content>
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div class="flex flex-col gap-1">
-							<label>Ad</label>
-							<InputText v-model.trim="createForm.firstName" :disabled="saving" />
-						</div>
-						<div class="flex flex-col gap-1">
-							<label>Soyad</label>
-							<InputText v-model.trim="createForm.lastName" :disabled="saving" />
-						</div>
-						<div class="flex flex-col gap-1">
-							<label>Kullanıcı adı</label>
-							<div class="relative">
-								<InputText
-									v-model="createForm.username"
-									class="w-full pr-10"
-									disabled
-								/>
-								<button
-									type="button"
-									class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-									:disabled="!createForm.username"
-									@click="copyUsername(createForm.username)"
-								>
-									<i class="ri-file-copy-line text-lg" />
-								</button>
-							</div>
-						</div>
-						<div class="flex flex-col gap-1">
-							<label>Şifre</label>
-							<Password
-								v-model="createForm.password"
-								:feedback="false"
-								toggle-mask
-								input-class="w-full"
-								class="w-full"
-								:disabled="saving"
-							/>
-						</div>
-						<div class="flex flex-col gap-1">
-							<label>Rol</label>
-							<Select
-								v-model="createForm.role"
-								:options="roleOptions"
-								optionLabel="label"
-								optionValue="value"
-								:disabled="saving"
-							/>
-						</div>
-					</div>
-					<div class="mt-4">
-						<Button
-							label="Kullanıcı oluştur"
-							:loading="saving"
-							:disabled="saving || !createForm.firstName || !createForm.lastName || !createForm.username || !createForm.password || !createForm.role"
-							@click="createUser"
-						/>
-					</div>
-				</template>
-			</Card>
-
-			<Message v-if="errorMessage" severity="error" :closable="false">
+			<Message
+				v-if="errorMessage"
+				severity="error"
+				:closable="false"
+			>
 				{{ errorMessage }}
 			</Message>
 
-			<Card>
-				<template #title>
+			<section class="px-4">
+				<h3 class="mb-3 text-lg font-semibold">
 					Mevcut kullanıcılar
-				</template>
-				<template #content>
-					<DataTable :value="users" :loading="loading" stripedRows>
-						<Column field="first_name" header="Ad" />
-						<Column field="last_name" header="Soyad" />
-						<Column field="username" header="Kullanıcı adı" />
+				</h3>
+				<div class="overflow-x-auto">
+					<DataTable
+						:value="users"
+						:loading="loading"
+						striped-rows
+					>
+						<Column
+							field="first_name"
+							header="Ad"
+						/>
+						<Column
+							field="last_name"
+							header="Soyad"
+						/>
+						<Column
+							field="username"
+							header="Kullanıcı adı"
+						/>
 						<Column header="Rol">
 							<template #body="{ data }">
 								{{ roleLabel(data.role) }}
@@ -362,23 +325,120 @@ await loadUsers();
 						</Column>
 						<Column header="Durum">
 							<template #body="{ data }">
-								<Tag :value="statusLabel(data.is_active)" :severity="data.is_active ? 'success' : 'secondary'" />
+								<Tag
+									:value="statusLabel(data.is_active)"
+									:severity="data.is_active ? 'success' : 'secondary'"
+									:variant="data.is_active ? 'outlined' : undefined"
+								/>
 							</template>
 						</Column>
 						<Column header="İşlem">
 							<template #body="{ data }">
 								<div class="flex gap-2">
-									<Button size="small" outlined label="Güncelle" @click="startEdit(data)" />
-									<Button size="small" severity="danger" outlined label="Sil" @click="deleteUser(data)" />
+									<Button
+										size="small"
+										label="Güncelle"
+										@click="startEdit(data)"
+									/>
+									<Button
+										size="small"
+										severity="danger"
+										label="Sil"
+										@click="deleteUser(data)"
+									/>
 								</div>
 							</template>
 						</Column>
 					</DataTable>
-				</template>
-			</Card>
+				</div>
+			</section>
 		</div>
 
-		<Dialog v-model:visible="editDialogVisible" modal header="Kullanıcı güncelle" :style="{ width: '32rem' }">
+		<Dialog
+			v-model:visible="createDialogVisible"
+			modal
+			header="Yeni kullanıcı oluştur"
+			:style="{ width: '32rem' }"
+		>
+			<div class="space-y-3">
+				<div class="flex flex-col gap-1">
+					<label>Ad</label>
+					<InputText
+						v-model.trim="createForm.firstName"
+						:disabled="saving"
+					/>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label>Soyad</label>
+					<InputText
+						v-model.trim="createForm.lastName"
+						:disabled="saving"
+					/>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label>Kullanıcı adı</label>
+					<div class="relative">
+						<InputText
+							v-model="createForm.username"
+							class="w-full pr-10"
+							disabled
+						/>
+						<button
+							type="button"
+							class="absolute right-3 top-1/2 -translate-y-1/2 app-icon-button transition disabled:cursor-not-allowed disabled:opacity-50"
+							:disabled="!createForm.username"
+							@click="copyUsername(createForm.username)"
+						>
+							<i class="ri-file-copy-line text-lg" />
+						</button>
+					</div>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label>Şifre</label>
+					<Password
+						v-model="createForm.password"
+						:feedback="false"
+						toggle-mask
+						input-class="w-full"
+						class="w-full"
+						:disabled="saving"
+					/>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label>Rol</label>
+					<Select
+						v-model="createForm.role"
+						:options="roleOptions"
+						option-label="label"
+						option-value="value"
+						:disabled="saving"
+					/>
+				</div>
+			</div>
+
+			<template #footer>
+				<Button
+					label="İptal"
+					severity="secondary"
+					text
+					:disabled="saving"
+					@click="createDialogVisible = false"
+				/>
+				<Button
+					label="Kullanıcı oluştur"
+					:loading="saving"
+					:disabled="saving || !createForm.firstName || !createForm.lastName || !createForm.username || !createForm.password || !createForm.role"
+					@click="createUser"
+				/>
+			</template>
+		</Dialog>
+
+		<Dialog
+			v-model:visible="editDialogVisible"
+			modal
+			header="Kullanıcı güncelle"
+			:style="{ width: '32rem' }"
+		>
 			<div class="space-y-3">
 				<div class="flex flex-col gap-1">
 					<label>Ad</label>
@@ -398,7 +458,7 @@ await loadUsers();
 						/>
 						<button
 							type="button"
-							class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+							class="absolute right-3 top-1/2 -translate-y-1/2 app-icon-button transition disabled:cursor-not-allowed disabled:opacity-50"
 							:disabled="!editForm.username"
 							@click="copyUsername(editForm.username)"
 						>
@@ -421,14 +481,19 @@ await loadUsers();
 					<Select
 						v-model="editForm.role"
 						:options="roleOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 					/>
 				</div>
 			</div>
 
 			<template #footer>
-				<Button label="İptal" severity="secondary" text @click="editDialogVisible = false" />
+				<Button
+					label="İptal"
+					severity="secondary"
+					text
+					@click="editDialogVisible = false"
+				/>
 				<Button
 					label="Kaydet"
 					:loading="saving"

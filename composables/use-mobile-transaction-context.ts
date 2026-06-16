@@ -59,7 +59,7 @@ export async function useMobileTransactionContext(locationId: string) {
 				})
 			: '';
 
-		return `  Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
+		return `Bu YSC numarasina ${formattedDate} tarihinde bir bakım kaydı girilmiş. Yine de bakım kaydı oluşturmak istiyor musunuz?`;
 	});
 
 	const isRefillDateExpired = computed(() => {

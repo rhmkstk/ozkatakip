@@ -5,7 +5,7 @@ const { toTenantPath } = useTenant();
 </script>
 
 <template>
-	<div class="flex flex-col space-y-4 h-dvh pb-4">
+	<div class="flex flex-col space-y-4 pb-4">
 		<div class="mt-auto">
 			<form
 				class="w-full"

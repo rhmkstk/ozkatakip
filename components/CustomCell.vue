@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { defineComponent, h } from 'vue';
 import ZoomImage from './ZoomImage.vue';
 import { productStatusTypeLabels, transactionTypeLabels } from '~/constants';
 
@@ -14,6 +15,76 @@ const { getUserNameById, loadUserDirectory } = useUserDirectory();
 
 onMounted(() => {
 	loadUserDirectory();
+});
+
+const CreatedAtCell = defineComponent({
+	props: {
+		value: {
+			type: String,
+			default: null,
+		},
+	},
+	setup(cellProps) {
+		return () => {
+			const formattedDateTime = formatTurkishDateTime(cellProps.value);
+			const [date, time] = formattedDateTime.includes(' ')
+				? formattedDateTime.split(' ')
+				: [formattedDateTime, ''];
+			const children = [
+				h('span', {
+					class: 'font-medium app-text',
+				}, date),
+			];
+
+			if (time) {
+				children.push(
+					h('span', {
+						class: 'inline-flex items-center gap-1 text-xs app-text-muted',
+					}, [
+						h('i', {
+							'class': 'ri-time-line text-sm leading-none',
+							'aria-hidden': 'true',
+						}),
+						h('span', time),
+					]),
+				);
+			}
+
+			return h('span', {
+				class: 'inline-flex flex-col items-start gap-0.5 whitespace-nowrap leading-tight',
+			}, children);
+		};
+	},
+});
+
+const TransactionTypeCell = defineComponent({
+	props: {
+		value: {
+			type: String,
+			default: '',
+		},
+	},
+	setup(cellProps) {
+		return () => {
+			const iconMap: Record<string, string> = {
+				fill: 'ri-ink-bottle-line',
+				inspection: 'ri-shield-check-line',
+				change: 'ri-exchange-line',
+				other: 'ri-more-line',
+			};
+			const label = transactionTypeLabels[cellProps.value as keyof typeof transactionTypeLabels] || cellProps.value;
+
+			return h('span', {
+				class: 'inline-flex items-center gap-2 whitespace-nowrap',
+			}, [
+				h('i', {
+					'class': `${iconMap[cellProps.value] || 'ri-more-line'} text-base leading-none app-text-muted`,
+					'aria-hidden': 'true',
+				}),
+				h('span', label),
+			]);
+		};
+	},
 });
 
 // function converIsoString(isoString: string): string {
@@ -34,8 +105,11 @@ const customCells = {
 		name: 'i',
 		props: {
 			class: value
-				? 'ri-check-fill text-3xl text-green-600 font-semibold'
-				: props.type === 'fill' ? 'ri-subtract-line text-3xl font-semibold text-gray-500' : 'ri-close-line text-3xl text-red-600 font-semibold',
+				? 'ri-check-fill text-3xl font-semibold'
+				: props.type === 'fill' ? 'ri-subtract-line text-3xl font-semibold app-text-muted' : 'ri-close-line text-3xl font-semibold',
+			style: value
+				? 'color: var(--p-green-600)'
+				: props.type === 'fill' ? undefined : 'color: var(--p-red-600)',
 		},
 		text: null,
 	}),
@@ -48,9 +122,11 @@ const customCells = {
 		text: null,
 	}),
 	type: (value: string) => ({
-		name: 'span',
-		props: {},
-		text: transactionTypeLabels[value as keyof typeof transactionTypeLabels] || value,
+		name: TransactionTypeCell,
+		props: {
+			value,
+		},
+		text: null,
 	}),
 	productStatus: (value: string) => ({
 		name: 'span',
@@ -82,9 +158,11 @@ const componentDefinitions = {
 		text: formatTurkishMonthYear(value),
 	}),
 	'created_at': (value: string) => ({
-		name: 'span',
-		props: {},
-		text: formatTurkishDateTime(value),
+		name: CreatedAtCell,
+		props: {
+			value,
+		},
+		text: null,
 	}),
 	'manufacture_year': (value: string) => ({
 		name: 'span',

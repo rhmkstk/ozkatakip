@@ -3,6 +3,21 @@
 @theme {
   --font-display: "Inter", sans-serif;
 }
+
+@layer base {
+  html,
+  body,
+  #__nuxt {
+    min-height: 100%;
+  }
+
+  body {
+    color: var(--p-text-color);
+    background: var(--p-surface-0);
+    font-family: var(--font-display);
+  }
+}
+
 @layer components {
   .form-row {
     @apply flex space-x-6 w-full;
@@ -11,18 +26,173 @@
     @apply flex flex-col gap-1 flex-1;
   }
   .form-item label {
-    @apply text-gray-600 text-sm;
+    @apply text-sm;
+    color: var(--p-text-muted-color);
   }
-}
 
-body {
-  @apply text-gray-900 bg-slate-100;
-}
+  .app-surface {
+    background: var(--p-surface-0);
+    color: var(--p-text-color);
+    border: 1px solid var(--p-content-border-color);
+  }
 
-html,
-body,
-#__nuxt {
-  min-height: 100%;
+  .app-card {
+    background: var(--p-surface-0);
+    color: var(--p-text-color);
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--p-surface-900) 8%, transparent);
+  }
+
+  .app-panel {
+    background: var(--p-content-background);
+    color: var(--p-text-color);
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 16px;
+  }
+
+  .app-label {
+    @apply text-sm leading-4;
+    color: var(--p-text-muted-color);
+  }
+
+  .app-border {
+    border-color: var(--p-content-border-color);
+  }
+
+  .app-border-subtle {
+    border-color: var(--p-surface-200);
+  }
+
+  .app-text {
+    color: var(--p-text-color);
+  }
+
+  .app-text-soft {
+    color: var(--p-text-hover-color);
+  }
+
+  .app-text-muted {
+    color: var(--p-text-muted-color);
+  }
+
+  .app-text-subtle {
+    color: var(--p-surface-400);
+  }
+
+  .app-text-primary {
+    color: var(--p-primary-color);
+  }
+
+  .app-bg-primary {
+    background: var(--p-primary-color);
+    color: var(--p-primary-contrast-color);
+  }
+
+  .app-bg-subtle {
+    background: var(--p-surface-100);
+    color: var(--p-text-color);
+  }
+
+  .app-bg-muted {
+    background: color-mix(in srgb, var(--p-surface-0) 70%, transparent);
+    color: var(--p-text-color);
+  }
+
+  .app-badge-muted {
+    background: color-mix(in srgb, var(--p-surface-0) 70%, transparent);
+    color: var(--p-text-color);
+  }
+
+  .app-highlight {
+    background: var(--p-highlight-background);
+    color: var(--p-highlight-color);
+  }
+
+  .app-shell {
+    background: var(--p-surface-100);
+    color: var(--p-text-color);
+  }
+
+  .app-shell-panel {
+    background: var(--p-surface-0);
+    color: var(--p-text-color);
+    border: 1px solid var(--p-content-border-color);
+  }
+
+  .app-icon-button {
+    color: var(--p-text-muted-color);
+  }
+
+  .app-icon-button:hover {
+    background: var(--p-surface-100);
+    color: var(--p-text-color);
+  }
+
+  .app-divider {
+    border-color: var(--p-content-border-color);
+  }
+
+  .app-status-success {
+    background: color-mix(in srgb, var(--p-green-500) 12%, var(--p-surface-0));
+    border-color: color-mix(in srgb, var(--p-green-500) 28%, var(--p-surface-0));
+    color: var(--p-green-700);
+  }
+
+  .app-status-success-soft {
+    background: color-mix(in srgb, var(--p-green-500) 12%, var(--p-surface-0));
+    color: var(--p-green-600);
+  }
+
+  .app-status-danger {
+    background: color-mix(in srgb, var(--p-red-500) 12%, var(--p-surface-0));
+    border-color: color-mix(in srgb, var(--p-red-500) 28%, var(--p-surface-0));
+    color: var(--p-red-700);
+  }
+
+  .app-row-danger {
+    background: color-mix(in srgb, var(--p-red-500) 10%, var(--p-surface-0));
+  }
+
+  .app-row-transaction-change,
+  .app-row-transaction-change > td {
+    background: color-mix(in srgb, var(--p-blue-500) 10%, var(--p-surface-0));
+  }
+
+  .app-row-transaction-fill,
+  .app-row-transaction-fill > td {
+    background: color-mix(in srgb, var(--p-green-500) 8%, var(--p-surface-0));
+  }
+
+  .app-row-transaction-other,
+  .app-row-transaction-other > td {
+    background: color-mix(in srgb, var(--p-surface-400) 14%, var(--p-surface-0));
+  }
+
+  .app-status-warn {
+    background: color-mix(in srgb, var(--p-orange-500) 12%, var(--p-surface-0));
+    border-color: color-mix(in srgb, var(--p-orange-500) 28%, var(--p-surface-0));
+    color: var(--p-orange-800);
+  }
+
+  .app-status-warn-strong {
+    background: color-mix(in srgb, var(--p-orange-500) 18%, var(--p-surface-0));
+    color: var(--p-orange-900);
+  }
+
+  .app-overlay {
+    background: color-mix(in srgb, var(--p-surface-900) 80%, transparent);
+    color: var(--p-surface-0);
+  }
+
+  .app-overlay-soft {
+    background: color-mix(in srgb, var(--p-surface-200) 70%, transparent);
+  }
+
+  .app-surface-inverse {
+    background: var(--p-surface-900);
+    color: var(--p-surface-0);
+  }
 }
 
 @media (display-mode: standalone) {

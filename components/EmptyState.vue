@@ -20,7 +20,7 @@ defineProps<Props>();
       </div>
     </template>
     <template #subtitle>
-      <div class="text-center text-gray-500 mt-2">
+      <div class="text-center app-text-muted mt-2">
         <span v-if="subtitle">{{ subtitle }}</span>
         <slot v-else name="subtitle"></slot>
       </div>

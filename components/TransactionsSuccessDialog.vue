@@ -72,11 +72,11 @@ onUnmounted(() => {
 		:modal="true"
 	>
 		<div class="flex flex-col items-center pt-4">
-			<i class="ri-checkbox-circle-line text-6xl text-green-600 mb-2" />
+			<i class="ri-checkbox-circle-line text-6xl mb-2" style="color: var(--p-green-600)" />
 			<h3 class="text-lg font-semibold mb-2">
 				{{ title }}
 			</h3>
-			<p class="text-sm text-gray-600 mb-6">
+			<p class="text-sm app-text-muted mb-6">
 				<span class="font-semibold">{{ countDown }}</span> saniye içerisinde anasayfaya yönlendirileceksiniz.
 			</p>
 		</div>
