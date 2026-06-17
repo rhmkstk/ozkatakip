@@ -29,6 +29,14 @@ type InspectionResponse = Tables<'inspections'> & {
 
 const route = useRoute();
 const locationId = computed(() => route.params.location_id as string);
+const tenantSlug = computed(() => {
+	const routeTenantSlug = route.params.tenantSlug;
+	return typeof routeTenantSlug === 'string' ? routeTenantSlug : undefined;
+});
+const requestParams = computed(() => ({
+	location_id: locationId.value,
+	...(tenantSlug.value ? { tenant_slug: tenantSlug.value } : {}),
+}));
 
 const {
 	data: inspections,
@@ -36,8 +44,8 @@ const {
 	error,
 	refresh,
 } = await useFetch<InspectionResponse[]>('/api/inspections/getByLocationId', {
-	params: { location_id: locationId },
-	watch: [locationId],
+	params: requestParams,
+	watch: [requestParams],
 	immediate: true,
 	default: () => [],
 });
