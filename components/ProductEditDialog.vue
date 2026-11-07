@@ -274,7 +274,7 @@ watch(
 		v-model:visible="visibleModel"
 		modal
 		header="Ürün Bilgilerini Düzenle"
-		:style="{ width: '50rem' }"
+		:style="{ width: '50rem', maxWidth: '95vw' }"
 	>
 		<BaseLoader v-if="editProductSaving" />
 		<div class="space-y-6">

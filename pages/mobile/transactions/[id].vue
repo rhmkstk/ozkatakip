@@ -10,6 +10,13 @@ import {
   productStatusTypeLabels,
 } from "~/constants";
 
+type FetchError = {
+  data?: {
+    message?: string;
+  };
+  message?: string;
+};
+
 definePageMeta({
   layout: "mobile",
 });
@@ -23,6 +30,12 @@ const lastInspectionDate = ref<Date | null>(null);
 const showInspectionAlert = ref(false);
 const compressedImage = ref<File | null>(null);
 const inspectionFormLoading = ref(false);
+const locationFormLoading = ref(false);
+const buildingFormLoading = ref(false);
+const showBuildingForm = ref(false);
+const productEditVisible = ref(false);
+const buildings = ref<Database["public"]["Tables"]["location_buildings"]["Row"][]>([]);
+const newBuildingName = ref("");
 const drawersShow = reactive({
   change: false,
   success: false,
@@ -56,6 +69,12 @@ const fillForm = reactive({
   paint: false,
   hydrostatic_pressure_test: false,
   user_id: null,
+});
+
+const locationForm = reactive({
+  buildingId: null as number | null,
+  room: "",
+  locationId: "",
 });
 
 const isLoading = computed(() => {
@@ -95,7 +114,7 @@ const controlFields = [
   "is_expiry",
 ];
 
-const { data, status, error } = await useAsyncData("product", async () => {
+const { data, status, error, refresh } = await useAsyncData("product", async () => {
   const location = await $fetch("/api/locations/getByLocationId", {
     params: { location_id: route.params.id },
   });
@@ -113,6 +132,132 @@ const { data, status, error } = await useAsyncData("product", async () => {
 
   return { product: product[0], location: location[0] };
 });
+
+const editableProduct = computed(() => {
+  if (!data.value) {
+    return null;
+  }
+
+  return {
+    ...data.value.product,
+    locations: data.value.location,
+  };
+});
+
+const loadBuildings = async () => {
+  const response = await $fetch<Database["public"]["Tables"]["location_buildings"]["Row"][]>(
+    "/api/location-buildings",
+  );
+  buildings.value = Array.isArray(response) ? response : [];
+};
+
+const resetLocationForm = () => {
+  locationForm.buildingId = null;
+  locationForm.room = "";
+  locationForm.locationId = "";
+};
+
+const saveNewBuilding = async () => {
+  const name = newBuildingName.value.trim();
+  if (!name) {
+    toast.add({
+      severity: "warn",
+      summary: "Uyarı",
+      detail: "Bina adı boş olamaz.",
+      life: 2500,
+    });
+    return;
+  }
+
+  buildingFormLoading.value = true;
+  try {
+    const building = await $fetch<Database["public"]["Tables"]["location_buildings"]["Row"]>(
+      "/api/location-buildings",
+      {
+        method: "POST",
+        body: { name },
+      },
+    );
+    await loadBuildings();
+    locationForm.buildingId = building.id;
+    newBuildingName.value = "";
+    showBuildingForm.value = false;
+    toast.add({
+      severity: "success",
+      summary: "Başarılı",
+      detail: "Bina kaydedildi.",
+      life: 2000,
+    });
+  } catch (error) {
+    console.error("Error saving building:", error);
+    toast.add({
+      severity: "error",
+      summary: "Hata",
+      detail: "Bina kaydedilirken bir hata oluştu.",
+      life: 3000,
+    });
+  } finally {
+    buildingFormLoading.value = false;
+  }
+};
+
+const moveProduct = async () => {
+  if (
+    !data.value?.product.id ||
+    !locationForm.buildingId ||
+    !locationForm.room.trim() ||
+    !locationForm.locationId.trim()
+  ) {
+    toast.add({
+      severity: "warn",
+      summary: "Uyarı",
+      detail: "Bina, bulunduğu yer ve YSC No alanlarını doldurun.",
+      life: 3000,
+    });
+    return;
+  }
+
+  locationFormLoading.value = true;
+  try {
+    await $fetch("/api/products/move", {
+      method: "POST",
+      body: {
+        productId: data.value.product.id,
+        buildingId: locationForm.buildingId,
+        room: locationForm.room,
+        locationId: locationForm.locationId,
+      },
+    });
+
+    resetLocationForm();
+    toast.add({
+      severity: "success",
+      summary: "Başarılı",
+      detail: "Tüpün konumu güncellendi.",
+      life: 2500,
+    });
+
+    await navigateTo(toTenantPath("/mobile"), { replace: true });
+  } catch (error) {
+    console.error("Error moving product:", error);
+    const fetchError = error as FetchError;
+    toast.add({
+      severity: "error",
+      summary: "Hata",
+      detail:
+        fetchError.data?.message ||
+        fetchError.message ||
+        "Tüpün konumu güncellenirken bir hata oluştu.",
+      life: 5000,
+    });
+  } finally {
+    locationFormLoading.value = false;
+  }
+};
+
+const refreshProduct = async () => {
+  await refresh();
+};
 
 const inspectionAlert = computed(() => {
   const formattedDate = lastInspectionDate.value
@@ -322,6 +467,7 @@ function isInSameMonth(dateInput: Date): boolean {
 }
 
 onMounted(async () => {
+  await loadBuildings();
   const id = route.params.id as string;
 
   const data = await $fetch("/api/inspections/getByLocationId", {
@@ -451,8 +597,9 @@ onMounted(async () => {
       <div class="card">
         <Tabs v-model:value="activeTab">
           <TabList>
-            <Tab value="0" class="w-1/2"> Bakım kayıt </Tab>
-            <Tab value="1" class="w-1/2"> Dolum kayıt </Tab>
+            <Tab value="0" class="w-1/3"> Bakım kayıt </Tab>
+            <Tab value="1" class="w-1/3"> Dolum kayıt </Tab>
+            <Tab value="2" class="w-1/3"> Bilgileri düzenle </Tab>
           </TabList>
           <TabPanels>
             <TabPanel value="0">
@@ -528,6 +675,97 @@ onMounted(async () => {
                 />
               </form>
             </TabPanel>
+            <TabPanel value="2">
+              <div class="space-y-6">
+                <section class="space-y-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-semibold">Konum değiştir</h3>
+                    <Button
+                      size="small"
+                      severity="secondary"
+                      outlined
+                      :label="showBuildingForm ? 'Vazgeç' : 'Yeni bina ekle'"
+                      @click="showBuildingForm = !showBuildingForm"
+                    />
+                  </div>
+
+                  <div
+                    v-if="showBuildingForm"
+                    class="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-3"
+                  >
+                    <label for="new-building-name" class="block text-sm font-medium">
+                      Yeni bina/alan adı
+                    </label>
+                    <InputText
+                      id="new-building-name"
+                      v-model="newBuildingName"
+                      class="w-full"
+                    />
+                    <Button
+                      class="w-full"
+                      label="Binayı kaydet"
+                      :loading="buildingFormLoading"
+                      @click="saveNewBuilding"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label for="move-building">Bulunduğu bina/alan</label>
+                    <Select
+                      id="move-building"
+                      v-model="locationForm.buildingId"
+                      :options="buildings"
+                      option-label="name"
+                      option-value="id"
+                      placeholder="Bina/alan seçin"
+                      class="w-full"
+                      filter
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label for="move-room">Bulunduğu yer</label>
+                    <InputText
+                      id="move-room"
+                      v-model="locationForm.room"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label for="move-location-id">YSC No</label>
+                    <InputText
+                      id="move-location-id"
+                      v-model="locationForm.locationId"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <Button
+                    class="w-full"
+                    label="Konumu güncelle"
+                    :loading="locationFormLoading"
+                    @click="moveProduct"
+                  />
+                </section>
+
+                <Divider />
+
+                <section class="space-y-3">
+                  <h3 class="font-semibold">Diğer tüp bilgileri</h3>
+                  <p class="text-sm text-slate-600">
+                    Dolum periyodu, seri no, tarihler ve teknik bilgileri düzenleyebilirsiniz.
+                  </p>
+                  <Button
+                    class="w-full"
+                    severity="secondary"
+                    outlined
+                    label="Tüp bilgilerini düzenle"
+                    @click="productEditVisible = true"
+                  />
+                </section>
+              </div>
+            </TabPanel>
           </TabPanels>
         </Tabs>
       </div>
@@ -558,6 +796,11 @@ onMounted(async () => {
           : 'Dolum kaydi basariyla olusturuldu!'
       "
       @close="drawersShow.success = false"
+    />
+    <ProductEditDialog
+      v-model:visible="productEditVisible"
+      :product="editableProduct"
+      @updated="refreshProduct"
     />
   </div>
 </template>
