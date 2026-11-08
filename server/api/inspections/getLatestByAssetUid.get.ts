@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
 		const query = getQuery(event);
 		const assetUid = normalizeAssetUid(getFirstQueryValue(query.asset_uid));
 		const tenantSlug = getFirstQueryValue(query.tenant_slug);
+		const month = getFirstQueryValue(query.month);
 		const supabase = await getAdminClient(event);
 
 		if (!assetUid) {
@@ -20,7 +21,7 @@ export default defineEventHandler(async (event) => {
 			? await resolveTenantBySlug(supabase, tenantSlug)
 			: await requireTenantContext(event);
 
-		const { data, error } = await supabase
+		let request = supabase
 			.from('inspections')
 			.select(`
         *,
@@ -44,7 +45,16 @@ export default defineEventHandler(async (event) => {
       `)
 			.eq('tenant_id', tenant.id)
 			.eq('products.asset_uid', assetUid)
-			.not('created_at', 'is', null)
+			.not('created_at', 'is', null);
+
+		if (month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+			const [year, monthNumber] = month.split('-').map(Number);
+			const dateFrom = `${month}-01`;
+			const dateTo = new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 10);
+			request = request.gte('date', dateFrom).lt('date', dateTo);
+		}
+
+		const { data, error } = await request
 			.order('created_at', { ascending: false })
 			.limit(1);
 		if (error) {

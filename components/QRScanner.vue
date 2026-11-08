@@ -71,21 +71,33 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<div class="flex flex-col h-full absolute inset-0 size-full z-50 bg-slate-800">
-		<header class="flex items-center py-4 px-3 bg-slate-900 text-white">
+	<div class="fixed inset-0 z-[70] flex h-dvh flex-col bg-slate-950 text-white">
+		<header class="flex items-center border-b border-white/10 bg-slate-950/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur">
 			<button
-				class="flex"
+				type="button"
+				class="flex size-10 items-center justify-center rounded-lg text-xl active:bg-white/10"
+				aria-label="Tarayıcıyı kapat"
 				@click="$emit('close')"
 			>
-				<i class="ri-arrow-left-line text-xl" />
+				<i class="ri-close-line" />
 			</button>
-			<p class="font-semibold mx-auto">
-				Karekod okut
-			</p>
+			<div class="ml-3">
+				<p class="text-sm font-bold">
+					QR kodu tara
+				</p>
+				<p class="text-[11px] text-slate-400">
+					Kodu çerçevenin içine hizalayın
+				</p>
+			</div>
 		</header>
-		<div
-			id="qr-reader"
-			style="width: 100%; max-width: 500px; margin: auto"
-		/>
+		<div class="flex flex-1 flex-col items-center justify-center p-4">
+			<div
+				id="qr-reader"
+				class="w-full max-w-md overflow-hidden rounded-xl bg-black"
+			/>
+			<p class="mt-5 max-w-xs text-center text-xs leading-5 text-slate-400">
+				Kamera izni istendiğinde onaylayın. Kod algılandığında ekran otomatik kapanır.
+			</p>
+		</div>
 	</div>
 </template>

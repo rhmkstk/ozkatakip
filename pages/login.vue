@@ -151,27 +151,81 @@ onMounted(async () => {
 </script>
 
 <template>
-	<div class="flex justify-center items-center min-h-screen bg-gray-100 px-4">
-		<Card class="w-full max-w-md shadow-lg">
-			<template #title>
-				Giriş Yap
-			</template>
-			<template #content>
-				<form @submit.prevent="login">
-					<div class="space-y-4">
+	<div class="grid min-h-dvh bg-white lg:grid-cols-[minmax(0,1fr)_minmax(440px,0.72fr)]">
+		<section class="relative hidden overflow-hidden bg-slate-950 p-12 text-white lg:flex lg:flex-col">
+			<div class="absolute -right-24 -top-24 size-96 rounded-full border border-white/10" />
+			<div class="absolute -right-8 top-20 size-64 rounded-full border border-white/10" />
+			<div class="relative flex items-center gap-3">
+				<div class="flex size-11 items-center justify-center rounded-xl bg-blue-600 text-2xl">
+					<i class="ri-shield-check-line" />
+				</div>
+				<div>
+					<p class="text-lg font-bold">
+						Özka Takip
+					</p><p class="text-xs uppercase tracking-[0.15em] text-slate-400">
+						Periyodik kontrol
+					</p>
+				</div>
+			</div>
+			<div class="relative my-auto max-w-xl">
+				<p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">
+					Sade. Güvenilir. İzlenebilir.
+				</p>
+				<h1 class="mt-5 text-4xl font-semibold leading-tight tracking-[-0.035em]">
+					Saha kontrolleri ve ekipman kayıtları tek yerde.
+				</h1>
+				<p class="mt-5 max-w-lg text-base leading-7 text-slate-400">
+					Bakım, dolum ve periyodik kontrol süreçlerini hızlıca kaydedin; geçmişi ve yaklaşan işlemleri kolayca takip edin.
+				</p>
+			</div>
+			<p class="relative text-xs text-slate-500">
+				Yetkili kullanıcı erişimi
+			</p>
+		</section>
+
+		<main class="flex items-center justify-center bg-slate-50 px-5 py-10 sm:px-10">
+			<div class="w-full max-w-sm">
+				<div class="mb-9 flex items-center gap-3 lg:hidden">
+					<div class="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-xl text-white">
+						<i class="ri-shield-check-line" />
+					</div>
+					<div>
+						<p class="font-bold text-slate-950">
+							Özka Takip
+						</p><p class="text-[10px] uppercase tracking-wider text-slate-500">
+							Periyodik kontrol
+						</p>
+					</div>
+				</div>
+
+				<p class="app-kicker">
+					Hesabınıza erişin
+				</p>
+				<h2 class="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950">
+					{{ requiresTenantSelection ? 'Çalışma alanını seçin' : 'Tekrar hoş geldiniz' }}
+				</h2>
+				<p class="mt-2 text-sm leading-6 text-slate-500">
+					{{ requiresTenantSelection ? 'Devam etmek istediğiniz çalışma alanını belirleyin.' : 'Devam etmek için kullanıcı bilgilerinizi girin.' }}
+				</p>
+
+				<form
+					class="mt-8"
+					@submit.prevent="login"
+				>
+					<div class="space-y-5">
 						<div
 							v-if="!requiresTenantSelection"
 							class="w-full"
 						>
 							<label
 								for="username"
-								class="block mb-1"
+								class="mb-2 block text-sm font-semibold text-slate-700"
 							>Kullanıcı adı</label>
 							<InputText
 								id="username"
 								v-model="userCredentials.username"
 								type="text"
-								placeholder="Kullanıcı adı"
+								placeholder="Kullanıcı adınızı girin"
 								class="w-full"
 								:disabled="loading"
 								autocomplete="username"
@@ -184,14 +238,14 @@ onMounted(async () => {
 						>
 							<label
 								for="password"
-								class="block mb-1"
+								class="mb-2 block text-sm font-semibold text-slate-700"
 							>Şifre</label>
 							<Password
 								id="password"
 								v-model="userCredentials.password"
 								toggle-mask
 								:feedback="false"
-								placeholder="Şifre"
+								placeholder="Şifrenizi girin"
 								input-class="w-full"
 								class="w-full"
 								:disabled="loading"
@@ -204,23 +258,24 @@ onMounted(async () => {
 						>
 							<label
 								for="tenant"
-								class="block mb-1"
-							>Tenant</label>
+								class="mb-2 block text-sm font-semibold text-slate-700"
+							>Çalışma alanı</label>
 							<Select
 								id="tenant"
 								v-model="selectedTenantSlug"
 								:options="tenantOptions"
 								option-label="label"
 								option-value="value"
-								placeholder="Tenant seçin"
+								placeholder="Çalışma alanı seçin"
 								class="w-full"
 								:disabled="loading"
 							/>
 						</div>
 
 						<Button
-							:label="requiresTenantSelection ? 'Tenant ile devam et' : 'Giriş Yap'"
-							class="w-full"
+							:label="requiresTenantSelection ? 'Devam et' : 'Giriş yap'"
+							class="mt-2 w-full"
+							size="large"
 							:loading="loading"
 							type="submit"
 							:disabled="loading || (!requiresTenantSelection && (!userCredentials.username || !userCredentials.password)) || (requiresTenantSelection && !selectedTenantSlug)"
@@ -235,7 +290,10 @@ onMounted(async () => {
 						</Message>
 					</div>
 				</form>
-			</template>
-		</Card>
+				<p class="mt-8 text-center text-xs text-slate-400">
+					Erişim sorunu yaşıyorsanız sistem yöneticinizle iletişime geçin.
+				</p>
+			</div>
+		</main>
 	</div>
 </template>

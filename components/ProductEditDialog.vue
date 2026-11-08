@@ -273,10 +273,15 @@ watch(
 	<Dialog
 		v-model:visible="visibleModel"
 		modal
-		header="Ürün Bilgilerini Düzenle"
+		class="product-edit-dialog"
 		:style="{ width: '50rem', maxWidth: '95vw' }"
 	>
-		<BaseLoader v-if="editProductSaving" />
+		<template #header>
+			<AppDialogHeader
+				title="YSC bilgilerini düzenle"
+				subtitle="Teknik özellikleri, durumu ve periyodik tarihleri güncelleyin."
+			/>
+		</template>
 		<div class="space-y-6">
 			<div class="form-row">
 				<div class="form-item">
@@ -479,7 +484,7 @@ watch(
 			</div>
 		</div>
 		<template #footer>
-			<div class="pt-4 space-x-4">
+			<div class="grid w-full grid-cols-2 gap-2 pt-2">
 				<Button
 					label="Vazgeç"
 					severity="secondary"

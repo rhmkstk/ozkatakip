@@ -64,21 +64,6 @@ const appliedFilters = reactive({
 const editProductModal = ref(false);
 const assetCodeSearch = ref('');
 let assetCodeSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-const hasActiveFilters = computed(() => {
-	return (
-		Boolean(appliedFilters.building)
-		|| Boolean(appliedFilters.weight)
-		|| Boolean(appliedFilters.modelType)
-		|| Boolean(appliedFilters.assetCode)
-		|| Boolean(appliedFilters.brand)
-		|| Boolean(appliedFilters.manufactureYear)
-		|| Boolean(appliedFilters.refillPeriod)
-		|| appliedFilters.refillDateMode !== 'none'
-		|| appliedFilters.nextRefillDateMode !== 'none'
-		|| appliedFilters.hydroDateMode !== 'none'
-		|| Boolean(appliedFilters.status)
-	);
-});
 const activeFilterCount = computed(() => {
 	let count = 0;
 	if (appliedFilters.building) count += 1;
@@ -480,90 +465,68 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<div>
-		<BaseLoader v-if="loading" />
+	<div class="app-table-page">
 		<div>
 			<PageHeader title="Tüm lokasyonlardaki tüpler listeleniyor">
 				<template #right>
-					<Button
-						v-if="hasActiveFilters"
-						label="Temizle"
-						icon="ri-close-line"
-						size="small"
-						severity="secondary"
-						outlined
-						@click="clearFilters"
+					<AppFilterControl
+						:active-count="activeFilterCount"
+						@open="showFilters = true"
+						@clear="clearFilters"
 					/>
-					<Button
-						:outlined="!hasActiveFilters"
-						size="small"
-						@click="showFilters = true"
+					<AppSearchInput
+						v-model="assetCodeSearch"
+						placeholder="Tüp kodu ara"
+						@clear="clearAssetCodeSearch"
+					/>
+					<div
+						v-if="selectedProducts.length"
+						class="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 p-1"
 					>
-						<i class="ri-filter-3-line text-base" />
-						<span>Filtreler</span>
-						<span
-							v-if="activeFilterCount"
-							class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
-						>
-							{{ activeFilterCount }}
-						</span>
-					</Button>
-					<div class="relative">
-						<InputText
-							v-model="assetCodeSearch"
+						<span class="px-2 text-xs font-semibold text-blue-700">{{ selectedProducts.length }} seçili</span>
+						<Button
+							text
+							label="QR oluştur"
+							icon="ri-qr-code-line"
 							size="small"
-							placeholder="Tüp kodu ara"
-							class="w-52 pr-10"
+							@click="generateQRCodes"
 						/>
-						<button
-							v-if="assetCodeSearch"
-							type="button"
-							aria-label="Tüp kodu aramasını temizle"
-							class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-							@click="clearAssetCodeSearch"
-						>
-							<i class="ri-close-line text-sm leading-none" />
-						</button>
+						<Button
+							v-if="selectedProducts.length === 1"
+							text
+							label="Düzenle"
+							icon="ri-edit-line"
+							size="small"
+							@click="openEditModal"
+						/>
+						<Button
+							text
+							severity="danger"
+							label="Sil"
+							icon="ri-delete-bin-5-line"
+							size="small"
+							@click="deleteProductConfirmModal = true"
+						/>
 					</div>
-					<Button
-						v-if="selectedProducts.length"
-						outlined
-						label="QR Kod Oluştur"
-						icon="ri-qr-code-line"
-						size="small"
-						@click="generateQRCodes"
-					/>
-
-					<Button
-						v-if="selectedProducts.length === 1"
-						outlined
-						label="Düzenle"
-						icon="ri-edit-line"
-						size="small"
-						severity="info"
-						:disabled="selectedProducts.length !== 1"
-						@click="openEditModal"
-					/>
-
-					<Button
-						v-if="selectedProducts.length"
-						severity="danger"
-						outlined
-						label="Ürünleri Sil"
-						icon="ri-delete-bin-5-line"
-						size="small"
-						@click="deleteProductConfirmModal = true"
-					/>
 				</template>
 			</PageHeader>
 		</div>
 		<Drawer
 			v-model:visible="showFilters"
 			header="Filtreler"
-			position="left"
-			:style="{ width: '22rem' }"
+			position="right"
+			class="filter-drawer"
+			:style="{ width: 'min(31rem, 100vw)' }"
 		>
 			<div class="flex flex-col gap-4">
+				<div class="border-b border-slate-200 pb-2">
+					<p class="text-xs font-bold uppercase tracking-wider text-slate-500">
+						Konum ve ürün
+					</p>
+					<p class="mt-1 text-xs text-slate-400">
+						YSC'nin bulunduğu alan ve temel özellikleri
+					</p>
+				</div>
 				<div class="flex flex-col gap-2">
 					<label class="text-sm font-medium text-gray-600">Bulduğu bina/alan</label>
 					<Select
@@ -603,6 +566,11 @@ onBeforeUnmount(() => {
 						show-clear
 					/>
 				</div>
+				<div class="mt-2 border-b border-slate-200 pb-2">
+					<p class="text-xs font-bold uppercase tracking-wider text-slate-500">
+						Teknik özellikler
+					</p>
+				</div>
 				<div class="flex flex-col gap-2">
 					<label class="text-sm font-medium text-gray-600">Üretim tarihi</label>
 					<Select
@@ -622,6 +590,14 @@ onBeforeUnmount(() => {
 						filter
 						show-clear
 					/>
+				</div>
+				<div class="mt-2 border-b border-slate-200 pb-2">
+					<p class="text-xs font-bold uppercase tracking-wider text-slate-500">
+						Tarih aralıkları
+					</p>
+					<p class="mt-1 text-xs text-slate-400">
+						Dolum ve test planına göre daraltın
+					</p>
 				</div>
 				<div class="flex flex-col gap-2">
 					<label class="text-sm font-medium text-gray-600">Dolum tarihi</label>
@@ -689,6 +665,11 @@ onBeforeUnmount(() => {
 						show-button-bar
 					/>
 				</div>
+				<div class="mt-2 border-b border-slate-200 pb-2">
+					<p class="text-xs font-bold uppercase tracking-wider text-slate-500">
+						Güncel durum
+					</p>
+				</div>
 				<div class="flex flex-col gap-2">
 					<label class="text-sm font-medium text-gray-600">Durum</label>
 					<Select
@@ -701,7 +682,7 @@ onBeforeUnmount(() => {
 					/>
 				</div>
 			</div>
-			<div class="mt-6 flex items-center gap-2">
+			<div class="filter-actions mt-6 flex items-center gap-2">
 				<Button
 					label="Temizle"
 					severity="secondary"
@@ -714,7 +695,7 @@ onBeforeUnmount(() => {
 				/>
 			</div>
 		</Drawer>
-		<EmptyState v-if="!tabledata.length">
+		<EmptyState v-if="!loading && !tabledata.length">
 			<template #title>
 				YSC bulunamadı
 			</template>
@@ -732,12 +713,13 @@ onBeforeUnmount(() => {
 		</EmptyState>
 		<div
 			v-else
-			class="overflow-x-auto"
+			class="app-table-shell"
 		>
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				v-model:selection="selectedProducts"
 				:value="tabledata"
+				:loading="loading"
 				striped-rows
 				size="large"
 				class="text-sm"
@@ -769,7 +751,7 @@ onBeforeUnmount(() => {
 					</template>
 				</Column>
 				<template #expansion="slotProps">
-					<div class="p-4">
+					<div class="p-0">
 						<DataTable
 							:value="[slotProps.data]"
 							size="small"
@@ -784,6 +766,10 @@ onBeforeUnmount(() => {
 					</div>
 				</template>
 			</DataTable>
+			<AppPagination
+				:total="tabledata.length"
+				item-label="YSC"
+			/>
 		</div>
 		<Dialog
 			v-model:visible="showQRModal"

@@ -111,10 +111,6 @@ const expandedRows = ref([]);
 const assetCodeSearch = ref('');
 let assetCodeSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-const hasActiveFilters = computed(() => {
-	return Boolean(filters.location) || Boolean(filters.modelType) || Boolean(filters.assetCode);
-});
-
 const activeFilterCount = computed(() => {
 	let count = 0;
 	if (filters.location) count += 1;
@@ -255,58 +251,28 @@ const getFilteredDates = computed(() => {
 </script>
 
 <template>
-	<div class="">
-		<BaseLoader v-if="isLoading" />
+	<div class="app-table-page">
 		<PageHeader :title="getFilteredDates">
 			<template #right>
-				<Button
-					v-if="hasActiveFilters"
-					label="Temizle"
-					icon="ri-close-line"
-					size="small"
-					severity="secondary"
-					outlined
-					@click="clearFilters"
+				<AppFilterControl
+					:active-count="activeFilterCount"
+					@open="showFilters = true"
+					@clear="clearFilters"
 				/>
-				<Button
-					:outlined="!hasActiveFilters"
-					size="small"
-					@click="showFilters = true"
-				>
-					<i class="ri-filter-3-line text-base" />
-					<span>Filtreler</span>
-					<span
-						v-if="activeFilterCount"
-						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
-					>
-						{{ activeFilterCount }}
-					</span>
-				</Button>
-				<div class="relative">
-					<InputText
-						v-model="assetCodeSearch"
-						size="small"
-						placeholder="Tüp kodu ara"
-						class="w-52 pr-10"
-					/>
-					<button
-						v-if="assetCodeSearch"
-						type="button"
-						aria-label="Tüp kodu aramasını temizle"
-						class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-						@click="clearAssetCodeSearch"
-					>
-						<i class="ri-close-line text-sm leading-none" />
-					</button>
-				</div>
+				<AppSearchInput
+					v-model="assetCodeSearch"
+					placeholder="Tüp kodu ara"
+					@clear="clearAssetCodeSearch"
+				/>
 			</template>
 		</PageHeader>
 
 		<Drawer
 			v-model:visible="showFilters"
 			header="Filtreler"
-			position="left"
-			:style="{ width: '22rem' }"
+			position="right"
+			class="filter-drawer"
+			:style="{ width: 'min(28rem, 100vw)' }"
 		>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
@@ -339,7 +305,7 @@ const getFilteredDates = computed(() => {
 					/>
 				</div>
 			</div>
-			<div class="mt-6 flex items-center gap-2">
+			<div class="filter-actions mt-6 flex items-center gap-2">
 				<Button
 					label="Temizle"
 					severity="secondary"
@@ -354,7 +320,7 @@ const getFilteredDates = computed(() => {
 			</div>
 		</Drawer>
 
-		<EmptyState v-if="!tabledata.length">
+		<EmptyState v-if="!isLoading && !tabledata.length">
 			<template #title>
 				Ürün bulunamadı
 			</template>
@@ -364,11 +330,12 @@ const getFilteredDates = computed(() => {
 		</EmptyState>
 		<div
 			v-else
-			class="overflow-x-auto"
+			class="app-table-shell"
 		>
 			<DataTable
 				v-model:expanded-rows="expandedRows"
 				:value="tabledata"
+				:loading="isLoading"
 				striped-rows
 				size="large"
 				class="text-sm"
@@ -382,15 +349,25 @@ const getFilteredDates = computed(() => {
 					expander
 					style="width: 3rem"
 				/>
-					<Column
-						v-for="item in columns"
-						:key="item.accessorKey"
-						:field="item.accessorKey"
-						:header="item.header.toUpperCase()"
-						sortable
-					/>
+				<Column
+					v-for="item in columns"
+					:key="item.accessorKey"
+					:field="item.accessorKey"
+					:header="item.header.toUpperCase()"
+					sortable
+				>
+					<template
+						v-if="isCellCustom(item.accessorKey)"
+						#body="slotProps"
+					>
+						<CustomCell
+							:field="item.accessorKey"
+							:value="getValueByPath(slotProps.data, item.accessorKey)"
+						/>
+					</template>
+				</Column>
 				<template #expansion="slotProps">
-					<div class="p-4">
+					<div class="p-0">
 						<DataTable
 							:value="[slotProps.data]"
 							size="small"
@@ -405,6 +382,10 @@ const getFilteredDates = computed(() => {
 					</div>
 				</template>
 			</DataTable>
+			<AppPagination
+				:total="tabledata.length"
+				item-label="planlama kaydı"
+			/>
 		</div>
 	</div>
 </template>

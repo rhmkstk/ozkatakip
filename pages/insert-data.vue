@@ -75,6 +75,7 @@ const buildingManager = ref({
 	saving: false,
 	updating: false,
 	name: '',
+	editingName: '',
 	editingId: null as number | null,
 	deleting: false,
 });
@@ -84,7 +85,6 @@ const deleteConfirm = ref({
 	deleting: false,
 });
 const buildings = ref<BuildingRow[]>([]);
-const selectedBuildingIds = ref<number[]>([]);
 const selectedBuilding = ref<BuildingRow | null>(null);
 
 const notify = (
@@ -199,9 +199,6 @@ const refreshBuildingOptions = async () => {
 		);
 		selectedBuilding.value = selected ?? null;
 	}
-	selectedBuildingIds.value = selectedBuildingIds.value.filter(id =>
-		buildings.value.some(item => item.id === id),
-	);
 };
 
 const openBuildingManager = async () => {
@@ -209,9 +206,14 @@ const openBuildingManager = async () => {
 	await refreshBuildingOptions();
 };
 
+const resetBuildingEdit = () => {
+	buildingManager.value.editingName = '';
+	buildingManager.value.editingId = null;
+};
+
 const resetBuildingManagerForm = () => {
 	buildingManager.value.name = '';
-	buildingManager.value.editingId = null;
+	resetBuildingEdit();
 };
 
 const closeBuildingManager = () => {
@@ -221,7 +223,7 @@ const closeBuildingManager = () => {
 
 const startBuildingEdit = (building: BuildingRow) => {
 	buildingManager.value.editingId = building.id;
-	buildingManager.value.name = building.name;
+	buildingManager.value.editingName = building.name;
 };
 
 const closeDeleteConfirm = () => {
@@ -327,14 +329,14 @@ const saveNewBuilding = async () => {
 		notify('error', 'Bina kaydedilirken bir hata oluştu.');
 	}
 	finally {
-		resetBuildingManagerForm();
+		buildingManager.value.name = '';
 		buildingManager.value.saving = false;
 		await refreshBuildingOptions();
 	}
 };
 
 const updateBuilding = async () => {
-	const buildingName = buildingManager.value.name.trim();
+	const buildingName = buildingManager.value.editingName.trim();
 	const editingId = buildingManager.value.editingId;
 
 	if (!editingId) {
@@ -372,7 +374,7 @@ const updateBuilding = async () => {
 		);
 	}
 	finally {
-		resetBuildingManagerForm();
+		resetBuildingEdit();
 		buildingManager.value.updating = false;
 		await refreshBuildingOptions();
 	}
@@ -386,6 +388,9 @@ const deleteBuilding = async (building: BuildingRow, force = false) => {
 
 		if (selectedBuilding.value?.id === building.id) {
 			selectedBuilding.value = null;
+		}
+		if (buildingManager.value.editingId === building.id) {
+			resetBuildingEdit();
 		}
 
 		closeDeleteConfirm();
@@ -425,75 +430,10 @@ const confirmDeleteBuilding = async () => {
 			await deleteBuilding(item.building, true);
 		}
 		await refreshBuildingOptions();
-		selectedBuildingIds.value = [];
 	}
 	finally {
 		buildingManager.value.deleting = false;
 		deleteConfirm.value.deleting = false;
-	}
-};
-
-const deleteSelectedBuildings = async () => {
-	if (!selectedBuildingIds.value.length) {
-		notify('warn', 'Lütfen silmek için en az bir bina seçin.');
-		return;
-	}
-
-	const selectedBuildings = buildings.value.filter(item =>
-		selectedBuildingIds.value.includes(item.id),
-	);
-
-	try {
-		buildingManager.value.deleting = true;
-		const pendingConfirmItems: PendingDeleteItem[] = [];
-		let deletedCount = 0;
-
-		for (const building of selectedBuildings) {
-			try {
-				await deleteBuildingRequest(building.id);
-
-				if (selectedBuilding.value?.id === building.id) {
-					selectedBuilding.value = null;
-				}
-				deletedCount += 1;
-			}
-			catch (error) {
-				const fetchError = error as DeleteBuildingFetchError;
-				const statusCode = getFetchErrorStatus(fetchError);
-				const payload = fetchError?.data?.data;
-
-				if (statusCode === 409 && payload?.requiresConfirmation) {
-					pendingConfirmItems.push({
-						building,
-						relations: payload.relations ?? null,
-					});
-				}
-				else {
-					notify(
-						'error',
-						getFetchErrorMessage(fetchError)
-						|| 'Bina silinirken bir hata oluştu.',
-						2500,
-					);
-				}
-			}
-		}
-
-		if (deletedCount > 0) {
-			notify('success', `${deletedCount} bina silindi.`);
-		}
-
-		await refreshBuildingOptions();
-
-		if (pendingConfirmItems.length) {
-			openDeleteConfirm(pendingConfirmItems);
-		}
-		else {
-			selectedBuildingIds.value = [];
-		}
-	}
-	finally {
-		buildingManager.value.deleting = false;
 	}
 };
 
@@ -533,331 +473,366 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-	<div class="flex">
+	<div>
 		<BaseLoader v-if="loading" />
+		<PageHeader
+			title="Yeni YSC kaydı"
+			eyebrow="Envanter"
+		/>
 		<form
-			class="mx-auto max-w-[700px] flex-1"
+			class="mx-auto max-w-[900px]"
 			@submit.prevent
 		>
-			<h2 class="font-semibold text-2xl mb-8">
-				YSC Kayit formu
-			</h2>
-			<div class="space-y-6 mt-6 w-full">
-				<div class="form-row !items-end">
-					<div class="form-item">
-						<label for="building_area">{{ headerLabels.building_area }}</label>
-						<Select
-							v-model="selectedBuilding"
-							:options="buildings"
-							option-label="name"
-							placeholder="Bina seçin"
-						/>
+			<div class="app-panel w-full divide-y divide-slate-200 px-5 sm:px-7">
+				<section class="py-6">
+					<div class="mb-5">
+						<p class="text-base font-bold text-slate-900">
+							Konum bilgileri
+						</p>
+						<p class="mt-1 text-sm text-slate-500">
+							YSC'nin sahada bulunduğu bina ve noktayı tanımlayın.
+						</p>
 					</div>
-					<div class="form-item">
-						<Button
-							type="button"
-							label="Binalari duzenle"
-							severity="secondary"
-							outlined
-							@click="openBuildingManager"
-						/>
+					<div class="space-y-5">
+						<div class="form-row !items-end">
+							<div class="form-item">
+								<label for="building_area">{{ headerLabels.building_area }}</label>
+								<Select
+									v-model="selectedBuilding"
+									:options="buildings"
+									option-label="name"
+									placeholder="Bina seçin"
+								/>
+							</div>
+							<div class="form-item">
+								<Button
+									type="button"
+									label="Binaları düzenle"
+									severity="secondary"
+									outlined
+									@click="openBuildingManager"
+								/>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-item">
+								<label for="location">Bulunduğu yer</label>
+								<InputText
+									id="location"
+									v-model="form.location.room"
+								/>
+							</div>
+							<div class="form-item">
+								<label for="location_id">{{ headerLabels.location_id }}</label>
+								<InputText
+									id="location_id"
+									v-model="form.location.location_id"
+								/>
+							</div>
+						</div>
 					</div>
-				</div>
-				<div class="form-row">
-					<div class="form-item">
-						<label for="location">Bulunduğu yer</label>
-						<InputText
-							id="location"
-							v-model="form.location.room"
-						/>
+				</section>
+
+				<section class="py-7">
+					<div class="mb-5">
+						<p class="text-base font-bold text-slate-900">
+							Ekipman bilgileri
+						</p>
+						<p class="mt-1 text-sm text-slate-500">
+							Tip, kapasite ve kimlik bilgilerini girin.
+						</p>
 					</div>
-					<div class="form-item">
-						<label for="location_id">{{ headerLabels.location_id }}</label>
-						<InputText
-							id="location_id"
-							v-model="form.location.location_id"
-						/>
+					<div class="space-y-5">
+						<div class="form-row">
+							<div class="form-item">
+								<label for="product-kind">{{ headerLabels.model_type }}</label>
+								<Select
+									v-model="form.product.model_type"
+									:options="fireExtinguishers"
+									option-label="name"
+									option-value="name"
+									placeholder="Tipini seçin"
+								/>
+							</div>
+							<div class="form-item">
+								<label for="unit">{{ headerLabels.unit }}</label>
+								<Select
+									v-model="form.product.unit"
+									:options="fireExtinguisherWeightOptions"
+									placeholder="Ağırlık seçin"
+								/>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-item">
+								<label for="working_pressure_bar">{{ headerLabels.brand }}</label>
+								<InputText
+									id="brand"
+									v-model="form.product.brand"
+								/>
+							</div>
+							<div class="form-item">
+								<label for="current_status">{{
+									headerLabels.current_status
+								}}</label>
+								<Select
+									id="current_status"
+									v-model="form.product.current_status"
+									:options="productStatusOptions"
+									option-label="label"
+									option-value="value"
+									placeholder="Durum seçin"
+								/>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-item">
+								<label for="serial_number">{{ headerLabels.serial_number }}</label>
+								<InputNumber
+									id="serial_number"
+									v-model="form.product.serial_number"
+									:use-grouping="false"
+									fluid
+								/>
+							</div>
+							<div class="form-item">
+								<label for="manufacture_year">{{
+									headerLabels.manufacture_year
+								}}</label>
+								<DatePicker
+									id="manufacture_year"
+									v-model="form.product.manufacture_year"
+									view="year"
+									date-format="yy"
+								/>
+							</div>
+						</div>
 					</div>
-				</div>
-				<div class="form-row">
-					<div class="form-item">
-						<label for="product-kind">{{ headerLabels.model_type }}</label>
-						<Select
-							v-model="form.product.model_type"
-							:options="fireExtinguishers"
-							option-label="name"
-							option-value="name"
-							placeholder="Tipini seçin"
-						/>
+				</section>
+
+				<section class="py-7">
+					<div class="mb-5">
+						<p class="text-base font-bold text-slate-900">
+							Periyodik tarihler
+						</p>
+						<p class="mt-1 text-sm text-slate-500">
+							Dolum ve hidrostatik test planını oluşturun.
+						</p>
 					</div>
-					<div class="form-item">
-						<label for="unit">{{ headerLabels.unit }}</label>
-						<Select
-							v-model="form.product.unit"
-							:options="fireExtinguisherWeightOptions"
-							placeholder="Agirlik seçin"
-						/>
-					</div>
-				</div>
-				<div class="form-row">
-					<div class="form-item">
-						<label for="working_pressure_bar">{{ headerLabels.brand }}</label>
-						<InputText
-							id="brand"
-							v-model="form.product.brand"
-						/>
-					</div>
-					<div class="form-item">
-						<label for="current_status">{{
-							headerLabels.current_status
-						}}</label>
-						<Select
-							id="current_status"
-							v-model="form.product.current_status"
-							:options="productStatusOptions"
-							option-label="label"
-							option-value="value"
-							placeholder="Durum seçin"
-						/>
-					</div>
-				</div>
-				<div class="form-row">
-					<div class="form-item">
-						<label for="serial_number">{{ headerLabels.serial_number }}</label>
-						<InputNumber
-							id="serial_number"
-							v-model="form.product.serial_number"
-							:use-grouping="false"
-							fluid
-						/>
-					</div>
-					<div class="form-item">
-						<label for="manufacture_year">{{
-							headerLabels.manufacture_year
-						}}</label>
-						<DatePicker
-							id="manufacture_year"
-							v-model="form.product.manufacture_year"
-							view="year"
-							date-format="yy"
-						/>
-					</div>
-				</div>
-				<div class="form-row">
-					<div class="form-item">
-						<label for="refill_period">{{ headerLabels.refill_period }}</label>
-						<Select
-							id="refill_period"
-							v-model="form.product.refill_period"
-							:options="refillPeriodOptions"
-							option-label="label"
-							option-value="value"
-							placeholder="Yeniden dolum periyodu secin"
-						/>
-						<!-- <InputNumber
+					<div class="space-y-5">
+						<div class="form-row">
+							<div class="form-item">
+								<label for="refill_period">{{ headerLabels.refill_period }}</label>
+								<Select
+									id="refill_period"
+									v-model="form.product.refill_period"
+									:options="refillPeriodOptions"
+									option-label="label"
+									option-value="value"
+									placeholder="Yeniden dolum periyodu seçin"
+								/>
+								<!-- <InputNumber
               id="refill_period"
               v-model="form.product.refill_period"
               :use-grouping="false"
               fluid
             /> -->
-					</div>
-					<div class="form-item">
-						<label for="refill_date">{{ headerLabels.refill_date }}</label>
-						<DatePicker
-							id="refill_date"
-							v-model="form.product.refill_date"
-							date-format="dd/mm/yy"
-						/>
-						<!-- <InputText
+							</div>
+							<div class="form-item">
+								<label for="refill_date">{{ headerLabels.refill_date }}</label>
+								<DatePicker
+									id="refill_date"
+									v-model="form.product.refill_date"
+									date-format="dd/mm/yy"
+								/>
+								<!-- <InputText
 							id="refill_date"
 							v-model="form.product.refill_date"
 						/> -->
+							</div>
+							<div class="form-item">
+								<label for="next_refill_date">{{
+									headerLabels.next_refill_date
+								}}</label>
+								<DatePicker
+									id="next_refill_date"
+									v-model="form.product.next_refill_date"
+									date-format="dd/mm/yy"
+									readonly
+								/>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-item">
+								<label for="hydrostatic_test_date">{{
+									headerLabels.hydrostatic_test_date
+								}}</label>
+								<DatePicker
+									id="hydrostatic_test_date"
+									v-model="form.product.hydrostatic_test_date"
+									date-format="dd/mm/yy"
+									show-button-bar
+								/>
+							</div>
+							<div class="form-item">
+								<label for="next_hydrostatic_test_date">{{
+									headerLabels.next_hydrostatic_test_date
+								}}</label>
+								<DatePicker
+									id="next_hydrostatic_test_date"
+									v-model="form.product.next_hydrostatic_test_date"
+									date-format="dd/mm/yy"
+									readonly
+								/>
+							</div>
+						</div>
 					</div>
-					<div class="form-item">
-						<label for="next_refill_date">{{
-							headerLabels.next_refill_date
-						}}</label>
-						<DatePicker
-							id="next_refill_date"
-							v-model="form.product.next_refill_date"
-							date-format="dd/mm/yy"
-							readonly
-						/>
-					</div>
-				</div>
-				<div class="form-row">
-					<div class="form-item">
-						<label for="hydrostatic_test_date">{{
-							headerLabels.hydrostatic_test_date
-						}}</label>
-						<DatePicker
-							id="hydrostatic_test_date"
-							v-model="form.product.hydrostatic_test_date"
-							date-format="dd/mm/yy"
-							show-button-bar
-						/>
-					</div>
-					<div class="form-item">
-						<label for="next_hydrostatic_test_date">{{
-							headerLabels.next_hydrostatic_test_date
-						}}</label>
-						<DatePicker
-							id="next_hydrostatic_test_date"
-							v-model="form.product.next_hydrostatic_test_date"
-							date-format="dd/mm/yy"
-							readonly
-						/>
-					</div>
-				</div>
+				</section>
 			</div>
-			<Button
-				label="Kaydet"
-				type="button"
-				class="w-full mt-8"
-				size="large"
-				@click="saveProduct"
-			/>
+			<div class="sticky bottom-0 mt-5 flex justify-end border-t border-slate-200 bg-[#f3f5f7]/95 py-4 backdrop-blur">
+				<Button
+					label="YSC kaydını oluştur"
+					icon="ri-save-line"
+					type="button"
+					size="large"
+					@click="saveProduct"
+				/>
+			</div>
 		</form>
 		<Dialog
 			v-model:visible="buildingManager.modal"
 			modal
-			header="Binalari duzenle"
-			:style="{ width: '32rem' }"
+			:style="{ width: '38rem' }"
 		>
-			<span class="text-surface-500 dark:text-surface-400 block mb-6">
-				Bu ekrandan yeni bina ekleyebilir, varolan binaları yeniden
-				adlandırabilir ve silebilirsin.
-			</span>
-			<div
-				v-if="buildingManager.editingId"
-				class="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
-			>
-				Düzenleme modu açık. Kaydı güncelledikten sonra istersen yeni bina
-				eklemeye dönebilirsin.
-			</div>
-			<div class="form-item mb-4">
-				<label for="building-name">Bina adi</label>
-				<InputText
-					id="building-name"
-					v-model="buildingManager.name"
+			<template #header>
+				<AppDialogHeader
+					title="Binaları düzenle"
+					subtitle="Bina ve alan adlarını buradan ekleyebilir, güncelleyebilir veya silebilirsiniz."
 				/>
-			</div>
-			<div class="flex justify-end gap-2 mb-8">
-				<Button
-					v-if="buildingManager.editingId"
-					type="button"
-					label="Guncelle"
-					:loading="buildingManager.updating"
-					:disabled="
-						buildingManager.saving
-							|| buildingManager.updating
-							|| buildingManager.deleting
-					"
-					@click="updateBuilding"
-				/>
-				<Button
-					type="button"
-					label="Yeni bina kaydet"
-					:loading="buildingManager.saving"
-					:disabled="
-						buildingManager.saving
-							|| buildingManager.updating
-							|| buildingManager.deleting
-					"
-					@click="saveNewBuilding"
-				/>
-				<Button
-					v-if="buildingManager.editingId"
-					type="button"
-					label="Vazgec"
-					severity="secondary"
-					text
-					:disabled="
-						buildingManager.saving
-							|| buildingManager.updating
-							|| buildingManager.deleting
-					"
-					@click="resetBuildingManagerForm"
-				/>
-			</div>
-			<div class="border-t border-gray-200 pt-6">
-				<h3 class="font-semibold text-base mb-4">
-					Mevcut binalar
-				</h3>
+			</template>
+			<section class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+				<div class="mb-2 flex items-center justify-between">
+					<label
+						for="building-name"
+						class="text-sm font-semibold text-slate-700"
+					>
+						Yeni bina veya alan
+					</label>
+				</div>
+				<div class="flex gap-2">
+					<InputText
+						id="building-name"
+						v-model="buildingManager.name"
+						class="min-w-0 flex-1"
+						placeholder="Örn. İdari bina"
+					/>
+					<Button
+						type="button"
+						label="Ekle"
+						icon="ri-add-line"
+						:loading="buildingManager.saving"
+						:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting || !buildingManager.name.trim()"
+						@click="saveNewBuilding"
+					/>
+				</div>
+			</section>
+
+			<section class="mt-6">
+				<div class="mb-3 flex items-center justify-between">
+					<h3 class="text-sm font-bold text-slate-900">
+						Kayıtlı binalar
+					</h3>
+					<span class="text-xs text-slate-400">{{ buildings.length }} kayıt</span>
+				</div>
 				<p
 					v-if="!buildings.length"
-					class="text-surface-500 text-sm"
+					class="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500"
 				>
 					Kayıtlı bina bulunamadı.
 				</p>
 				<div
 					v-else
-					class="space-y-4"
+					class="max-h-64 space-y-2 overflow-y-auto pr-1"
 				>
-					<div class="space-y-2">
+					<div
+						v-for="building in buildings"
+						:key="building.id"
+						class="rounded-lg border border-slate-200 px-3 py-2.5"
+					>
 						<div
-							v-for="building in buildings"
-							:key="building.id"
-							class="flex items-center justify-between gap-3 rounded border border-gray-200 px-3 py-2"
+							v-if="buildingManager.editingId === building.id"
+							class="flex items-center gap-2"
 						>
-							<span class="truncate text-sm font-medium">{{
-								building.name
-							}}</span>
+							<InputText
+								v-model="buildingManager.editingName"
+								autofocus
+								class="min-w-0 flex-1"
+								aria-label="Bina adı"
+								@keydown.enter="updateBuilding"
+								@keydown.esc="resetBuildingEdit"
+							/>
 							<Button
 								type="button"
-								label="Duzenle"
+								icon="ri-check-line"
+								aria-label="Değişikliği kaydet"
+								title="Kaydet"
+								size="small"
+								:loading="buildingManager.updating"
+								:disabled="!buildingManager.editingName.trim()"
+								@click="updateBuilding"
+							/>
+							<Button
+								type="button"
+								icon="ri-close-line"
+								aria-label="Düzenlemeyi iptal et"
+								title="İptal"
 								severity="secondary"
 								text
 								size="small"
-								:disabled="
-									buildingManager.saving
-										|| buildingManager.updating
-										|| buildingManager.deleting
-								"
+								:disabled="buildingManager.updating"
+								@click="resetBuildingEdit"
+							/>
+						</div>
+						<div
+							v-else
+							class="flex items-center gap-3"
+						>
+							<span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><i class="ri-building-line" /></span>
+							<span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{{ building.name }}</span>
+							<Button
+								type="button"
+								icon="ri-edit-line"
+								aria-label="Düzenle"
+								title="Düzenle"
+								severity="secondary"
+								text
+								size="small"
+								:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting || Boolean(buildingManager.editingId)"
 								@click="startBuildingEdit(building)"
+							/>
+							<Button
+								type="button"
+								icon="ri-delete-bin-line"
+								aria-label="Sil"
+								title="Sil"
+								severity="danger"
+								text
+								size="small"
+								:disabled="buildingManager.saving || buildingManager.updating || buildingManager.deleting || Boolean(buildingManager.editingId)"
+								@click="openDeleteConfirm([{ building, relations: null }])"
 							/>
 						</div>
 					</div>
-					<MultiSelect
-						v-model="selectedBuildingIds"
-						:options="buildings"
-						option-label="name"
-						option-value="id"
-						display="chip"
-						filter
-						placeholder="Silmek için bina seçin"
-						class="w-full"
-						:disabled="
-							buildingManager.saving
-								|| buildingManager.updating
-								|| buildingManager.deleting
-						"
-					/>
-					<div class="flex justify-end mb-12">
-						<Button
-							type="button"
-							label="Secili binalari sil"
-							severity="danger"
-							:loading="buildingManager.deleting"
-							:disabled="
-								buildingManager.saving
-									|| buildingManager.updating
-									|| buildingManager.deleting
-									|| !selectedBuildingIds.length
-							"
-							@click="deleteSelectedBuildings"
-						/>
-					</div>
 				</div>
-			</div>
-			<div class="flex justify-end gap-2">
+			</section>
+			<template #footer>
 				<Button
 					type="button"
 					label="Kapat"
 					severity="secondary"
 					@click="closeBuildingManager"
 				/>
-			</div>
+			</template>
 		</Dialog>
 		<Dialog
 			v-model:visible="deleteConfirm.visible"
@@ -866,9 +841,9 @@ onBeforeRouteLeave(() => {
 			:style="{ width: '30rem' }"
 			:closable="!deleteConfirm.deleting"
 		>
-			<span class="text-surface-700 block mb-4">
-				Seçili binalardan bazılarına bağlı kayıtlar var. Onaylarsan bu veriler
-				de kalıcı olarak silinecek.
+			<span class="text-surface-700 mb-4 block">
+				Aşağıdaki binayı silmek üzeresiniz. Binaya bağlı kayıtlar varsa onlar da
+				kalıcı olarak silinecek. Bu işlem geri alınamaz.
 			</span>
 			<ul class="list-disc pl-5 text-sm text-surface-600 mb-6">
 				<li
