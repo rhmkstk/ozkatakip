@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 		const hydroDateFrom = getFirstQueryValue(query.hydro_date_from as string | string[] | undefined);
 		const hydroDateTo = getFirstQueryValue(query.hydro_date_to as string | string[] | undefined);
 		const status = getFirstQueryValue(query.status as string | string[] | undefined)?.trim();
-		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined)?.trim();
+		const assetCode = getFirstQueryValue(query.asset_code as string | string[] | undefined)?.trim();
 
 		const { data, error } = await event.context.supabase
 			.from('products')
@@ -55,7 +55,7 @@ export default defineEventHandler(async (event) => {
 			return normalize(value) === normalize(filterValue);
 		};
 
-		const filteredData = data.filter((item: any) => {
+		const filteredData = data.filter((item) => {
 			const itemBuilding = item?.locations?.building_id?.name;
 			const itemUnit = item?.unit;
 			const itemModelType = item?.model_type;
@@ -65,14 +65,14 @@ export default defineEventHandler(async (event) => {
 			const itemRefillDate = item?.refill_date;
 			const itemNextRefillDate = item?.next_refill_date;
 			const itemHydroDate = item?.hydrostatic_test_date;
-			const itemYscNo = item?.locations?.location_id;
+			const itemAssetCode = item?.asset_code;
 
 			return (
 				includesFilter(itemBuilding, building)
 				&& includesFilter(itemUnit, unit)
 				&& includesFilter(itemModelType, modelType)
 				&& includesFilter(itemBrand, brand)
-				&& includesFilter(itemYscNo, yscNo)
+				&& includesFilter(itemAssetCode, assetCode)
 				&& equalsFilter(itemManufactureYear, manufactureYear)
 				&& equalsFilter(itemRefillPeriod, refillPeriod)
 				&& (!refillDateFrom || (itemRefillDate && itemRefillDate >= refillDateFrom))

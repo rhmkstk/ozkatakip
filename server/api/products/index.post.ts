@@ -5,21 +5,28 @@ export default defineEventHandler(async (event) => {
 	try {
 		const body = await readBody<TablesInsert<'products'>>(event);
 		const tenant = await requireTenantContext(event);
+		const {
+			asset_code: _ignoredAssetCode,
+			asset_uid: _ignoredAssetUid,
+			tenant_id: _ignoredTenantId,
+			id: _ignoredId,
+			...productData
+		} = body;
 
 		// Validate required fields
-		if (!body.manufacture_year || !body.serial_number) {
+		if (!productData.manufacture_year || !productData.serial_number) {
 			throw createError({
 				statusCode: 400,
 				message: 'Missing required fields: manufacture_year and serial_number are required',
 			});
 		}
 
-		if (body.location) {
+		if (productData.location) {
 			const { data: location, error: locationError } = await event.context.supabase
 				.from('locations')
 				.select('id')
 				.eq('tenant_id', tenant.id)
-				.eq('id', body.location)
+				.eq('id', productData.location)
 				.maybeSingle();
 
 			if (locationError) {
@@ -40,7 +47,7 @@ export default defineEventHandler(async (event) => {
 				.from('products')
 				.select('id')
 				.eq('tenant_id', tenant.id)
-				.eq('location', body.location)
+				.eq('location', productData.location)
 				.limit(1)
 				.maybeSingle();
 
@@ -59,12 +66,10 @@ export default defineEventHandler(async (event) => {
 			}
 		}
 
-		console.log('Inserting product:', body);
-
 		const { data, error } = await event.context.supabase
 			.from('products')
 			.insert({
-				...body,
+				...productData,
 				tenant_id: tenant.id,
 			})
 			.select()

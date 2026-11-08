@@ -12,6 +12,8 @@ type InspectionResponse = Tables<'inspections'> & {
 		last_name?: string | null;
 	} | null;
 	products?: {
+		asset_code?: string;
+		asset_uid?: string;
 		brand?: string | null;
 		model_type?: string | null;
 		serial_number?: number | null;
@@ -28,13 +30,13 @@ type InspectionResponse = Tables<'inspections'> & {
 };
 
 const route = useRoute();
-const locationId = computed(() => route.params.location_id as string);
+const assetUid = computed(() => route.params.asset_uid as string);
 const tenantSlug = computed(() => {
 	const routeTenantSlug = route.params.tenantSlug;
 	return typeof routeTenantSlug === 'string' ? routeTenantSlug : undefined;
 });
 const requestParams = computed(() => ({
-	location_id: locationId.value,
+	asset_uid: assetUid.value,
 	...(tenantSlug.value ? { tenant_slug: tenantSlug.value } : {}),
 }));
 
@@ -43,7 +45,7 @@ const {
 	pending,
 	error,
 	refresh,
-} = await useFetch<InspectionResponse[]>('/api/inspections/getByLocationId', {
+} = await useFetch<InspectionResponse[]>('/api/inspections/getLatestByAssetUid', {
 	params: requestParams,
 	watch: [requestParams],
 	immediate: true,
@@ -78,7 +80,10 @@ const formattedRefillDate = computed(() => {
 });
 
 const locationLabel = computed(
-	() => inspection.value?.products?.locations?.location_id ?? locationId.value,
+	() => inspection.value?.products?.locations?.location_id ?? 'Bilgi yok',
+);
+const assetCodeLabel = computed(
+	() => inspection.value?.products?.asset_code ?? null,
 );
 const buildingLabel = computed(
 	() => inspection.value?.products?.locations?.building_id?.name ?? null,
@@ -192,6 +197,12 @@ useHead(() => ({
 						</p>
 						<p class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
 							{{ locationLabel }}
+						</p>
+						<p
+							v-if="assetCodeLabel"
+							class="mt-2 text-xs text-slate-500"
+						>
+							Tüp kodu: {{ assetCodeLabel }}
 						</p>
 						<p
 							v-if="buildingLabel || roomLabel"
@@ -308,10 +319,10 @@ useHead(() => ({
 			class="rounded-[24px] border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.35)]"
 		>
 			<p class="font-semibold">
-				Bu lokasyon için kayıt bulunamadı.
+				Bu tüp için bakım kaydı bulunamadı.
 			</p>
 			<p class="mt-1 text-sm">
-				Lütfen başka bir YSC numarası deneyin.
+				QR kodunu kontrol edip tekrar deneyin.
 			</p>
 		</div>
 

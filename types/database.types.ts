@@ -288,6 +288,8 @@ export type Database = {
       }
       products: {
         Row: {
+          asset_code: string
+          asset_uid: string
           brand: string | null
           created_at: string
           current_status: Database["public"]["Enums"]["product_status"] | null
@@ -311,6 +313,8 @@ export type Database = {
           working_temperature_celsius: string | null
         }
         Insert: {
+          asset_code?: string
+          asset_uid?: string
           brand?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["product_status"] | null
@@ -334,6 +338,8 @@ export type Database = {
           working_temperature_celsius?: string | null
         }
         Update: {
+          asset_code?: string
+          asset_uid?: string
           brand?: string | null
           created_at?: string
           current_status?: Database["public"]["Enums"]["product_status"] | null

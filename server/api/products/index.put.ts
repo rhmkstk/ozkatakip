@@ -13,7 +13,14 @@ export default defineEventHandler(async (event) => {
 			});
 		}
 
-		const { id, ...updateData } = body;
+		const {
+			id,
+			asset_code: _ignoredAssetCode,
+			asset_uid: _ignoredAssetUid,
+			tenant_id: _ignoredTenantId,
+			created_at: _ignoredCreatedAt,
+			...updateData
+		} = body;
 
 		const { data, error } = await event.context.supabase
 			.from('products')

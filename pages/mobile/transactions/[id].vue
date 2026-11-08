@@ -115,22 +115,9 @@ const controlFields = [
 ];
 
 const { data, status, error, refresh } = await useAsyncData("product", async () => {
-  const location = await $fetch("/api/locations/getByLocationId", {
-    params: { location_id: route.params.id },
+  return await $fetch("/api/products/getByIdentifier", {
+    params: { identifier: route.params.id },
   });
-
-  if (!location) {
-    throw new Error("Location not found");
-  }
-  const product = await $fetch("/api/products/getByLocationId", {
-    params: { location_id: location[0].id },
-  });
-
-  if (!product || product.length === 0) {
-    throw new Error("Product not found");
-  }
-
-  return { product: product[0], location: location[0] };
 });
 
 const editableProduct = computed(() => {
@@ -468,14 +455,15 @@ function isInSameMonth(dateInput: Date): boolean {
 
 onMounted(async () => {
   await loadBuildings();
-  const id = route.params.id as string;
+  const assetUid = data.value?.product.asset_uid;
+  if (!assetUid) return;
 
-  const data = await $fetch("/api/inspections/getByLocationId", {
-    params: { location_id: id },
+  const latestInspections = await $fetch("/api/inspections/getLatestByAssetUid", {
+    params: { asset_uid: assetUid },
   });
 
-  if (data?.[0] && isInSameMonth(new Date(data[0].created_at))) {
-    lastInspectionDate.value = new Date(data[0].created_at);
+  if (latestInspections?.[0] && isInSameMonth(new Date(latestInspections[0].created_at))) {
+    lastInspectionDate.value = new Date(latestInspections[0].created_at);
     showInspectionAlert.value = true;
   }
 });
@@ -498,7 +486,7 @@ onMounted(async () => {
       class="py-2 flex flex-col gap-y-8"
     >
       <p class="text-lg">
-        Aradiginiz YSC bulunamadi! Geri donup farkli mevcut bir YSC ile islem
+        Aradığınız tüp kodu bulunamadı. Geri dönüp geçerli bir tüp koduyla işlem
         yapabilirsiniz
       </p>
       <Button label="Geri" @click="$router.push(toTenantPath('/mobile'))" />
@@ -541,6 +529,13 @@ onMounted(async () => {
           </div>
 
           <div class="flex-1 flex flex-col justify-between py-1">
+            <div class="flex space-x-1">
+              <i class="ri-qr-code-line -mt-0.5" />
+              <p class="min-w-0 break-all text-xs text-gray-700">
+                Tüp kodu:
+                <b>{{ data.product.asset_code }}</b>
+              </p>
+            </div>
             <div class="flex space-x-1">
               <i class="ri-map-pin-line -mt-0.5" />
               <p class="text-sm text-gray-700">

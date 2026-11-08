@@ -22,7 +22,7 @@ onMounted(async () => {
 			if (!activeTenantSlug.value) {
 				continue;
 			}
-			const qrUrl = generateQrCodeUrl(activeTenantSlug.value, String(product.locations?.location_id) || '');
+			const qrUrl = generateQrCodeUrl(activeTenantSlug.value, product.asset_uid);
 			const dataUrl = await QRCode.toDataURL(qrUrl);
 			qrCodes.value[product.id] = dataUrl;
 		}
@@ -34,7 +34,7 @@ onMounted(async () => {
 </script>
 
 <template>
-<div class="flex gap-4 flex-wrap justify-center">
+	<div class="flex gap-4 flex-wrap justify-center">
 		<div
 			v-for="product in products"
 			:key="product.id"
@@ -47,6 +47,9 @@ onMounted(async () => {
 			>
 			<div class="flex items-center">
 				<div class="flex flex-col space-y-2 align-baseline space-x-3 font-bold">
+					<p class="text-left">
+						Tüp kodu: {{ product.asset_code }}
+					</p>
 					<p class="text-left">
 						Modeli/Tipi: {{ product.unit }} {{ product.model_type }}
 					</p>

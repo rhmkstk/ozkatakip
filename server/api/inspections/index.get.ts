@@ -2,6 +2,7 @@
 
 import { getQuery } from 'h3';
 import { requireTenantContext } from '~/server/utils/tenant';
+import { normalizeAssetCode } from '~/utils/assetCode';
 
 const getFirstQueryValue = (value: string | string[] | undefined) =>
 	Array.isArray(value) ? value[0] : value;
@@ -15,12 +16,14 @@ export default defineEventHandler(async (event) => {
 		const building = getFirstQueryValue(query.building as string | string[] | undefined);
 		const unit = getFirstQueryValue(query.unit as string | string[] | undefined);
 		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined);
-		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined);
+		const assetCode = getFirstQueryValue(query.asset_code as string | string[] | undefined);
+		const normalizedAssetCode = assetCode ? normalizeAssetCode(assetCode) : null;
+		if (assetCode && !normalizedAssetCode) return [];
 		const result = getFirstQueryValue(query.result as string | string[] | undefined);
 		const createBaseRequest = () => {
 			let request = event.context.supabase
 				.from('inspections')
-				.select('*, products!inner(brand,model_type,refill_date,unit,next_refill_date,locations!inner(*, building_id!inner(*)))')
+				.select('*, products!inner(asset_code,brand,model_type,refill_date,unit,next_refill_date,locations!inner(*, building_id!inner(*)))')
 				.eq('tenant_id', tenant.id)
 				.order('created_at', { ascending: false });
 
@@ -39,8 +42,8 @@ export default defineEventHandler(async (event) => {
 			if (modelType) {
 				request = request.ilike('products.model_type', `%${modelType}%`);
 			}
-			if (yscNo) {
-				request = request.ilike('products.locations.location_id', `%${yscNo}%`);
+			if (normalizedAssetCode) {
+				request = request.eq('products.asset_code', normalizedAssetCode);
 			}
 			if (result === 'true' || result === 'false') {
 				request = request.eq('result', result === 'true');

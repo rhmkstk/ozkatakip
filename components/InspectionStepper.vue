@@ -35,7 +35,7 @@ const newProductData = reactive<NewProductData>({
 const activeStep = ref("1");
 const loading = ref(false);
 const showScanner = ref(false);
-const newProductId = ref("");
+const newProductIdentifier = ref("");
 const photo_url = ref<string | null>(null);
 const drawerShow = ref<boolean>(false);
 const selectedNewProductRefillPeriod = ref<number | null>(null);
@@ -134,33 +134,24 @@ const isRefillPeriodDirty = computed(() => {
 });
 
 async function getNewProductData(
-  newLocationId: string,
+  identifier: string,
   callback?: () => void,
   showErrorAlert = true,
 ) {
   try {
     loading.value = true;
-    const location = await $fetch("/api/locations/getByLocationId", {
-      params: { location_id: newLocationId },
+    const response = await $fetch("/api/products/getByIdentifier", {
+      params: { identifier },
     });
-    if (!location || location.length === 0) {
-      throw new Error("Location not found");
-    }
-    const product = await $fetch("/api/products/getByLocationId", {
-      params: { location_id: location[0].id },
-    });
-    if (!product || product.length === 0) {
-      throw new Error("Product not found");
-    }
-    newProductData.location = location[0];
-    newProductData.product = product[0];
-    selectedNewProductRefillPeriod.value = product[0].refill_period ?? null;
+    newProductData.location = response.location;
+    newProductData.product = response.product;
+    selectedNewProductRefillPeriod.value = response.product.refill_period ?? null;
     callback?.();
     return true;
   } catch (error) {
     console.error("Error fetching product data:", error);
     if (showErrorAlert) {
-      alert("YSC bulunamadı. Lütfen YSC noyu kontrol edin.");
+      alert("YSC bulunamadı. Lütfen tüp kodunu kontrol edin.");
     }
     return false;
   } finally {
@@ -194,7 +185,7 @@ async function updateNewProductRefillPeriod() {
     });
 
     const refreshSuccess = await getNewProductData(
-      newProductData.location.location_id,
+      newProductData.product.asset_code,
       undefined,
       false,
     );
@@ -364,26 +355,26 @@ async function createInspectionForm() {
         <StepPanel v-slot="{ activateCallback }" value="1">
           <div>
             <h4 class="mb-4 mt-10 font-semibold text-slate-600">
-              Bu adimda YSC no girerek veya QR kod okutarak yeni YSC yi sec.
+              Bu adımda tüp kodunu girerek veya QR kod okutarak yeni YSC'yi seç.
             </h4>
 
             <div>
               <form class="mt-auto w-full" @submit.prevent>
                 <div class="form-row">
                   <div class="form-item">
-                    <label for="building_area">YSC no</label>
+                    <label for="new_product_identifier">Tüp kodu</label>
                     <div class="flex space-x-2">
                       <InputText
-                        id="building_area"
-                        v-model="newProductId"
-                        placeholder="ATM-2"
+                        id="new_product_identifier"
+                        v-model="newProductIdentifier"
+                        placeholder="XXXXX-XXXXX-X"
                         class="flex-1"
                       />
                       <Button
-                        :disabled="!newProductId"
+                        :disabled="!newProductIdentifier.trim()"
                         label="Ara"
                         @click="
-                          getNewProductData(newProductId, () =>
+                          getNewProductData(newProductIdentifier.trim(), () =>
                             activateCallback('2'),
                           )
                         "
@@ -406,10 +397,10 @@ async function createInspectionForm() {
                 v-if="showScanner"
                 @close="showScanner = false"
                 @scan-complete="
-                  (scannedNumber: string) => {
-                    newProductId = scannedNumber;
+                  (scannedAssetUid: string) => {
+                    newProductIdentifier = scannedAssetUid;
                     showScanner = false;
-                    getNewProductData(scannedNumber, () => {
+                    getNewProductData(scannedAssetUid, () => {
                       activateCallback('2');
                     });
                   }

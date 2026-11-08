@@ -1,5 +1,6 @@
 import { getQuery } from 'h3';
 import { requireTenantContext } from '~/server/utils/tenant';
+import { normalizeAssetCode } from '~/utils/assetCode';
 
 const getFirstQueryValue = (value: string | string[] | undefined) =>
 	Array.isArray(value) ? value[0] : value;
@@ -15,11 +16,13 @@ export default defineEventHandler(async (event) => {
 		const building = getFirstQueryValue(query.building as string | string[] | undefined);
 		const unit = getFirstQueryValue(query.unit as string | string[] | undefined);
 		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined);
-		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined);
+		const assetCode = getFirstQueryValue(query.asset_code as string | string[] | undefined);
+		const normalizedAssetCode = assetCode ? normalizeAssetCode(assetCode) : null;
+		if (assetCode && !normalizedAssetCode) return [];
 
 		let request = event.context.supabase
 			.from('fill_records')
-			.select('*, products!inner(brand, model_type, unit, refill_date, hydrostatic_test_date, next_refill_date, locations!inner(*, building_id!inner(*)))')
+			.select('*, products!inner(asset_code, brand, model_type, unit, refill_date, hydrostatic_test_date, next_refill_date, locations!inner(*, building_id!inner(*)))')
 			.eq('tenant_id', tenant.id);
 
 		if (fillDateFrom) {
@@ -43,8 +46,8 @@ export default defineEventHandler(async (event) => {
 		if (modelType) {
 			request = request.ilike('products.model_type', `%${modelType}%`);
 		}
-		if (yscNo) {
-			request = request.ilike('products.locations.location_id', `%${yscNo}%`);
+		if (normalizedAssetCode) {
+			request = request.eq('products.asset_code', normalizedAssetCode);
 		}
 
 		const { data, error } = await request;

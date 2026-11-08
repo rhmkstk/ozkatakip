@@ -1,17 +1,18 @@
 import { getAdminClient } from '~/server/utils/user-management';
 import { requireTenantContext } from '~/server/utils/tenant';
+import { normalizeAssetUid } from '~/utils/assetUid';
 
 export default defineEventHandler(async (event) => {
 	try {
 		const query = getQuery(event);
-		const locationID = getFirstQueryValue(query.location_id);
+		const assetUid = normalizeAssetUid(getFirstQueryValue(query.asset_uid));
 		const tenantSlug = getFirstQueryValue(query.tenant_slug);
 		const supabase = await getAdminClient(event);
 
-		if (!locationID) {
+		if (!assetUid) {
 			throw createError({
 				statusCode: 400,
-				message: 'Missing location_id parameter',
+				message: 'Geçerli bir tüp QR kimliği gereklidir.',
 			});
 		}
 
@@ -25,6 +26,8 @@ export default defineEventHandler(async (event) => {
         *,
         products!inner(
           id,
+          asset_code,
+          asset_uid,
           brand,
           model_type,
           serial_number,
@@ -40,7 +43,7 @@ export default defineEventHandler(async (event) => {
         )
       `)
 			.eq('tenant_id', tenant.id)
-			.eq('products.locations.location_id', locationID)
+			.eq('products.asset_uid', assetUid)
 			.not('created_at', 'is', null)
 			.order('created_at', { ascending: false })
 			.limit(1);

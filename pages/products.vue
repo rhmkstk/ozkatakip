@@ -33,7 +33,7 @@ const filterForm = reactive({
 	building: '',
 	weight: '',
 	modelType: '',
-	yscNo: '',
+	assetCode: '',
 	brand: '',
 	manufactureYear: '',
 	refillPeriod: '',
@@ -49,7 +49,7 @@ const appliedFilters = reactive({
 	building: '',
 	weight: '',
 	modelType: '',
-	yscNo: '',
+	assetCode: '',
 	brand: '',
 	manufactureYear: '',
 	refillPeriod: '',
@@ -62,14 +62,14 @@ const appliedFilters = reactive({
 	status: '',
 });
 const editProductModal = ref(false);
-const yscNoSearch = ref('');
-let yscSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const assetCodeSearch = ref('');
+let assetCodeSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const hasActiveFilters = computed(() => {
 	return (
 		Boolean(appliedFilters.building)
 		|| Boolean(appliedFilters.weight)
 		|| Boolean(appliedFilters.modelType)
-		|| Boolean(appliedFilters.yscNo)
+		|| Boolean(appliedFilters.assetCode)
 		|| Boolean(appliedFilters.brand)
 		|| Boolean(appliedFilters.manufactureYear)
 		|| Boolean(appliedFilters.refillPeriod)
@@ -84,7 +84,7 @@ const activeFilterCount = computed(() => {
 	if (appliedFilters.building) count += 1;
 	if (appliedFilters.weight) count += 1;
 	if (appliedFilters.modelType) count += 1;
-	if (appliedFilters.yscNo) count += 1;
+	if (appliedFilters.assetCode) count += 1;
 	if (appliedFilters.brand) count += 1;
 	if (appliedFilters.manufactureYear) count += 1;
 	if (appliedFilters.refillPeriod) count += 1;
@@ -176,7 +176,7 @@ const buildQuery = () => {
 	if (appliedFilters.modelType) {
 		query.model_type = appliedFilters.modelType.trim();
 	}
-	if (appliedFilters.yscNo) query.ysc_no = appliedFilters.yscNo.trim();
+	if (appliedFilters.assetCode) query.asset_code = appliedFilters.assetCode.trim();
 	if (appliedFilters.brand) query.brand = appliedFilters.brand.trim();
 	if (appliedFilters.manufactureYear) query.manufacture_year = appliedFilters.manufactureYear.trim();
 	if (appliedFilters.refillPeriod) query.refill_period = appliedFilters.refillPeriod.trim();
@@ -278,6 +278,10 @@ const columns = [
 		accessorKey: 'hydrostatic_test_date',
 		header: headerLabels.hydrostatic_test_date,
 	},
+	{
+		accessorKey: 'asset_code',
+		header: headerLabels.asset_code,
+	},
 	// {
 	//   accessorKey: "next_hydrostatic_test_date",
 	//   header: headerLabels.next_hydrostatic_test_date,
@@ -333,6 +337,8 @@ const downloadPdf = async () => {
 
 	urls.forEach((url, index) => {
 		const product = selectedProducts.value[index] as {
+			asset_code: string;
+			asset_uid: string;
 			locations?: { location_id?: string | null } | null;
 		};
 		const yscNo = product?.locations?.location_id?.trim() || `${index + 1}`;
@@ -340,7 +346,7 @@ const downloadPdf = async () => {
 
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = `etiket_${safeYscNo}.png`;
+		a.download = `etiket_${safeYscNo}_${product.asset_code}.png`;
 		a.click();
 		URL.revokeObjectURL(url);
 	});
@@ -385,7 +391,7 @@ const applyFilters = async () => {
 	appliedFilters.building = filterForm.building;
 	appliedFilters.weight = filterForm.weight;
 	appliedFilters.modelType = filterForm.modelType;
-	appliedFilters.yscNo = filterForm.yscNo;
+	appliedFilters.assetCode = filterForm.assetCode;
 	appliedFilters.brand = filterForm.brand;
 	appliedFilters.manufactureYear = filterForm.manufactureYear;
 	appliedFilters.refillPeriod = filterForm.refillPeriod;
@@ -401,15 +407,15 @@ const applyFilters = async () => {
 };
 
 const clearFilters = async () => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
-		yscSearchDebounceTimer = null;
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
+		assetCodeSearchDebounceTimer = null;
 	}
 	filterForm.building = '';
 	filterForm.weight = '';
 	filterForm.modelType = '';
-	filterForm.yscNo = '';
-	yscNoSearch.value = '';
+	filterForm.assetCode = '';
+	assetCodeSearch.value = '';
 	filterForm.brand = '';
 	filterForm.manufactureYear = '';
 	filterForm.refillPeriod = '';
@@ -423,7 +429,7 @@ const clearFilters = async () => {
 	appliedFilters.building = '';
 	appliedFilters.weight = '';
 	appliedFilters.modelType = '';
-	appliedFilters.yscNo = '';
+	appliedFilters.assetCode = '';
 	appliedFilters.brand = '';
 	appliedFilters.manufactureYear = '';
 	appliedFilters.refillPeriod = '';
@@ -438,37 +444,37 @@ const clearFilters = async () => {
 	await loadProducts();
 };
 
-const applyYscSearch = async (value: string) => {
+const applyAssetCodeSearch = async (value: string) => {
 	const normalized = value.trim();
-	if (appliedFilters.yscNo === normalized) {
+	if (appliedFilters.assetCode === normalized) {
 		return;
 	}
-	filterForm.yscNo = normalized;
-	appliedFilters.yscNo = normalized;
+	filterForm.assetCode = normalized;
+	appliedFilters.assetCode = normalized;
 	await loadProducts();
 };
 
-const clearYscSearch = async () => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
-		yscSearchDebounceTimer = null;
+const clearAssetCodeSearch = async () => {
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
+		assetCodeSearchDebounceTimer = null;
 	}
-	yscNoSearch.value = '';
-	await applyYscSearch('');
+	assetCodeSearch.value = '';
+	await applyAssetCodeSearch('');
 };
 
-watch(yscNoSearch, (value) => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
+watch(assetCodeSearch, (value) => {
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
 	}
-	yscSearchDebounceTimer = setTimeout(() => {
-		void applyYscSearch(value);
+	assetCodeSearchDebounceTimer = setTimeout(() => {
+		void applyAssetCodeSearch(value);
 	}, 400);
 });
 
 onBeforeUnmount(() => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
 	}
 });
 </script>
@@ -504,17 +510,17 @@ onBeforeUnmount(() => {
 					</Button>
 					<div class="relative">
 						<InputText
-							v-model="yscNoSearch"
+							v-model="assetCodeSearch"
 							size="small"
-							placeholder="YSC no ara"
+							placeholder="Tüp kodu ara"
 							class="w-52 pr-10"
 						/>
 						<button
-							v-if="yscNoSearch"
+							v-if="assetCodeSearch"
 							type="button"
-							aria-label="YSC aramasını temizle"
+							aria-label="Tüp kodu aramasını temizle"
 							class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-							@click="clearYscSearch"
+							@click="clearAssetCodeSearch"
 						>
 							<i class="ri-close-line text-sm leading-none" />
 						</button>

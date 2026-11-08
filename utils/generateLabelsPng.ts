@@ -2,6 +2,8 @@ import QRCode from 'qrcode';
 import { generateQrCodeUrl } from './index';
 
 type Product = {
+	asset_code: string;
+	asset_uid: string;
 	unit?: string | null;
 	model_type?: string | null;
 	serial_number?: string | number | null;
@@ -100,7 +102,7 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 		ctx.fillStyle = '#fff';
 		ctx.fillRect(0, 0, LABEL_WIDTH_PX, LABEL_HEIGHT_PX);
 
-		const INFO_BLOCK_HEIGHT_PX = 152;
+		const INFO_BLOCK_HEIGHT_PX = 188;
 		const logosRowHeightPx = providerLogo && tenantLogo ? 126 : 0;
 		const qrMaxWidth = LABEL_WIDTH_PX - SAFE_MARGIN_PX * 2;
 		const qrMaxHeight
@@ -110,7 +112,7 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 				- logosRowHeightPx;
 		const qrSizePx = Math.max(1, Math.min(qrMaxWidth, qrMaxHeight));
 
-		const qrData = generateQrCodeUrl(tenantSlug, p.locations?.location_id ?? '-');
+		const qrData = generateQrCodeUrl(tenantSlug, p.asset_uid);
 		const qr = await QRCode.toDataURL(qrData, {
 			type: 'image/png',
 			margin: 1,
@@ -146,6 +148,7 @@ export async function generateLabelsPng(products: Product[], tenantSlug: string)
 		ctx.font = `bold ${fontSize}px Arial`;
 
 		const lines = [
+			`Tüp Kodu: ${p.asset_code}`,
 			`Model / Tip: ${modelTip}`,
 			`Seri No: ${seriNo}`,
 			`Marka: ${marka}`,

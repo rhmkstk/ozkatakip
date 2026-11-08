@@ -1,5 +1,6 @@
 import { getQuery } from 'h3';
 import { requireTenantContext } from '~/server/utils/tenant';
+import { normalizeAssetCode } from '~/utils/assetCode';
 
 const getFirstQueryValue = (value: string | string[] | undefined) =>
 	Array.isArray(value) ? value[0] : value;
@@ -12,7 +13,9 @@ export default defineEventHandler(async (event) => {
 		const rangeEndDate = getFirstQueryValue(query.end_date as string | string[] | undefined);
 		const location = getFirstQueryValue(query.location as string | string[] | undefined);
 		const modelType = getFirstQueryValue(query.model_type as string | string[] | undefined);
-		const yscNo = getFirstQueryValue(query.ysc_no as string | string[] | undefined);
+		const assetCode = getFirstQueryValue(query.asset_code as string | string[] | undefined);
+		const normalizedAssetCode = assetCode ? normalizeAssetCode(assetCode) : null;
+		if (assetCode && !normalizedAssetCode) return [];
 
 		if (!rangeStartDate || !rangeEndDate) {
 			throw createError({
@@ -35,8 +38,8 @@ export default defineEventHandler(async (event) => {
 		if (modelType) {
 			request = request.ilike('model_type', `%${modelType}%`);
 		}
-		if (yscNo) {
-			request = request.ilike('locations.location_id', `%${yscNo}%`);
+		if (normalizedAssetCode) {
+			request = request.eq('asset_code', normalizedAssetCode);
 		}
 
 		const { data, error } = await request;
@@ -52,8 +55,9 @@ export default defineEventHandler(async (event) => {
 	catch (error: unknown) {
 		console.log('ERROR:', error);
 		if (error instanceof Error) {
+			const errorWithStatus = error as Error & { statusCode?: number };
 			throw createError({
-				statusCode: (error as any).statusCode || 500,
+				statusCode: errorWithStatus.statusCode || 500,
 				message: error.message,
 			});
 		}

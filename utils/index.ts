@@ -134,6 +134,6 @@ export function getValueByPath(obj, path) {
 	return path.split('.').reduce((acc, part) => acc?.[part], obj);
 }
 
-export function generateQrCodeUrl(tenantSlug: string, locationId: string) {
-	return `${window.location.origin}/${tenantSlug}/inspections/${locationId}`;
+export function generateQrCodeUrl(tenantSlug: string, assetUid: string) {
+	return `${window.location.origin}/${encodeURIComponent(tenantSlug)}/inspections/${encodeURIComponent(assetUid)}`;
 }

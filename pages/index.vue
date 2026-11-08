@@ -18,11 +18,11 @@ const filters = reactive({
   building: "",
   weight: "",
   modelType: "",
-  yscNo: "",
+  assetCode: "",
   result: null as null | boolean,
 });
-const yscNoSearch = ref("");
-let yscSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const assetCodeSearch = ref("");
+let assetCodeSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const dateModeOptions = [
   { label: "Kapalı", value: "none" },
@@ -40,7 +40,7 @@ const hasActiveFilters = computed(() => {
     Boolean(filters.building) ||
     Boolean(filters.weight) ||
     Boolean(filters.modelType) ||
-    Boolean(filters.yscNo) ||
+    Boolean(filters.assetCode) ||
     filters.result !== null ||
     filters.dateMode !== "none"
   );
@@ -51,7 +51,7 @@ const activeFilterCount = computed(() => {
   if (filters.building) count += 1;
   if (filters.weight) count += 1;
   if (filters.modelType) count += 1;
-  if (filters.yscNo) count += 1;
+  if (filters.assetCode) count += 1;
   if (filters.result !== null) count += 1;
   if (filters.dateMode !== "none") count += 1;
   return count;
@@ -118,8 +118,8 @@ const buildQuery = () => {
   if (filters.modelType) {
     query.model_type = filters.modelType.trim();
   }
-  if (filters.yscNo) {
-    query.ysc_no = filters.yscNo.trim();
+  if (filters.assetCode) {
+    query.asset_code = filters.assetCode.trim();
   }
   if (filters.result !== null) {
     query.result = String(filters.result);
@@ -148,52 +148,52 @@ const applyFilters = async () => {
 };
 
 const clearFilters = async () => {
-  if (yscSearchDebounceTimer) {
-    clearTimeout(yscSearchDebounceTimer);
-    yscSearchDebounceTimer = null;
+  if (assetCodeSearchDebounceTimer) {
+    clearTimeout(assetCodeSearchDebounceTimer);
+    assetCodeSearchDebounceTimer = null;
   }
   filters.dateMode = "none";
   filters.date = new Date(defaultDate);
   filters.building = "";
   filters.weight = "";
   filters.modelType = "";
-  filters.yscNo = "";
-  yscNoSearch.value = "";
+  filters.assetCode = "";
+  assetCodeSearch.value = "";
   filters.result = null;
   showFilters.value = false;
   await loadInspections();
 };
 
-const applyYscSearch = async (value: string) => {
+const applyAssetCodeSearch = async (value: string) => {
   const normalized = value.trim();
-  if (filters.yscNo === normalized) {
+  if (filters.assetCode === normalized) {
     return;
   }
-  filters.yscNo = normalized;
+  filters.assetCode = normalized;
   await loadInspections();
 };
 
-const clearYscSearch = async () => {
-  if (yscSearchDebounceTimer) {
-    clearTimeout(yscSearchDebounceTimer);
-    yscSearchDebounceTimer = null;
+const clearAssetCodeSearch = async () => {
+  if (assetCodeSearchDebounceTimer) {
+    clearTimeout(assetCodeSearchDebounceTimer);
+    assetCodeSearchDebounceTimer = null;
   }
-  yscNoSearch.value = "";
-  await applyYscSearch("");
+  assetCodeSearch.value = "";
+  await applyAssetCodeSearch("");
 };
 
-watch(yscNoSearch, (value) => {
-  if (yscSearchDebounceTimer) {
-    clearTimeout(yscSearchDebounceTimer);
+watch(assetCodeSearch, (value) => {
+  if (assetCodeSearchDebounceTimer) {
+    clearTimeout(assetCodeSearchDebounceTimer);
   }
-  yscSearchDebounceTimer = setTimeout(() => {
-    void applyYscSearch(value);
+  assetCodeSearchDebounceTimer = setTimeout(() => {
+    void applyAssetCodeSearch(value);
   }, 400);
 });
 
 onBeforeUnmount(() => {
-  if (yscSearchDebounceTimer) {
-    clearTimeout(yscSearchDebounceTimer);
+  if (assetCodeSearchDebounceTimer) {
+    clearTimeout(assetCodeSearchDebounceTimer);
   }
 });
 
@@ -246,6 +246,10 @@ const columns = [
   {
     accessorKey: "products.next_refill_date",
     header: headerLabels.next_refill_date,
+  },
+  {
+    accessorKey: "products.asset_code",
+    header: headerLabels.asset_code,
   },
   {
     accessorKey: "result",
@@ -334,17 +338,17 @@ const expandColumns = [
         </Button>
         <div class="relative">
           <InputText
-            v-model="yscNoSearch"
+            v-model="assetCodeSearch"
             size="small"
-            placeholder="YSC no ara"
+            placeholder="Tüp kodu ara"
             class="w-52 pr-10"
           />
           <button
-            v-if="yscNoSearch"
+            v-if="assetCodeSearch"
             type="button"
-            aria-label="YSC aramasını temizle"
+            aria-label="Tüp kodu aramasını temizle"
             class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            @click="clearYscSearch"
+            @click="clearAssetCodeSearch"
           >
             <i class="ri-close-line text-sm leading-none" />
           </button>

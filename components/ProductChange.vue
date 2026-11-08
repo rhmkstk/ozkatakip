@@ -17,7 +17,7 @@ const toast = useToast();
 const { toTenantPath } = useTenant();
 const loading = ref(false);
 const state = ref(0);
-const newProductId = ref('');
+const newProductIdentifier = ref('');
 const newProductData = reactive({
 	location: null,
 	product: null,
@@ -74,24 +74,15 @@ const newProductSummaryCardData = computed(() => {
 async function getNewProductData() {
 	try {
 		loading.value = true;
-		const location = await $fetch('/api/locations/getByLocationId', {
-			params: { location_id: newProductId.value },
+		const response = await $fetch('/api/products/getByIdentifier', {
+			params: { identifier: newProductIdentifier.value },
 		});
-		if (!location || location.length === 0) {
-			throw new Error('Location not found');
-		}
-		const product = await $fetch('/api/products/getByLocationId', {
-			params: { location_id: location[0].id },
-		});
-		if (!product || product.length === 0) {
-			throw new Error('Product not found');
-		}
-		newProductData.location = location[0];
-		newProductData.product = product[0];
+		newProductData.location = response.location;
+		newProductData.product = response.product;
 	}
 	catch (error) {
 		console.error('Error fetching product data:', error);
-		alert('YSC bulunamadı. Lütfen YSC noyu kontrol edin.');
+		alert('YSC bulunamadı. Lütfen tüp kodunu kontrol edin.');
 	}
 	finally {
 		loading.value = false;
@@ -165,11 +156,11 @@ async function applyChanges() {
 			>
 				<div class="form-row">
 					<div class="form-item">
-						<label for="building_area">YSC no</label>
+						<label for="new_product_identifier">Tüp kodu</label>
 						<InputText
-							id="building_area"
-							v-model="newProductId"
-							placeholder="ATM-2"
+							id="new_product_identifier"
+							v-model="newProductIdentifier"
+							placeholder="XXXXX-XXXXX-X"
 							size="large"
 						/>
 					</div>

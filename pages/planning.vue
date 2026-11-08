@@ -56,6 +56,10 @@ const columns = [
 		header: headerLabels.next_hydrostatic_test_date,
 	},
 	{
+		accessorKey: 'asset_code',
+		header: headerLabels.asset_code,
+	},
+	{
 		accessorKey: 'current_status',
 		header: headerLabels.current_status,
 	},
@@ -101,21 +105,21 @@ const filters = reactive({
 	date: new Date(now),
 	location: '',
 	modelType: '',
-	yscNo: '',
+	assetCode: '',
 });
 const expandedRows = ref([]);
-const yscNoSearch = ref('');
-let yscSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const assetCodeSearch = ref('');
+let assetCodeSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const hasActiveFilters = computed(() => {
-	return Boolean(filters.location) || Boolean(filters.modelType) || Boolean(filters.yscNo);
+	return Boolean(filters.location) || Boolean(filters.modelType) || Boolean(filters.assetCode);
 });
 
 const activeFilterCount = computed(() => {
 	let count = 0;
 	if (filters.location) count += 1;
 	if (filters.modelType) count += 1;
-	if (filters.yscNo) count += 1;
+	if (filters.assetCode) count += 1;
 	return count;
 });
 
@@ -142,8 +146,8 @@ const buildQuery = () => {
 	if (filters.modelType) {
 		query.model_type = filters.modelType.trim();
 	}
-	if (filters.yscNo) {
-		query.ysc_no = filters.yscNo.trim();
+	if (filters.assetCode) {
+		query.asset_code = filters.assetCode.trim();
 	}
 	return query;
 };
@@ -171,49 +175,49 @@ const applyFilters = async () => {
 };
 
 const clearFilters = async () => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
-		yscSearchDebounceTimer = null;
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
+		assetCodeSearchDebounceTimer = null;
 	}
 	filters.date = new Date(now);
 	filters.location = '';
 	filters.modelType = '';
-	filters.yscNo = '';
-	yscNoSearch.value = '';
+	filters.assetCode = '';
+	assetCodeSearch.value = '';
 	showFilters.value = false;
 	await loadPlanningRecords();
 };
 
-const applyYscSearch = async (value: string) => {
+const applyAssetCodeSearch = async (value: string) => {
 	const normalized = value.trim();
-	if (filters.yscNo === normalized) {
+	if (filters.assetCode === normalized) {
 		return;
 	}
-	filters.yscNo = normalized;
+	filters.assetCode = normalized;
 	await loadPlanningRecords();
 };
 
-const clearYscSearch = async () => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
-		yscSearchDebounceTimer = null;
+const clearAssetCodeSearch = async () => {
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
+		assetCodeSearchDebounceTimer = null;
 	}
-	yscNoSearch.value = '';
-	await applyYscSearch('');
+	assetCodeSearch.value = '';
+	await applyAssetCodeSearch('');
 };
 
-watch(yscNoSearch, (value) => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
+watch(assetCodeSearch, (value) => {
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
 	}
-	yscSearchDebounceTimer = setTimeout(() => {
-		void applyYscSearch(value);
+	assetCodeSearchDebounceTimer = setTimeout(() => {
+		void applyAssetCodeSearch(value);
 	}, 400);
 });
 
 onBeforeUnmount(() => {
-	if (yscSearchDebounceTimer) {
-		clearTimeout(yscSearchDebounceTimer);
+	if (assetCodeSearchDebounceTimer) {
+		clearTimeout(assetCodeSearchDebounceTimer);
 	}
 });
 
@@ -280,17 +284,17 @@ const getFilteredDates = computed(() => {
 				</Button>
 				<div class="relative">
 					<InputText
-						v-model="yscNoSearch"
+						v-model="assetCodeSearch"
 						size="small"
-						placeholder="YSC no ara"
+						placeholder="Tüp kodu ara"
 						class="w-52 pr-10"
 					/>
 					<button
-						v-if="yscNoSearch"
+						v-if="assetCodeSearch"
 						type="button"
-						aria-label="YSC aramasını temizle"
+						aria-label="Tüp kodu aramasını temizle"
 						class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-						@click="clearYscSearch"
+						@click="clearAssetCodeSearch"
 					>
 						<i class="ri-close-line text-sm leading-none" />
 					</button>

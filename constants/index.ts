@@ -20,6 +20,7 @@ export const headerLabels = {
   location: "Bulduğu yer",
   building_area: "Bulduğu bina/alan",
   location_id: "YSC no",
+  asset_code: "Tüp kodu",
   serial_number: "Seri no",
   brand: "Markası",
   date: "Kontrol tarihi",

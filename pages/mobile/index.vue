@@ -3,7 +3,7 @@ definePageMeta({
 	layout: 'mobile',
 });
 
-const locationId = ref<string | null>('');
+const assetCode = ref('');
 const showScanner = ref(false);
 const { toTenantPath } = useTenant();
 </script>
@@ -17,19 +17,20 @@ const { toTenantPath } = useTenant();
 			>
 				<div class="form-row">
 					<div class="form-item">
-						<label for="building_area">YSC no</label>
+						<label for="asset_code">Tüp kodu</label>
 						<div class="flex space-x-2">
 							<InputText
-								id="building_area"
-								v-model="locationId"
-								placeholder="ATM-2"
+								id="asset_code"
+								v-model="assetCode"
+								placeholder="XXXXX-XXXXX-X"
 								size="large"
 								class="flex-1"
 							/>
 							<Button
 								size="large"
 								label="Ara"
-								@click="$router.push(toTenantPath(`/mobile/transactions/${locationId}`))"
+								:disabled="!assetCode.trim()"
+								@click="$router.push(toTenantPath(`/mobile/transactions/${assetCode.trim()}`))"
 							/>
 						</div>
 					</div>
@@ -50,7 +51,7 @@ const { toTenantPath } = useTenant();
 			<QRScanner
 				v-if="showScanner"
 				@close="showScanner = false"
-				@scan-complete="(locationId) => $router.push(toTenantPath(`/mobile/transactions/${locationId}`))"
+				@scan-complete="(scannedAssetUid) => $router.push(toTenantPath(`/mobile/transactions/${scannedAssetUid}`))"
 			/>
 		</div>
 	</div>

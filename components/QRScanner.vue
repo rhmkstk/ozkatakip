@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { Html5Qrcode } from 'html5-qrcode';
+import { normalizeAssetUid } from '~/utils/assetUid';
 
 type Emits = {
 	(e: 'close'): void;
@@ -24,15 +25,26 @@ const handleQrScan = async () => {
 				scanner?.stop().then(() => {
 					scanner?.clear();
 
-					const scannedNumber = decodedText.trim();
-					// TODO: check if the scanned number is a valid ysc number
-					if (!scannedNumber) {
+					const scannedValue = decodedText.trim();
+					if (!scannedValue) {
 						console.warn('Scanned number is empty or invalid.');
 						return;
 					}
-					const splitedUrl = scannedNumber.split('/')
-					const locationId = splitedUrl[splitedUrl.length - 1];
-					emit('scanComplete', locationId);
+
+					try {
+						const parsedUrl = new URL(scannedValue, window.location.origin);
+						const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+						const assetUid = normalizeAssetUid(
+							decodeURIComponent(pathSegments.at(-1) ?? ''),
+						);
+						if (!assetUid) {
+							throw new Error('Geçerli bir tüp QR kodu bulunamadı.');
+						}
+						emit('scanComplete', assetUid);
+					}
+					catch (error) {
+						console.warn('QR kodu çözümlenemedi:', error);
+					}
 				});
 			},
 			(errorMessage) => {
