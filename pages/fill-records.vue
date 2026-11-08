@@ -283,57 +283,28 @@ const expandColumns = [
 </script>
 
 <template>
-	<div>
+	<div class="app-table-page">
 		<PageHeader title="Dolum kayıtları listeleniyor">
 			<template #right>
-				<Button
-					v-if="hasActiveFilters"
-					label="Temizle"
-					icon="ri-close-line"
-					size="small"
-					severity="secondary"
-					outlined
-					@click="clearFilters"
+				<AppFilterControl
+					:active-count="activeFilterCount"
+					@open="showFilters = true"
+					@clear="clearFilters"
 				/>
-				<Button
-					:outlined="!hasActiveFilters"
-					size="small"
-					@click="showFilters = true"
-				>
-					<i class="ri-filter-3-line text-base" />
-					<span>Filtreler</span>
-					<span
-						v-if="activeFilterCount"
-						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
-					>
-						{{ activeFilterCount }}
-					</span>
-				</Button>
-				<div class="relative">
-					<InputText
-						v-model="assetCodeSearch"
-						size="small"
-						placeholder="Tüp kodu ara"
-						class="w-52 pr-10"
-					/>
-					<button
-						v-if="assetCodeSearch"
-						type="button"
-						aria-label="Tüp kodu aramasını temizle"
-						class="absolute inset-y-0 right-2 z-10 my-auto inline-flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-						@click="clearAssetCodeSearch"
-					>
-						<i class="ri-close-line text-sm leading-none" />
-					</button>
-				</div>
+				<AppSearchInput
+					v-model="assetCodeSearch"
+					placeholder="Tüp kodu ara"
+					@clear="clearAssetCodeSearch"
+				/>
 			</template>
 		</PageHeader>
 
 		<Drawer
 			v-model:visible="showFilters"
 			header="Filtreler"
-			position="left"
-			:style="{ width: '22rem' }"
+			position="right"
+			class="filter-drawer"
+			:style="{ width: 'min(28rem, 100vw)' }"
 		>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
@@ -341,8 +312,8 @@ const expandColumns = [
 					<Select
 						v-model="filters.fillDateMode"
 						:options="dateModeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 					/>
 				</div>
 				<div
@@ -363,8 +334,8 @@ const expandColumns = [
 					<Select
 						v-model="filters.hydroDateMode"
 						:options="dateModeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 					/>
 				</div>
 				<div
@@ -410,7 +381,7 @@ const expandColumns = [
 					/>
 				</div>
 			</div>
-			<div class="mt-6 flex items-center gap-2">
+			<div class="filter-actions mt-6 flex items-center gap-2">
 				<Button
 					label="Temizle"
 					severity="secondary"
@@ -424,7 +395,7 @@ const expandColumns = [
 				/>
 			</div>
 		</Drawer>
-		<EmptyState v-if="!tabledata.length">
+		<EmptyState v-if="!isLoading && !tabledata.length">
 			<template #title>
 				Bakım Kayıdı bulunamadı
 			</template>
@@ -434,7 +405,7 @@ const expandColumns = [
 		</EmptyState>
 		<div
 			v-else
-			class="overflow-x-auto"
+			class="app-table-shell"
 		>
 			<DataTable
 				v-model:expanded-rows="expandedRows"
@@ -465,7 +436,7 @@ const expandColumns = [
 					</template>
 				</Column>
 				<template #expansion="slotProps">
-					<div class="p-4">
+					<div class="p-0">
 						<DataTable
 							:value="[slotProps.data]"
 							size="small"
@@ -491,6 +462,10 @@ const expandColumns = [
 					</div>
 				</template>
 			</DataTable>
+			<AppPagination
+				:total="tabledata.length"
+				item-label="dolum kaydı"
+			/>
 		</div>
 	</div>
 </template>

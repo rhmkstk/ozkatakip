@@ -1,32 +1,26 @@
 <script setup lang="ts">
-type Props = {
-  title?: string;
-  subtitle?: string;
-};
-defineProps<Props>();
+defineProps<{ title?: string; subtitle?: string }>();
 </script>
+
 <template>
-  <Card
-    style="width: max-content"
-    class="flex flex-col items-center justify-center mx-auto mt-20"
-  >
-    <template #header>
-      <i class="ri-close-circle-line text-8xl"></i>
-    </template>
-    <template #title>
-      <div class="text-center text-2xl font-semibold">
-        <span v-if="title">{{ title }}</span>
-        <slot v-else name="title"></slot>
-      </div>
-    </template>
-    <template #subtitle>
-      <div class="text-center text-gray-500 mt-2">
-        <span v-if="subtitle">{{ subtitle }}</span>
-        <slot v-else name="subtitle"></slot>
-      </div>
-    </template>
-    <template #footer>
-      <slot name="footer"></slot>
-    </template>
-  </Card>
+	<section class="mx-auto my-16 flex max-w-md flex-col items-center px-6 py-8 text-center">
+		<div class="mb-4 flex size-12 items-center justify-center rounded-full bg-slate-100 text-2xl text-slate-400">
+			<i class="ri-inbox-2-line" />
+		</div>
+		<h2 class="text-base font-semibold text-slate-900">
+			<span v-if="title">{{ title }}</span><slot
+				v-else
+				name="title"
+			/>
+		</h2>
+		<p class="mt-1.5 text-sm leading-6 text-slate-500">
+			<span v-if="subtitle">{{ subtitle }}</span><slot
+				v-else
+				name="subtitle"
+			/>
+		</p>
+		<div class="mt-5">
+			<slot name="footer" />
+		</div>
+	</section>
 </template>

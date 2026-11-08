@@ -1,136 +1,141 @@
 <script setup lang="ts">
 const supabase = useSupabaseClient();
+const route = useRoute();
 const { currentUser, loadCurrentUser } = useCurrentAppUser();
 const { loadUserDirectory } = useUserDirectory();
 const { toTenantPath } = useTenant();
+const mobileMenuOpen = ref(false);
+const sidebarCollapsed = ref(false);
+
+const toggleSidebar = () => {
+	sidebarCollapsed.value = !sidebarCollapsed.value;
+	localStorage.setItem('dashboard-sidebar-collapsed', String(sidebarCollapsed.value));
+};
 
 const logout = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    console.error("Logout error:", error.message);
-  } else {
-    await navigateTo("/login");
-  }
-  currentUser.value = null;
+	const { error } = await supabase.auth.signOut();
+	if (error) {
+		console.error('Logout error:', error.message);
+		return;
+	}
+	currentUser.value = null;
+	await navigateTo('/login');
 };
 
 onMounted(async () => {
-	await Promise.all([
-		loadCurrentUser(true),
-		loadUserDirectory(true),
-	]);
+	sidebarCollapsed.value = localStorage.getItem('dashboard-sidebar-collapsed') === 'true';
+	await Promise.all([loadCurrentUser(true), loadUserDirectory(true)]);
 });
 
-const allMenuItems = [
-  { name: "Bakım kayıtları", path: "/", icon: "ri-booklet-line" },
-  { name: "Dolum kayıtları", path: "/fill-records", icon: "ri-book-open-line" },
-  { name: "İşlem geçmişi", path: "/history", icon: "ri-history-fill" },
-  { name: "Planlama", path: "/planning", icon: "ri-calendar-todo-line" },
-  { name: "YSC genel liste", path: "/products", icon: "ri-fire-line" },
-  { name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line', adminOnly: true },
-  { name: "YSC Veri girişi", path: "/insert-data", icon: "ri-booklet-line" },
-  { name: "Mobil", path: "/mobile", icon: "ri-cellphone-line" },
+watch(() => route.fullPath, () => {
+	mobileMenuOpen.value = false;
+});
+
+const allMenuGroups = [
+	{ label: 'Kayıtlar', items: [
+		{ name: 'Bakım kayıtları', path: '/', icon: 'ri-shield-check-line' },
+		{ name: 'Dolum kayıtları', path: '/fill-records', icon: 'ri-archive-drawer-line' },
+		{ name: 'İşlem geçmişi', path: '/history', icon: 'ri-history-line' },
+	] },
+	{ label: 'Yönetim', items: [
+		{ name: 'Planlama', path: '/planning', icon: 'ri-calendar-check-line' },
+		{ name: 'YSC envanteri', path: '/products', icon: 'ri-fire-line' },
+		{ name: 'Veri girişi', path: '/insert-data', icon: 'ri-add-box-line' },
+		{ name: 'Kullanıcılar', path: '/users', icon: 'ri-group-line', adminOnly: true },
+	] },
+	{ label: 'Saha', items: [
+		{ name: 'Mobil uygulama', path: '/mobile', icon: 'ri-qr-scan-2-line' },
+	] },
 ];
 
-const menuItems = computed(() => {
-	return allMenuItems
+const menuGroups = computed(() => allMenuGroups.map(group => ({
+	...group,
+	items: group.items
 		.filter(item => !item.adminOnly || currentUser.value?.role === 'admin')
-		.map(item => ({
-			...item,
-			path: toTenantPath(item.path),
-		}));
+		.map(item => ({ ...item, path: toTenantPath(item.path) })),
+})));
+
+const initials = computed(() => {
+	const first = currentUser.value?.first_name?.[0] ?? '';
+	const last = currentUser.value?.last_name?.[0] ?? '';
+	return `${first}${last}`.toLocaleUpperCase('tr-TR') || 'OT';
 });
-
-const supportItems = [
-  // { name: 'Yardım', path: '/help' },
-  // { name: 'İletişim', path: '/contact' },
-  {
-    name: "Çıkış yap",
-    icon: "ri-logout-circle-r-line",
-    action: logout,
-  },
-];
-
-const sidebarExpanded = ref(true);
-// const toggleSidebar = () => {
-// 	sidebarExpanded.value = !sidebarExpanded.value;
-// };
 </script>
 
 <template>
-	<div class="flex w-full max-w-full h-screen bg-slate-100">
-		<div
-			v-show="sidebarExpanded"
-			class="sidebar pb-12 pt-8 px-8 text-gray-950 flex flex-col"
-		>
-			<div v-if="currentUser" class="border-b pb-6 border-slate-300 flex justify-between">
-				<div v-if="currentUser" class="flex items-center space-x-3">
-					<img
-            :src="`assets/user_avatar.jpg`"
-            alt="profile image"
-            class="size-11 rounded-full object-cover" />
-					<div>
-						<span class="text-[10px] text-gray-500">{{ currentUser.role ==="admin" ? 'YÖNETİCİ': 'ÇALIŞAN' }}</span>
-						<p class="font-bold  text-sm">
-							{{ currentUser.first_name }} {{ currentUser.last_name }}
-						</p>
-						<p v-if="currentUser.activeTenant" class="text-[10px] text-gray-500">
-							{{ currentUser.activeTenant.name }}
-						</p>
-					</div>
+	<div class="min-h-dvh bg-[#f3f5f7] text-slate-800">
+		<header class="sticky top-0 z-40 flex h-16 items-center border-b border-slate-200 bg-white px-4 lg:hidden">
+			<button
+				type="button"
+				class="mr-3 inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-xl text-slate-700"
+				aria-label="Menüyü aç"
+				@click="mobileMenuOpen = true"
+			>
+				<i class="ri-menu-line" />
+			</button>
+			<div class="flex items-center gap-2.5">
+				<div class="flex size-9 items-center justify-center rounded-lg bg-blue-600 text-lg text-white">
+					<i class="ri-shield-check-line" />
+				</div>
+				<div>
+					<p class="text-sm font-bold leading-tight text-slate-900">
+						Özka Takip
+					</p>
+					<p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+						Periyodik kontrol
+					</p>
 				</div>
 			</div>
+		</header>
 
-      <!-- <div class="user">
-        <img
-          :src="profileImg"
-          alt="profile image"
-          class="size-14 rounded-xl object-cover"
-        />
-        <p class="text-2xl mt-5 mb-0.5">Samantha</p>
-        <p class="text-gray-400">samantha@email.com</p>
-      </div> -->
-      <nav class="mt-8">
-        <ul class="text-gray-950 space-y-2">
-          <li v-for="item in menuItems" :key="item.name">
-            <NuxtLink
-              :to="item.path"
-              class="flex items-center px-2 py-2 space-x-1.5 rounded-lg"
-              active-class="!bg-white shadow-sm"
-            >
-              <i :class="item.icon" class="text-lg" />
-              <span>{{ item.name }}</span>
-            </NuxtLink>
-          </li>
-        </ul>
-      </nav>
-      <nav class="mt-auto">
-        <ul class="space-y-4">
-          <li
-            v-for="item in supportItems"
-            :key="item.name"
-            @click="item.action ? item.action() : null"
-          >
-            <NuxtLink :to="item.path" class="flex items-center gap-2">
-              <i :class="item.icon" class="text-lg" />
-              <span>{{ item.name }}</span>
-            </NuxtLink>
-          </li>
-        </ul>
-      </nav>
-    </div>
-    <div class="content flex-1 h-full p-2.5 overflow-x-auto">
-      <div
-        class="py-6 w-full relative z-50 px-4 md:px-6 h-full max-h-full min-h-full overflow-y-auto border border-slate-300 rounded-xl bg-white"
-      >
-        <!-- <button
-					class="absolute top-6 -left-4 z-[99] flex size-8 rounded-full border border-slate-300 bg-white shadow-md"
-					@click="toggleSidebar"
+		<div
+			v-if="mobileMenuOpen"
+			class="fixed inset-0 z-50 lg:hidden"
+		>
+			<button
+				class="absolute inset-0 bg-slate-950/35"
+				aria-label="Menüyü kapat"
+				@click="mobileMenuOpen = false"
+			/>
+			<aside class="relative h-full w-[min(86vw,300px)] bg-white shadow-2xl">
+				<button
+					class="absolute right-3 top-3 flex size-9 items-center justify-center rounded-lg text-xl text-slate-500 hover:bg-slate-100"
+					aria-label="Menüyü kapat"
+					@click="mobileMenuOpen = false"
 				>
-					<i class="ri-arrow-left-s-line text-2xl text-blue-500 m-auto" />
-				</button> -->
-        <slot />
-      </div>
-    </div>
-  </div>
+					<i class="ri-close-line" />
+				</button>
+				<AppSidebarContent
+					:menu-groups="menuGroups"
+					:current-user="currentUser"
+					:initials="initials"
+					:collapsed="false"
+					@logout="logout"
+				/>
+			</aside>
+		</div>
+
+		<aside
+			class="fixed inset-y-0 left-0 z-30 hidden border-r border-slate-200 bg-white transition-[width] duration-300 ease-in-out lg:block"
+			:class="sidebarCollapsed ? 'w-[80px]' : 'w-[272px]'"
+		>
+			<AppSidebarContent
+				:menu-groups="menuGroups"
+				:current-user="currentUser"
+				:initials="initials"
+				:collapsed="sidebarCollapsed"
+				@logout="logout"
+				@toggle="toggleSidebar"
+			/>
+		</aside>
+
+		<main
+			class="min-w-0 transition-[padding] duration-300 ease-in-out"
+			:class="sidebarCollapsed ? 'lg:pl-[80px]' : 'lg:pl-[272px]'"
+		>
+			<div class="mx-auto min-h-[calc(100dvh-4rem)] w-full max-w-[1600px] px-4 py-5 sm:px-6 lg:min-h-dvh lg:px-8 lg:py-7">
+				<slot />
+			</div>
+		</main>
+	</div>
 </template>

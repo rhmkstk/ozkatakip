@@ -8,21 +8,27 @@ export default defineEventHandler(async (event) => {
 	const assetCode = normalizeAssetCode(identifier);
 	const tenant = await requireTenantContext(event);
 
-	if (!assetUid && !assetCode) {
+	if (!identifier) {
 		throw createError({
 			statusCode: 400,
-			message: 'Geçerli bir tüp kodu veya QR kimliği gereklidir.',
+			message: 'Tüp kodu, QR kimliği veya YSC No gereklidir.',
 		});
 	}
 
 	let request = event.context.supabase
 		.from('products')
-		.select('*, locations(*, building_id(*))')
+		.select('*, locations!inner(*, building_id(*))')
 		.eq('tenant_id', tenant.id);
 
-	request = assetUid
-		? request.eq('asset_uid', assetUid)
-		: request.eq('asset_code', assetCode as string);
+	if (assetUid) {
+		request = request.eq('asset_uid', assetUid);
+	}
+	else if (assetCode) {
+		request = request.eq('asset_code', assetCode);
+	}
+	else {
+		request = request.eq('locations.location_id', identifier);
+	}
 
 	const { data, error } = await request.maybeSingle();
 
@@ -33,7 +39,7 @@ export default defineEventHandler(async (event) => {
 	if (!data) {
 		throw createError({
 			statusCode: 404,
-			message: 'Bu tüp kodu veya QR kimliğiyle eşleşen bir YSC bulunamadı.',
+			message: 'Bu tüp kodu, QR kimliği veya YSC No ile eşleşen kayıt bulunamadı.',
 		});
 	}
 

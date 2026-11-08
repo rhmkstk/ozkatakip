@@ -31,7 +31,7 @@ export default defineNuxtConfig({
 				},
 				{
 					name: 'theme-color',
-					content: '#225AEB',
+					content: '#2563EB',
 				},
 				{
 					name: 'mobile-web-app-capable',
@@ -165,8 +165,8 @@ export default defineNuxtConfig({
 			name: 'ozkatakip',
 			short_name: 'ozkatakip',
 			description: 'ozkatakip mobil saha uygulamasi',
-			theme_color: '#225AEB',
-			background_color: '#B62472',
+			theme_color: '#2563EB',
+			background_color: '#F1F5F9',
 			display: 'standalone',
 			scope: '/',
 			start_url: '/mobile?source=pwa',

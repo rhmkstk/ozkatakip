@@ -40,7 +40,7 @@ export const headerLabels = {
   user_id: "Kullanıcı Adi",
   product_id: "Ürün ID",
   details: "Detaylar",
-  type: "İşem Tipi",
+  type: "İşlem tipi",
   is_expiry: "Son kullanma tarihi",
 };
 
@@ -141,7 +141,7 @@ export const transactionTypeLabels: {
 } = {
   fill: "Dolum",
   inspection: "Bakım",
-  change: "Degisim",
+  change: "Değişim",
   other: "Diğer",
 };
 
@@ -149,7 +149,7 @@ export const productStatusTypeLabels: {
   [key in Database["public"]["Enums"]["product_status"]]: string;
 } = {
   active: "Uygun",
-  damaged: "Kullanim dışı",
+  damaged: "Kullanım dışı",
   lost: "Bulunamadı",
   spare: "Yedek",
   scrap: "Hurda",

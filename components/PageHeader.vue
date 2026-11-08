@@ -1,21 +1,25 @@
 <script lang="ts" setup>
-type Props = {
-	title?: string;
-};
-const props = defineProps<Props>();
+defineProps<{ title?: string; eyebrow?: string }>();
 </script>
 
 <template>
-	<div class="flex items-center space-x-4 mb-6 p-6 -m-6 sticky -top-6 z-10 bg-white shadow-sm">
-		<slot />
-		<h2
-			v-if="props.title"
-			class="text-gray-500 text-sm"
-		>
-			{{ props.title }}
-		</h2>
-		<div class="ml-auto flex items-center space-x-2 shrink-0">
-			<slot name="right"/>
+	<header class="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+		<div class="min-w-0">
+			<p class="app-kicker mb-1">
+				{{ eyebrow || 'Özka Takip' }}
+			</p>
+			<div class="flex items-center gap-3">
+				<slot />
+				<h1
+					v-if="title"
+					class="truncate text-xl font-bold tracking-[-0.02em] text-slate-950 sm:text-2xl"
+				>
+					{{ title }}
+				</h1>
+			</div>
 		</div>
-	</div>
+		<div class="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
+			<slot name="right" />
+		</div>
+	</header>
 </template>

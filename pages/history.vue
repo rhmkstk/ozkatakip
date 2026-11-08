@@ -155,12 +155,12 @@ await loadUserDirectory();
 
 const columns = [
 	{
-		accessorKey: 'created_at',
-		header: headerLabels.transaction_date,
-	},
-	{
 		accessorKey: 'type',
 		header: headerLabels.type,
+	},
+	{
+		accessorKey: 'created_at',
+		header: headerLabels.transaction_date,
 	},
 	{
 		accessorKey: 'details',
@@ -179,31 +179,13 @@ const columns = [
 </script>
 
 <template>
-	<div>
-		<PageHeader title="İşlem kayıtları listeleniyor">
+	<div class="app-table-page">
+		<PageHeader title="İşlem geçmişi">
 			<template #right>
-				<Button
-					:outlined="!hasActiveFilters"
-					size="small"
-					@click="showFilters = true"
-				>
-					<i class="ri-filter-3-line text-base" />
-					<span>Filtreler</span>
-					<span
-						v-if="activeFilterCount"
-						class="ml-2 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full text-xs font-medium bg-white/70 text-gray-900"
-					>
-						{{ activeFilterCount }}
-					</span>
-				</Button>
-				<Button
-					v-if="hasActiveFilters"
-					label="Temizle"
-					icon="pi pi-times"
-					size="small"
-					severity="secondary"
-					outlined
-					@click="clearFilters"
+				<AppFilterControl
+					:active-count="activeFilterCount"
+					@open="showFilters = true"
+					@clear="clearFilters"
 				/>
 			</template>
 		</PageHeader>
@@ -211,8 +193,9 @@ const columns = [
 		<Drawer
 			v-model:visible="showFilters"
 			header="Filtreler"
-			position="left"
-			:style="{ width: '22rem' }"
+			position="right"
+			class="filter-drawer"
+			:style="{ width: 'min(28rem, 100vw)' }"
 		>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
@@ -220,8 +203,8 @@ const columns = [
 					<Select
 						v-model="filters.dateMode"
 						:options="dateModeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 					/>
 				</div>
 				<div
@@ -242,8 +225,8 @@ const columns = [
 					<Select
 						v-model="filters.type"
 						:options="typeOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 						placeholder="İşlem tipi seç"
 						show-clear
 					/>
@@ -253,15 +236,15 @@ const columns = [
 					<Select
 						v-model="filters.user"
 						:options="userOptions"
-						optionLabel="label"
-						optionValue="value"
+						option-label="label"
+						option-value="value"
 						placeholder="Kullanıcı seç"
 						filter
 						show-clear
 					/>
 				</div>
 			</div>
-			<div class="mt-6 flex items-center gap-2">
+			<div class="filter-actions mt-6 flex items-center gap-2">
 				<Button
 					label="Temizle"
 					severity="secondary"
@@ -276,17 +259,17 @@ const columns = [
 			</div>
 		</Drawer>
 
-		<EmptyState v-if="!tabledata.length">
+		<EmptyState v-if="!isLoading && !tabledata.length">
 			<template #title>
-				İşlem Kayıdı bulunamadı
+				İşlem kaydı bulunamadı
 			</template>
 			<template #subtitle>
-				Seçilen tarihler için işlem kayıdı bulunamadı.
+				Seçilen tarihler için işlem kaydı bulunamadı.
 			</template>
 		</EmptyState>
 		<div
 			v-else
-			class="overflow-x-auto"
+			class="app-table-shell"
 		>
 			<DataTable
 				:value="tabledata"
@@ -312,6 +295,10 @@ const columns = [
 					</template>
 				</Column>
 			</DataTable>
+			<AppPagination
+				:total="tabledata.length"
+				item-label="işlem"
+			/>
 		</div>
 	</div>
 </template>

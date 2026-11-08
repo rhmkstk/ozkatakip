@@ -145,7 +145,10 @@ async function applyChanges() {
 
 <template>
 	<div class="h-full">
-		<BaseLoader v-if="loading" />
+		<MobileLoading
+			v-if="loading"
+			label="Değişim işlemi yapılıyor"
+		/>
 		<div v-if="state === 0">
 			<h5 class="mb-12 text-xl font-semibold">
 				Yeni YSC nin bilgilerini girin

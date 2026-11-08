@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import ZoomImage from './ZoomImage.vue';
-import { productStatusTypeLabels, transactionTypeLabels } from '~/constants';
 
 type Props = {
 	field: string;
@@ -48,14 +47,14 @@ const customCells = {
 		text: null,
 	}),
 	type: (value: string) => ({
-		name: 'span',
-		props: {},
-		text: transactionTypeLabels[value as keyof typeof transactionTypeLabels] || value,
+		name: resolveComponent('AppTransactionTypeCell'),
+		props: { value },
+		text: null,
 	}),
 	productStatus: (value: string) => ({
-		name: 'span',
-		props: {},
-		text: productStatusTypeLabels[value as keyof typeof productStatusTypeLabels] || value,
+		name: resolveComponent('AppStatusBadge'),
+		props: { value },
+		text: null,
 	}),
 	userName: (value: string) => ({
 		name: 'span',
@@ -82,9 +81,9 @@ const componentDefinitions = {
 		text: formatTurkishMonthYear(value),
 	}),
 	'created_at': (value: string) => ({
-		name: 'span',
-		props: {},
-		text: formatTurkishDateTime(value),
+		name: resolveComponent('AppDateTimeCell'),
+		props: { value },
+		text: null,
 	}),
 	'manufacture_year': (value: string) => ({
 		name: 'span',
